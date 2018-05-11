@@ -1,0 +1,353 @@
+/* --------------------------- */
+/* Global Definitions: */
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f1f1f1;
+	margin: 0;
+	padding: 0;
+}
+
+h2 {
+    font-size: 18px;
+	padding: 0px;
+	border: 1px solid red;
+}
+
+input {
+	border: 1px solid lightgrey;
+	padding: 0px 4px;
+	height: 26px;
+    font-size: 14px;
+}
+
+button, input[type=submit], input[type=button] {
+	height: 24px;
+    font-size: 14px;
+	border: 1px solid black;
+	color: white;
+	border-radius: 6px;  
+	-moz-border-radius: 6px; 
+	-webkit-border-radius: 6px;
+}
+
+input[type=text] {
+    min-width: 240px;
+}
+
+textarea {
+	border: 1px solid lightgrey;
+	padding: 2px 4px;
+    min-height: 24px;
+    font-size: 14px;
+}
+
+.button-red {
+	background-color: red;	
+}
+
+.button-green {
+	background-color: green;	
+}
+
+.button-black {
+	background-color: black;
+}
+
+.button-blue {
+	background-color: blue;	
+}
+
+button:active, input[type=submit]:active {
+	background-color: #009DDE;
+}
+
+/* --------------------------- */
+/* Layout Items: */
+
+/* Include padding and border in the element's total width and height */
+.header {
+    background-color: white;
+    padding: 10px 15px;
+	height: 60px;
+    text-align: center;
+    vertical-align: top;
+    font-size: 40px;
+	line-height: 60px;
+    font-weight: normal;
+}
+
+.header img {
+    float: left;
+	height: 60px;
+	width: auto;
+}
+
+.header_name {
+    float: right;
+	font-size: 20px;
+}
+
+/* Style the top navigation bar */
+.topnav {
+    overflow: hidden;
+    background-color: #009DDE;
+    font-size: 18px;
+}
+
+/* Style the topnav links */
+.topnav a {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+/* Change color on hover */
+.topnav a:hover {
+    background-color: #C3E5F8;
+    color: black;
+}
+
+.breadcrumb {
+	padding: 10px;
+    font-size: 20px;
+}
+
+.row {
+    padding: 10px;
+}
+
+.row:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* Clear floats after the columns */
+.footer {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	padding: 20px;
+    text-align: center;
+    background: #ddd;
+    margin-top: 20px;
+}
+
+/* --------------------------- */
+/* Message Boxes: */
+
+.message-box {
+	padding: 5px;
+	background-color: white;
+	border-radius: 6px;
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+.error-box {
+	border:1px solid red;
+	color:red;
+}
+
+.warning-box {
+	border: 1px solid orange;
+	color: orange;
+}
+
+.info-box {
+	border: 1px solid teal;
+	color: teal;
+}
+
+.success-box {
+	border: 1px solid green;
+	color: green;
+}
+
+/* --------------------------- */
+/* Details Table: */
+
+.details-table {
+	text-align:left;
+	border:1px solid black;
+	border-collapse:collapse;
+}
+
+.details-table th {
+	padding:5px 10px; 
+	background-color:black;
+	color:white; 
+	font-weight:bold;
+	white-space: nowrap;
+}
+
+.details-table td {
+	padding: 5px 10px; 
+}
+
+.details-table tr:nth-child(even) {
+	background: #C3E5F8;
+}
+
+.details-table a {
+    color: black;
+    text-decoration: none;
+}
+
+.details-table a:hover {
+    text-decoration: underline;
+}
+
+.pagination-div {
+    margin: 4px 0px 4px 0px;
+}
+
+.pagination-div a {
+    color: black;
+    text-decoration: none;
+}
+
+.pagination-div a:hover {
+    text-decoration: underline;
+}
+
+/* --------------------------- */
+/* Input Table: */
+
+.input-table {
+	border-collapse:collapse;
+}
+
+.input-table th {
+	text-align: right;
+	font-weight: bold;
+}
+
+.input-table th {
+	padding: 4px 3px; 
+}
+
+.input-table td {
+	padding: 4px 0px; 
+}
+
+.input-table .button-row {
+	text-align:right;
+}
+
+.no-wrap-table td {
+	white-space: nowrap;
+}
+
+/* --------------------------- */
+/* Scrollable Table: */
+
+table.scrollable-table thead {
+	display: block;
+}
+
+table.scrollable-table tbody {
+	display: block;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* --------------------------- */
+/* Participants: */
+
+.participant-table td:nth-child(2) {
+	min-width: 120px;
+}
+
+.participant-table td:nth-child(3) {
+	min-width: 120px;
+}
+
+.participant-tabs {
+    background-color: #C3E5F8;
+    color: black;
+    text-align: center;
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid black;
+    margin-bottom: 4px;
+}
+
+.participant-tabs.active {
+    background-color: #009DDE;
+    color: white;
+}
+
+.participant-tabs:hover, .participant-tabs:active {
+    background-color: #009DDE;
+    color: white;
+}
+
+.green-box {
+	background-color: #ADFFA1;
+	border: 1px solid darkgreen;
+	height: 24px;
+	width: 180px;
+	line-height: 24px;
+	text-align: center;
+	color: black;
+}
+
+.red-box {
+	background-color: #FFB7BC;
+	border: 1px solid darkred;
+	height: 24px;
+	width: 180px;
+	line-height: 24px;
+	text-align: center;
+	color: black;
+}
+
+.blue-box {
+	background-color: #9AC5FF;
+	border: 1px solid blue;
+	height: 24px;
+	width: 180px;
+	line-height: 24px;
+	text-align: center;
+	color: black;
+}
+
+#update_participant tr th:first-child {
+	width: 112px;
+}
+
+#update_participant textarea {
+    min-width: 494px;
+    max-width: 494px;
+}
+
+.button-red.register {
+	background-color: red;
+	width: 200px;
+	height: 40px;
+	font-size: 20px;
+}
+
+.button-green.register {
+	background-color: green;	
+	width: 200px;
+	height: 40px;
+	font-size: 20px;
+}
+
+.history-table th:last-child {
+	min-width: 180px;
+    width: 100%;
+}
+
+.history-table td:last-child {
+	min-width: 180px;
+    width: 100%;
+}
+
