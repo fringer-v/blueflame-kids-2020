@@ -93,9 +93,7 @@ bugs($_POST);
 			$this->error = $form->validate();
 			if (empty($this->error)) {
 				$pwd = $stf_password->getValue();
-				if (empty($stf_id_v))
-					$pwd = "";
-				else
+				if (!empty($pwd))
 					$pwd = password_hash(strtolower(md5($pwd."129-3026-19-2089")), PASSWORD_DEFAULT);
 				if (empty($stf_id_v)) {
 					//$this->news_model->set_news();
