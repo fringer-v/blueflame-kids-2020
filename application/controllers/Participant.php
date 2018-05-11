@@ -258,6 +258,7 @@ class Participant extends BF_Controller {
 
 					$data['prt_number'] = $prt_number;
 					$data['prt_create_stf_id'] = $this->session->stf_id;
+					$this->db->set('prt_modifytime', 'NOW()', FALSE);
 
 					$this->db->insert('bf_participants', $data);
 					$prt_id_v = $this->db->insert_id();
@@ -273,6 +274,7 @@ class Participant extends BF_Controller {
 				}
 				else {
 					$data['prt_modify_stf_id'] = $this->session->stf_id;
+					$this->db->set('prt_modifytime', 'NOW()', FALSE);
 
 					$this->db->where('prt_id', $prt_id_v);
 					$this->db->update('bf_participants', $data);
@@ -285,7 +287,7 @@ class Participant extends BF_Controller {
 			if ($unregister->submitted() || $register->submitted()) {
 				$registered = !$participant_row['prt_registered'];
 
-				$sql = 'UPDATE bf_participants SET prt_registered = ?';
+				$sql = 'UPDATE bf_participants SET prt_registered = ?, prt_modifytime = NOW()';
 				if (!empty($participant_row['prt_call_status'])) {
 					$sql .= ', prt_call_status = '.CALL_NOCALL;
 					$sql .= ', prt_call_escalation = 0';
@@ -307,6 +309,7 @@ class Participant extends BF_Controller {
 					'hst_notes'=>$register_comment->getValue()));
 
 				$this->success = $prt_firstname->getValue()." ".$prt_lastname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet');
+				$register_comment->setValue('');
 			}
 
 			$call_status = $participant_row['prt_call_status'];
@@ -344,6 +347,7 @@ class Participant extends BF_Controller {
 					'hst_notes'=>$supervisor_comment->getValue()));
 
 				$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg;
+				$supervisor_comment->setValue('');
 			}
 			
 			if ($escallate->submitted()) {
