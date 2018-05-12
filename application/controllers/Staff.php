@@ -80,11 +80,11 @@ bugs($_POST);
 		else
 			$confirm_password->setRule('matches[stf_password]');
 		// Buttons:
-		$clear_staff = $form->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="staff";'));
 		if (empty($stf_id_v))
 			$save_staff = $form->addSubmit('submit', 'Mitarbeiter Hinzufügen', array('class'=>'button-black'));
 		else
 			$save_staff = $form->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
+		$clear_staff = $form->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="staff";'));
 
 		if ($clear_staff->submitted())
 			$form->setValues($empty_row);

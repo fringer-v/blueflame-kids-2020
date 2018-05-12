@@ -67,11 +67,11 @@ class Groups extends BF_Controller {
 		$grp_location = $form->addTextInput('grp_location', 'Raum', $group_row['grp_location']);
 		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
 
-		$clear_group = $form->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="groups";'));
 		if (empty($grp_id_v))
 			$save_group = $form->addSubmit('submit', 'Kleingruppe Hinzufügen', array('class'=>'button-black'));
 		else
 			$save_group = $form->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
+		$clear_group = $form->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="groups";'));
 
 		if ($clear_group->submitted())
 			$form->setValue($empty_row);

@@ -134,13 +134,10 @@ class BF_Controller extends CI_Controller {
 		if (!empty($this->success))
 			print_success($this->success);
 		_div();
-
-		div(array('class'=>'row'));
 	}
 	
 	public function footer($js_src = "") {
 
-		_div(); // row
 		div(array('class'=>'footer'));
 		em('&copy; ', 2018);
 		_div();

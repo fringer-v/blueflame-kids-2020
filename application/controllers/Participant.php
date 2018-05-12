@@ -178,10 +178,10 @@ class Participant extends BF_Controller {
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
-		$clear_participant = $update_participant->addSubmit('clear_participant', '', array('class'=>'button-black'));
-		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-black'));
-		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen', array('class'=>'button-black'));
 		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-black'));
+		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-black'));
+		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen...', array('class'=>'button-black'));
+		$clear_participant = $update_participant->addSubmit('clear_participant', '', array('class'=>'button-black'));
 
 		$update_participant->createGroup('tab_modify');
 
@@ -391,7 +391,7 @@ class Participant extends BF_Controller {
 			$call_field = '';
 		}
 		else {
-			$clear_participant->setValue('Neues Aufnehmen');
+			$clear_participant->setValue('Weiteres Aufnehmen...');
 
 			$new_participant->hide();
 			if ($participant_row['prt_registered']) {

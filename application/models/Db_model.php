@@ -131,6 +131,8 @@ class DB_model extends CI_Model {
 		$this->create_table('bf_history', $fields);
 
 		$this->set_setting('database-version', DB_VERSION);
+		
+		// insert bf_staff (stf_username, stf_fullname, stf_password) values ('Admin', 'Administrator', '$2y$10$pU1PLFCA1BbQPEYPFusiK.WW7WvKLpoiT4QXeRRqwDUcjNigNDL.O');
 	}
 
 	public function create_table($table_name, $fields, $keys = array()) {
