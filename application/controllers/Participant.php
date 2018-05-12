@@ -89,15 +89,15 @@ class HistoryTable extends Table {
 					case UNREGISTER:
 						return 'Abgemeldet';
 					case CALL:
-						return 'Gerufen';
-					case UNCALL:
-						return 'Aufgehoben';
+						return TEXT_PENDING;
+					case CANCELLED:
+						return TEXT_CANCELLED;
 					case ESCALATE:
-						return 'Eskaliert';
+						return TEXT_ESCALATED;
 					case CALLED:
-						return 'Durchgefuhrt';
+						return TEXT_CALLED;
 					case ENDED:
-						return 'Beendet';
+						return TEXT_COMPLETED;
 				}
 				return '';
 			case 'date':
@@ -219,7 +219,7 @@ class Participant extends BF_Controller {
 
 		$escallate = $update_participant->addSubmit('escallate', 'Eskalieren', array('class'=>'button-blue'));
 		$call_super = $update_participant->addSubmit('call_super', 'Ruf Eltern', array('class'=>'button-blue'));
-		$uncall_super = $update_participant->addSubmit('uncall_super', 'Ruf Aufheben ', array('class'=>'button-red'));
+		$cancel_super = $update_participant->addSubmit('cancel_super', 'Ruf Aufheben ', array('class'=>'button-red'));
 
 		$update_participant->createGroup('tab_supervisor');
 
@@ -296,7 +296,7 @@ class Participant extends BF_Controller {
 					$this->db->insert('bf_history', array(
 						'hst_prt_id'=>$prt_id_v,
 						'hst_stf_id'=>$this->session->stf_id,
-						'hst_action'=>UNCALL,
+						'hst_action'=>CANCELLED,
 						'hst_escalation'=>0));
 				}
 				$sql .= ' WHERE prt_id = ?';
@@ -313,7 +313,7 @@ class Participant extends BF_Controller {
 			}
 
 			$call_status = $participant_row['prt_call_status'];
-			if ($call_super->submitted() || $uncall_super->submitted()) {
+			if ($call_super->submitted() || $cancel_super->submitted()) {
 				$action = '';
 				$msg = '';
 				$sql = 'UPDATE bf_participants SET prt_call_escalation = 0, ';
@@ -326,7 +326,7 @@ class Participant extends BF_Controller {
 				}
 				else {
 					if ($call_status == CALL_PENDING) {
-						$action = UNCALL;
+						$action = CANCELLED;
 						$sql .= 'prt_call_status = '.CALL_CANCELLED.', ';
 					}
 					else { // CALL_CALLED
@@ -384,7 +384,7 @@ class Participant extends BF_Controller {
 			$save_participant->hide();
 			$unregister->hide();
 			$register->hide();
-			$uncall_super->hide();
+			$cancel_super->hide();
 			$call_super->hide();
 			$escallate->hide();
 			$reg_field = '';
@@ -412,22 +412,22 @@ class Participant extends BF_Controller {
 				else
 					$call_field = '';
 				$escallate->hide();
-				$uncall_super->hide();
+				$cancel_super->hide();
 			}
 			else {
 				$str = how_long_ago($participant_row['prt_call_start_time']);
 				if (!empty($participant_row['prt_call_escalation']))
 					$str .= ' ('.$participant_row['prt_call_escalation'].')';
 				if ($participant_row['prt_call_status'] == CALL_CALLED) {
-					$uncall_super->setValue('Ruf Beenden');
-					$call_field = div(array('class'=>'blue-box'), TEXT_CALLED.': '.$str);
+					$cancel_super->setValue('Ruf Beenden');
+					$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_CALLED.': '.$str);
 				}
 				else {
-					$uncall_super->setValue('Ruf Aufheben');
+					$cancel_super->setValue('Ruf Aufheben');
 					if (!empty($participant_row['prt_call_escalation']))
-						$call_field = div(array('class'=>'blue-box'), TEXT_ESCALATED.': '.$str);
+						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_ESCALATED.': '.$str);
 					else
-						$call_field = div(array('class'=>'blue-box'), TEXT_PENDING.': '.$str);
+						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_PENDING.': '.$str);
 				}
 				$call_super->hide();
 			}

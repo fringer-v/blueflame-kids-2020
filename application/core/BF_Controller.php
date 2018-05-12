@@ -6,7 +6,7 @@ define('CREATED', 0);
 define('REGISTER', 1);
 define('UNREGISTER', 2);
 define('CALL', 3);
-define('UNCALL', 4);
+define('CANCELLED', 4);
 define('ESCALATE', 5);
 define('CALLED', 6);
 define('ENDED', 7);
