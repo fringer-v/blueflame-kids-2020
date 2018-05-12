@@ -137,7 +137,7 @@ bugs($_POST);
 		$form->open();
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top', 'width'=>10));
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 		table(array('style'=>'border-collapse: collapse;'));
 		tr(td($table->paginationHtml()));
 		tr(td($table->html()));

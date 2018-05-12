@@ -23,6 +23,9 @@ class Database extends BF_Controller {
 		}
 
 		$this->header('Database update');
+		table(array('style'=>'border-collapse: collapse;'));
+		tr();
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 		if ($this->db_model->up_to_date()) {
 			out("The database is up-to-date");
 		}
@@ -30,6 +33,9 @@ class Database extends BF_Controller {
 			out("The database schema must be updated");
 			$form->show();
 		}
+		_td();
+		_tr();
+		_table();
 		$this->footer();
 	}
 

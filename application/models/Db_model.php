@@ -1,7 +1,7 @@
 <?php
 
 // THe current database version:
-define("DB_VERSION", 17);
+define("DB_VERSION", 20);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -47,6 +47,7 @@ class DB_model extends CI_Model {
 		$type = $this->meta_settings[$name][0];
 		if (gettype($val) != $type)
 			fatal_error("Setting: incorrect type for: ".$name.", required type: ".$type);
+		
 		$sql = "INSERT INTO bf_setting (stn_name, stn_type, stn_value) VALUES (?, ? , ?)
 			ON DUPLICATE KEY UPDATE stn_value=VALUES(stn_value);";
 		$this->db->query($sql, array($name, $type, $val));
@@ -130,9 +131,12 @@ class DB_model extends CI_Model {
 		);
 		$this->create_table('bf_history', $fields);
 
+		$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_username = "Admin"');
+		if ($count == 0)
+			$this->db->query('INSERT bf_staff (stf_username, stf_fullname, stf_password)
+				VALUES ("Admin", "Administrator", "$2y$10$orVZz8QD6iuSqg7G//Rvm.OFWFxFEQ1fSFFuc8H2Kn5bJYqRZ7FZW")');
+
 		$this->set_setting('database-version', DB_VERSION);
-		
-		// insert bf_staff (stf_username, stf_fullname, stf_password) values ('Admin', 'Administrator', '$2y$10$pU1PLFCA1BbQPEYPFusiK.WW7WvKLpoiT4QXeRRqwDUcjNigNDL.O');
 	}
 
 	public function create_table($table_name, $fields, $keys = array()) {

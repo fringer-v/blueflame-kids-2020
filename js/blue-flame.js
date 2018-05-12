@@ -50,7 +50,9 @@ function setHeaderSizesOfScrollableTables()
 
 function doLogin() {
 	var pwd = $('#stf_password').val();
-	$('#stf_password').val(MD5(pwd+'129-3026-19-2089'));
+	if (pwd != '')
+		$('#stf_md5_pwd').val(MD5(pwd+'129-3026-19-2089'));
+	$('#stf_password').val('');
 }
 
 function loadPage(target, page, field1 = null, field2 = null, field3 = null) {
