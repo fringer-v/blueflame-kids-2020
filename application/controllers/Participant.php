@@ -455,7 +455,7 @@ class Participant extends BF_Controller {
 		$this->header('Kinder');
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('style'=>'padding: 0px 20px', 'align'=>'right', 'valign'=>'top', 'rowspan'=>3, 'width'=>10));
+		td(array('style'=>'padding: 0px 20px; width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
 			tr(td($prt_filter->html(), $clear_filter->html()));
@@ -576,7 +576,7 @@ class Participant extends BF_Controller {
 			FROM bf_participants
 			WHERE CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
 				prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?',
-			array($prt_filter_v), array('class'=>'details-table participant-table'));
+			array($prt_filter_v), array('class'=>'details-table participant-table', 'style'=>'width: 600px;'));
 		$participant_table->setPagination('participant?prt_page=', 18, $prt_page_v);
 		$participant_table->setOrderBy($order_by);
 		table(array('style'=>'border-collapse: collapse;'));
