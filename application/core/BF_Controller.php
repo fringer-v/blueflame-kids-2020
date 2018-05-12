@@ -45,6 +45,7 @@ class BF_Controller extends CI_Controller {
 	{
 		parent::__construct();
 		$this->load->database();
+		$this->db->query("SET time_zone = '+02:00'");
 		$this->load->helper('url_helper');
 	}
 

@@ -1,7 +1,7 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
-//date_default_timezone_set('CET');
+date_default_timezone_set('CET');
 setlocale(LC_ALL, 'de_DE.UTF8', 'de_DE', 'de', 'ge');
 
 class Form {
