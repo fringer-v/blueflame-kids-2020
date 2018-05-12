@@ -183,7 +183,7 @@ button:active, input[type=submit]:active {
 }
 
 .details-table th {
-	padding:5px 10px; 
+	padding: 5px 5px; 
 	background-color:black;
 	color:white; 
 	font-weight:bold;
@@ -191,7 +191,7 @@ button:active, input[type=submit]:active {
 }
 
 .details-table td {
-	padding: 5px 10px; 
+	padding: 5px 5px; 
 }
 
 .details-table tr:nth-child(even) {
@@ -343,6 +343,19 @@ table.scrollable-table tbody {
 	width: 200px;
 	height: 40px;
 	font-size: 20px;
+}
+
+.history-table {
+	margin-right: 5px;
+	min-width: 640px;
+}
+
+.history-table td:nth-child(1) {
+	white-space: nowrap;
+}
+
+.history-table td:nth-child(2) {
+	white-space: nowrap;
 }
 
 .history-table th:last-child {

@@ -64,14 +64,10 @@ class HistoryTable extends Table {
 		switch ($field) {
 			case 'hst_action':
 				return 'Art';
-			case 'date':
-				return 'Datum';
-			case 'time':
+			case 'hst_timestamp':
 				return 'Zeit';
 			case 'stf_username':
 				return 'Mitarb.';
-			case 'hst_escalation':
-				return 'Esk.';
 			case 'hst_notes':
 				return 'Kommentar';
 		}
@@ -93,24 +89,18 @@ class HistoryTable extends Table {
 					case CANCELLED:
 						return TEXT_CANCELLED;
 					case ESCALATE:
-						return TEXT_ESCALATED;
+						return TEXT_ESCALATED.' ('.$row['hst_escalation'].')';
 					case CALLED:
 						return TEXT_CALLED;
 					case ENDED:
 						return TEXT_COMPLETED;
 				}
 				return '';
-			case 'date':
+			case 'hst_timestamp':
 				$val = date_create_from_format('Y-m-d H:i:s', $row[$field]);
-				return $val->format('d.m.Y');
-			case 'time':
-				$val = date_create_from_format('Y-m-d H:i:s', $row[$field]);
-				return $val->format('G:i:s');
+				return $val->format('d.m.Y H:i:s');
 			case 'stf_username':
 				return $row[$field];
-			case 'hst_escalation':
-				$val = $row[$field];
-				return empty($val) ? '' : $val;
 			case 'hst_notes';
 				$val = $row[$field];
 				return empty($val) ? '' : $val;
@@ -432,8 +422,8 @@ class Participant extends BF_Controller {
 				$call_super->hide();
 			}
 
-			$history_table = new HistoryTable('SELECT SQL_CALC_FOUND_ROWS hst_action, hst_timestamp AS `date`,
-				hst_timestamp AS `time`, stf_username, hst_escalation, hst_notes
+			$history_table = new HistoryTable('SELECT SQL_CALC_FOUND_ROWS hst_action, hst_timestamp,
+				stf_username, hst_escalation, hst_notes
 				FROM bf_history LEFT JOIN bf_staff ON stf_id = hst_stf_id
 				WHERE hst_prt_id = ? ORDER BY hst_timestamp DESC',
 				array($prt_id_v), array('class'=>'details-table history-table'));
@@ -464,7 +454,7 @@ class Participant extends BF_Controller {
 			$display_participant->close();
 		_td();
 		td(array('align'=>'left', 'valign'=>'top'));
-			table(array('style'=>'border-collapse: collapse;'));
+			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
 			tr();
 
 			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'modify', 'margin-right: 2px;'), 'Aufnehmen u. Ändern'));
