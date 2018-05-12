@@ -110,7 +110,7 @@ class CallList extends BF_Controller {
 		$form->open();
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('style'=>'padding: 0px 20px', 'align'=>'center', 'valign'=>'top'));
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 
 		$async_loader->html();
 	

@@ -138,6 +138,10 @@ button:active, input[type=submit]:active {
     margin-top: 20px;
 }
 
+.left-panel {
+	padding: 0px 10px;
+}
+
 /* --------------------------- */
 /* Message Boxes: */
 

@@ -118,7 +118,7 @@ class Groups extends BF_Controller {
 		$form->open();
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('style'=>'padding: 0px 20px', 'align'=>'right', 'valign'=>'top', 'width'=>10));
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 		table(array('style'=>'border-collapse: collapse;'));
 		tr(td($table->paginationHtml()));
 		tr(td($table->html()));

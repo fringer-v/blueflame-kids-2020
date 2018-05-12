@@ -45,7 +45,7 @@ class Login extends BF_Controller {
 
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('style'=>'padding: 0px 20px', 'align'=>'right', 'valign'=>'top', 'width'=>10));
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top', 'width'=>10));
 		$form->show();
 		_td();
 		_tr();

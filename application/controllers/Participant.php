@@ -455,7 +455,7 @@ class Participant extends BF_Controller {
 		$this->header('Kinder');
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-		td(array('style'=>'padding: 0px 20px; width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
+		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
 			tr(td($prt_filter->html(), $clear_filter->html()));
