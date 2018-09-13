@@ -10,6 +10,8 @@ define('CANCELLED', 4);
 define('ESCALATE', 5);
 define('CALLED', 6);
 define('ENDED', 7);
+define('GO_TO_WC', 8);
+define('BACK_FROM_WC', 9);
 
 // hst_action && prt_call_status 
 define('CALL_NOCALL', 0);
@@ -82,6 +84,7 @@ class BF_Controller extends CI_Controller {
 				prt_supervision_cellphone, prt_notes,
 				prt_grp_id,
 				prt_call_status, prt_call_escalation, prt_call_start_time, prt_call_change_time,
+				prt_wc_time,
 				grp_name, grp_location
 				FROM bf_participants LEFT JOIN bf_groups ON grp_id = prt_grp_id
 				WHERE prt_id=?', array($prt_id));
@@ -116,7 +119,7 @@ class BF_Controller extends CI_Controller {
 		tag('body', array('onload'=>'setHeaderSizesOfScrollableTables();'));
 		
 		div(array('class'=>'header'));
-		tag('img', array('src'=>base_url('/img/BlueFlame-Logo.svg')));
+		tag('img', array('src'=>base_url('/img/bf-kids-logo.png')));
 		span($title);
 		div(array('class'=>'header_name'), $this->stf_fullname);
 		_div();
@@ -139,9 +142,9 @@ class BF_Controller extends CI_Controller {
 	
 	public function footer($js_src = "") {
 
-		div(array('class'=>'footer'));
-		em('&copy; ', 2018);
-		_div();
+		//div(array('class'=>'footer'));
+		//em('&copy; ', 2018);
+		//_div();
 		_tag('body');
 
 		if (!empty($js_src))

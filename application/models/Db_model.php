@@ -1,7 +1,7 @@
 <?php
 
-// THe current database version:
-define("DB_VERSION", 20);
+// The current database version:
+define("DB_VERSION", 21);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -66,7 +66,7 @@ class DB_model extends CI_Model {
 			'stn_type'=>array('type'=>'VARCHAR', 'constraint'=>'10'),
 			'stn_value'=>array('type'=>'VARCHAR', 'constraint'=>'400')
 		);
-		$this->create_table('bf_setting', $fields);
+		$this->create_or_update_table('bf_setting', $fields);
 
 		$fields = array(
 			'id'=>array('type'=>'VARCHAR', 'constraint'=>'128'),
@@ -74,7 +74,7 @@ class DB_model extends CI_Model {
 			'timestamp'=>array('type'=>'INTEGER', 'unsigned'=>true, 'default'=>0),
 			'data'=>array('type'=>'BLOB')
 		);
-		$this->create_table('bf_sessions', $fields, array('timestamp'));
+		$this->create_or_update_table('bf_sessions', $fields, array('timestamp'));
 
 		$fields = array(
 			'stf_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -83,7 +83,7 @@ class DB_model extends CI_Model {
 			'stf_privs'=>array('type'=>'INTEGER', 'unsigned'=>true, 'default'=>0),
 			'stf_password VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL'
 		);
-		$this->create_table('bf_staff', $fields);
+		$this->create_or_update_table('bf_staff', $fields);
 
 		$fields = array(
 			'prt_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -104,19 +104,20 @@ class DB_model extends CI_Model {
 			'prt_call_escalation'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'prt_call_start_time'=>array('type'=>'DATETIME', 'null'=>true),
 			'prt_call_change_time'=>array('type'=>'DATETIME', 'null'=>true),
+			'prt_wc_time'=>array('type'=>'DATETIME', 'null'=>true), // Not null means WC!
 			'prt_notes'=>array('type'=>'TEXT'),
 			'UNIQUE INDEX prt_name_index (prt_firstname, prt_lastname)',
 			'INDEX prt_grp_id_index (prt_grp_id)',
 			'INDEX prt_call_status_index (prt_call_status, prt_call_change_time)'
 		);
-		$this->create_table('bf_participants', $fields);
+		$this->create_or_update_table('bf_participants', $fields);
 
 		$fields = array(
 			'grp_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
 			'grp_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
 			'grp_location'=>array('type'=>'VARCHAR', 'constraint'=>'100')
 		);
-		$this->create_table('bf_groups', $fields); // Kleingruppe
+		$this->create_or_update_table('bf_groups', $fields); // Kleingruppe
 
 		$fields = array(
 			'hst_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -129,7 +130,7 @@ class DB_model extends CI_Model {
 			'hst_notes'=>array('type'=>'TEXT'),
 			'INDEX hst_prt_id_timestamp_index (hst_prt_id, hst_timestamp)'
 		);
-		$this->create_table('bf_history', $fields);
+		$this->create_or_update_table('bf_history', $fields);
 
 		$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_username = "Admin"');
 		if ($count == 0)
@@ -137,9 +138,16 @@ class DB_model extends CI_Model {
 				VALUES ("Admin", "Administrator", "$2y$10$orVZz8QD6iuSqg7G//Rvm.OFWFxFEQ1fSFFuc8H2Kn5bJYqRZ7FZW")');
 
 		$this->set_setting('database-version', DB_VERSION);
+
+		$tables = db_array_2('SHOW TABLES');
+		foreach ($tables as $table) {
+			if (str_startswith($table, 'old_'.DB_VERSION.'_')) {
+				$this->dbforge->drop_table($table);
+			}
+		}
 	}
 
-	public function create_table($table_name, $fields, $keys = array()) {
+	public function create_or_update_table($table_name, $fields, $keys = array()) {
 		foreach ($fields as $field => $details) {
 			if (is_array($details))
 				$this->dbforge->add_field(array($field=>$details));
@@ -150,7 +158,38 @@ class DB_model extends CI_Model {
 			$this->dbforge->add_key($key);
 		}
 		$attributes = array('ENGINE' => 'InnoDB');
-		$this->dbforge->create_table($table_name, true, $attributes);
+
+		$new_table = 'new_'.DB_VERSION.'_'.$table_name;
+		$old_table = 'old_'.DB_VERSION.'_'.$table_name;
+		
+		$current_exists = $this->db->table_exists($table_name);
+		$new_exists = $this->db->table_exists($new_table);
+		$old_exists = $this->db->table_exists($old_table);
+
+		if (!$current_exists && !$old_exists && !$new_exists)
+			// New table:
+			$this->dbforge->create_table($table_name, true, $attributes);
+		else {
+			if (!$old_exists) {
+				$this->dbforge->create_table($new_table, true, $attributes);
+				$this->db->truncate($new_table);
+				$new_exists = true;
+			
+				// Copy data:
+				$fields = $this->db->list_fields($table_name);
+				$sql = 'INSERT INTO '.$new_table.' ('.implode(",", $fields).') ';
+				$sql .= 'SELECT '.implode(",", $fields).' FROM '.$table_name;
+				$this->db->query($sql);
+
+				// Current to old:
+				$this->dbforge->rename_table($table_name, $old_table);
+			}
+			
+			if ($new_exists) {
+				// New to current:
+				$this->dbforge->rename_table($new_table, $table_name);
+			}
+		}
 	}
 }
 

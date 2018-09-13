@@ -49,9 +49,15 @@ class ParticipantTable extends Table {
 				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
 			}
 			case 'prt_registered':
-				if ($row[$field] == 1)
-					return div(array('class'=>'green-box', 'style'=>'width: 52px; height: 22px;'), 'Ja');
-				return div(array('class'=>'red-box', 'style'=>'width: 52px; height: 22px;'), 'Nein');
+				if ($row[$field] == 1) {
+					if (empty($row['prt_wc_time']))
+						return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
+					$out = div(array('class'=>'green-box', 'style'=>'width: 25px; height: 22px;'), 'Ja');
+					$out->add(" ");
+					$out->add(div(array('class'=>'white-box', 'style'=>'width: 25px; height: 22px; font-size: 12px;'), 'WC'));
+					return $out;
+				}
+				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
 				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');')))->html();
 		}
@@ -94,6 +100,10 @@ class HistoryTable extends Table {
 						return TEXT_CALLED;
 					case ENDED:
 						return TEXT_COMPLETED;
+					case GO_TO_WC:
+						return 'Nach WC Gegangen';
+					case BACK_FROM_WC:
+						return 'Von WC Zurück';
 				}
 				return '';
 			case 'hst_timestamp':
@@ -185,8 +195,10 @@ class Participant extends BF_Controller {
 		$register_comment = $update_participant->addTextArea('register_comment', 'Kommentar');
 		$register_comment->setFormat('colspan=2');
 
+		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', array('class'=>'button-white wc'));
+		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', array('class'=>'button-white wc strike-thru'));
 		$unregister = $update_participant->addSubmit('unregister', 'Abmelden', array('class'=>'button-red register'));
-		$register = $update_participant->addSubmit('tab_register', 'Anmelden', array('class'=>'button-green register'));
+		$register = $update_participant->addSubmit('register', 'Anmelden', array('class'=>'button-green register'));
 
 		$update_participant->createGroup('tab_register');
 
@@ -304,8 +316,6 @@ class Participant extends BF_Controller {
 
 			$call_status = $participant_row['prt_call_status'];
 			if ($call_super->submitted() || $cancel_super->submitted()) {
-				$action = '';
-				$msg = '';
 				$sql = 'UPDATE bf_participants SET prt_call_escalation = 0, ';
 				if (empty($call_status) || $call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED) {
 					$action = CALL;
@@ -360,6 +370,28 @@ class Participant extends BF_Controller {
 					$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' ruf eskaliert';
 				}
 			}
+			
+			if ($go_to_wc->submitted() || $back_from_wc->submitted()) {
+				if (empty($participant_row['prt_wc_time'])) {
+					$action = GO_TO_WC;
+					$msg = 'ging nach WC';
+					$sql = 'UPDATE bf_participants SET prt_wc_time = NOW() WHERE prt_id = ?';
+				}
+				else {
+					$action = BACK_FROM_WC;
+					$msg = 'zurück von WC';
+					$sql = 'UPDATE bf_participants SET prt_wc_time = NULL WHERE prt_id = ?';
+				}
+				$this->db->query($sql, array($prt_id_v));
+
+				$this->db->insert('bf_history', array(
+					'hst_prt_id'=>$prt_id_v,
+					'hst_stf_id'=>$this->session->stf_id,
+					'hst_action'=>$action,
+					'hst_notes'=>$supervisor_comment->getValue()));
+
+				$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg;
+			}
 		}
 
 		if (!empty($this->success)) {
@@ -372,6 +404,8 @@ class Participant extends BF_Controller {
 			$clear_participant->setValue('Clear');
 			$clear_nr_name->hide();
 			$save_participant->hide();
+			$go_to_wc->hide();
+			$back_from_wc->hide();
 			$unregister->hide();
 			$register->hide();
 			$cancel_super->hide();
@@ -385,12 +419,23 @@ class Participant extends BF_Controller {
 
 			$new_participant->hide();
 			if ($participant_row['prt_registered']) {
-				$reg_field = div(array('class'=>'green-box'), 'Angemeldet');
+				if (empty($participant_row['prt_wc_time'])) {
+					$reg_field = out("");
+					$back_from_wc->hide();
+				}
+				else {
+					$reg_field = div(array('class'=>'white-box'), 'WC '.how_long_ago($participant_row['prt_wc_time']));
+					$reg_field->add(" ");
+					$go_to_wc->hide();
+				}
+				$reg_field->add(div(array('class'=>'green-box'), 'Angemeldet'));
 				$register->hide();
 			}
 			else {
 				$reg_field = div(array('class'=>'red-box'), 'Abgemeldet');
 				$unregister->hide();
+				$go_to_wc->hide();
+				$back_from_wc->hide();
 			}
 
 			$call_status = $participant_row['prt_call_status'];
@@ -432,7 +477,7 @@ class Participant extends BF_Controller {
 			$age_field->setValue(b(nbsp().get_age($prt_birthday->getDate())." Jahre alt"));
 		}
 
-		$status_line = table(array('width'=>'100%'), tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field), td(array('align'=>'right'), $reg_field)));
+		$status_line = table(array('width'=>'100%'), tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field), td(array('align'=>'right', 'nowrap'=>''), $reg_field)));
 		$number1->setValue($status_line);
 		$number2->setValue($status_line);
 		$number3->setValue($status_line);
@@ -562,7 +607,7 @@ class Participant extends BF_Controller {
 
 		$participant_table = new ParticipantTable('SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
 			CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name, prt_call_status,
-			 prt_registered, "button_column", IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling, prt_call_start_time
+			 prt_registered, prt_wc_time, "button_column", IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling, prt_call_start_time
 			FROM bf_participants
 			WHERE CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
 				prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?',
