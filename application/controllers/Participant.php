@@ -52,9 +52,9 @@ class ParticipantTable extends Table {
 				if ($row[$field] == 1) {
 					if (empty($row['prt_wc_time']))
 						return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
-					$out = div(array('class'=>'green-box', 'style'=>'width: 25px; height: 22px;'), 'Ja');
+					$out = div(array('class'=>'white-box', 'style'=>'width: 25px; height: 22px; font-size: 12px;'), 'WC');
 					$out->add(" ");
-					$out->add(div(array('class'=>'white-box', 'style'=>'width: 25px; height: 22px; font-size: 12px;'), 'WC'));
+					$out->add(div(array('class'=>'green-box', 'style'=>'width: 25px; height: 22px;'), 'Ja'));
 					return $out;
 				}
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
@@ -368,6 +368,7 @@ class Participant extends BF_Controller {
 						'hst_notes'=>$supervisor_comment->getValue()));
 
 					$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' ruf eskaliert';
+					$supervisor_comment->setValue('');
 				}
 			}
 			
@@ -388,9 +389,10 @@ class Participant extends BF_Controller {
 					'hst_prt_id'=>$prt_id_v,
 					'hst_stf_id'=>$this->session->stf_id,
 					'hst_action'=>$action,
-					'hst_notes'=>$supervisor_comment->getValue()));
+					'hst_notes'=>$register_comment->getValue()));
 
 				$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg;
+				$register_comment->setValue('');
 			}
 		}
 
@@ -455,14 +457,14 @@ class Participant extends BF_Controller {
 					$str .= ' ('.$participant_row['prt_call_escalation'].')';
 				if ($participant_row['prt_call_status'] == CALL_CALLED) {
 					$cancel_super->setValue('Ruf Beenden');
-					$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_CALLED.': '.$str);
+					$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_CALLED.': '.$str);
 				}
 				else {
 					$cancel_super->setValue('Ruf Aufheben');
 					if (!empty($participant_row['prt_call_escalation']))
-						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_ESCALATED.': '.$str);
+						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_ESCALATED.': '.$str);
 					else
-						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 220px;'), TEXT_PENDING.': '.$str);
+						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_PENDING.': '.$str);
 				}
 				$call_super->hide();
 			}

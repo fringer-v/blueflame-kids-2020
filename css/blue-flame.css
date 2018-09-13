@@ -308,7 +308,7 @@ table.scrollable-table tbody {
 	background-color: #ADFFA1;
 	border: 1px solid darkgreen;
 	height: 24px;
-	width: 180px;
+	width: 120px;
 	line-height: 24px;
 	text-align: center;
 	color: black;
@@ -319,7 +319,7 @@ table.scrollable-table tbody {
 	background-color: #FFB7BC;
 	border: 1px solid darkred;
 	height: 24px;
-	width: 180px;
+	width: 120px;
 	line-height: 24px;
 	text-align: center;
 	color: black;
@@ -330,7 +330,7 @@ table.scrollable-table tbody {
 	background-color: #9AC5FF;
 	border: 1px solid blue;
 	height: 24px;
-	width: 180px;
+	width: 120px;
 	line-height: 24px;
 	text-align: center;
 	color: black;
