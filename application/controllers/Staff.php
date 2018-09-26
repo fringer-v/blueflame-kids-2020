@@ -45,7 +45,7 @@ class Staff extends BF_Controller {
 	private function get_staff_row($stf_id) {
 		if (empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
-			'confirm_password'=>'', 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>'');
+				'confirm_password'=>'', 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>'');
 
 		$query = $this->db->query('SELECT stf_id, stf_username, stf_fullname, stf_registered,
 			stf_loginallowed, stf_technician FROM bf_staff WHERE stf_id=?', array($stf_id));
@@ -60,6 +60,8 @@ class Staff extends BF_Controller {
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
 
 		$update_staff = new Form('update_staff', 'staff', 1, array('class'=>'input-table'));
+		if (!empty($this->session->stf_technician))
+			$update_staff->disable();
 		$stf_id = $update_staff->addHidden('stf_id');
 		$stf_id->makeGlobal();
 
@@ -83,8 +85,10 @@ class Staff extends BF_Controller {
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
 		$stf_password = $update_staff->addPassword('stf_password', 'Passwort');
 		$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
-		$stf_loginallowed = $update_staff->addCheckbox('stf_loginallowed', 'Die Mitarbeiter darf sich bei dieser Anwendung anmelden', $staff_row['stf_loginallowed']);
-		$stf_technician = $update_staff->addCheckbox('stf_technician', 'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
+		$stf_loginallowed = $update_staff->addCheckbox('stf_loginallowed',
+			'Die Mitarbeiter darf sich bei dieser Anwendung anmelden', $staff_row['stf_loginallowed']);
+		$stf_technician = $update_staff->addCheckbox('stf_technician',
+			'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
 
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]');
@@ -95,6 +99,7 @@ class Staff extends BF_Controller {
 		}
 		else
 			$confirm_password->setRule('matches[stf_password]');
+
 		// Buttons:
 		if (empty($stf_id_v)) {
 			$save_staff = $update_staff->addSubmit('save_staff', 'Mitarbeiter Hinzufügen', array('class'=>'button-black'));
@@ -163,7 +168,8 @@ class Staff extends BF_Controller {
 		$stf_page_v = $stf_page->getValue();
 
 		$table = new StaffTable('SELECT SQL_CALC_FOUND_ROWS stf_id, stf_username, stf_fullname, stf_registered,
-			"button_column" FROM bf_staff ', array(), array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
+			"button_column" FROM bf_staff ', array(),
+			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$table->setOrderBy('stf_username');
 

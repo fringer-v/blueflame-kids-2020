@@ -299,6 +299,8 @@ class Form {
 					if ($i != 0)
 						nbsp();
 					$i++;
+					if ($this->disabled)
+						$button->disable();
 					$button->show();
 				}
 				if (!$start_row) {

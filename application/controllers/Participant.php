@@ -152,6 +152,8 @@ class Participant extends BF_Controller {
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
+		if (!empty($this->session->stf_technician))
+			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->makeGlobal();
 		$hst_page = $update_participant->addHidden('hst_page', 1);
