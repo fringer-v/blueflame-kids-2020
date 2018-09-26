@@ -350,7 +350,7 @@ class InputField {
 		return $this->form->getLabel($this->name, $quote, $this->group);
 	}
 
-	public function addAttribute($name, $value) {
+	public function addAttribute($name, $value = null) {
 		$this->attributes[$name] = $value;
 	}
 	

@@ -18,6 +18,8 @@ function tag($name) {
 		foreach ($params[0] as $attr => $avalue) {
 			if (is_null($avalue))
 				$tag->add(" $attr");
+			else if (is_numeric($attr))
+				$tag->add(" $avalue");
 			else
 				$tag->add(out(" $attr=\"[]\"", $avalue));
 			

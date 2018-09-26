@@ -272,7 +272,7 @@ class Table {
 		for ($i = 1; $i <= $max_page; $i++) {
 			$out->add(nbsp());
 			if ($this->curr_page == $i)
-				$out->add(href(url($this->page_url.$i), $i, array("selected" => null)));
+				$out->add(href(url($this->page_url.$i), $i, array('selected')));
 			else
 				$out->add(href(url($this->page_url.$i), $i));
 		}
