@@ -156,7 +156,7 @@ class Participant extends BF_Controller {
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->makeGlobal();
-		$hst_page = $update_participant->addHidden('hst_page', 1);
+		$hst_page = new Hidden('hst_page', 1);
 		$hst_page->makeGlobal();
 
 		if ($set_prt_id->submitted()) {
@@ -423,12 +423,12 @@ class Participant extends BF_Controller {
 			}
 		}
 
-		if (!empty($this->success)) {
-			$participant_row = $this->get_participant_row($prt_id_v);
-			$update_participant->setValues($participant_row);
-		}
+		//if (!empty($this->success)) {
+		//	$participant_row = $this->get_participant_row($prt_id_v);
+		//	$update_participant->setValues($participant_row);
+		//}
 
-		$prt_id_v = $prt_id->getValue();
+		//$prt_id_v = $prt_id->getValue();
 		if (empty($prt_id_v)) {
 			$clear_participant->setValue('Clear');
 			$clear_nr_name->hide();

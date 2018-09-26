@@ -47,7 +47,7 @@ input[type=text] {
 textarea {
 	border: 1px solid lightgrey;
 	padding: 2px 4px;
-    height: 24px;
+    height: 48px;
     font-size: 14px;
     width: 494px;
 }
@@ -406,5 +406,10 @@ table.scrollable-table tbody {
 .history-table td:last-child {
 	min-width: 180px;
     width: 100%;
+}
+
+.member-table {
+	margin-right: 5px;
+	min-width: 640px;
 }
 

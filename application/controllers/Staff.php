@@ -183,7 +183,7 @@ class Staff extends BF_Controller {
 		_td();
 		td(array('align'=>'left', 'valign'=>'top'));
 			$update_staff->open();
-			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
+			table(array('style'=>'border-collapse: collapse; margin-right: 5px; min-width: 640px;'));
 			tbody();
 			tr();
 			td(array('style'=>'border: 1px solid black; padding: 10px 5px;'));

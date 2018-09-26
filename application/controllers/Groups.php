@@ -37,6 +37,41 @@ class GroupsTable extends Table {
 	}
 }
 
+class MemberTable extends Table {
+	public function columnTitle($field) {
+		switch ($field) {
+			case 'prt_number':
+				return 'Nr.';
+			case 'prt_name':
+				return 'Name';
+			case 'prt_supervision_name':
+				return 'Begleitperson';
+			case 'prt_call_status';
+				return 'Ruf';
+		}
+		return nix();
+	}
+
+	public function cellValue($field, $row) {
+		switch ($field) {
+			case 'prt_number':
+			case 'prt_name':
+			case 'prt_supervision_name':
+				$value = $row[$field];
+				return $value;
+			case 'prt_call_status': {
+				$call_status = $row['prt_call_status'];
+				if (empty($call_status))
+					return nbsp();					
+				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
+					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
+				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
+			}
+		}
+		return nix();
+	}
+}
+
 class Groups extends BF_Controller {
 	public function __construct()
 	{
@@ -62,13 +97,18 @@ class Groups extends BF_Controller {
 
 		$display_group = new Form('display_group', 'groups', 1, array('class'=>'input-table'));
 		$set_grp_id = $display_group->addHidden('set_grp_id');
+		$grp_page = new Hidden('grp_page', 1);
+		$grp_page->makeGlobal();
 
 		$update_group = new Form('update_group', 'groups', 1, array('class'=>'input-table'));
 		$grp_id = $update_group->addHidden('grp_id');
 		$grp_id->makeGlobal();
+		$mem_page = new Hidden('mem_page', 1);
+		$mem_page->makeGlobal();
 
 		if ($set_grp_id->submitted()) {
 			$grp_id->setValue($set_grp_id->getValue());
+			$mem_page->setValue(1);
 			redirect('groups');
 		}
 
@@ -98,6 +138,17 @@ class Groups extends BF_Controller {
 		else {
 			$save_group = $update_group->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
 			$clear_group = $update_group->addSubmit('clear', 'Weiteres Aufnehmen...', array('class'=>'button-black'));
+
+			$member_table = new MemberTable('SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, 
+					CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
+					CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name, prt_call_status,
+			 		prt_registered, prt_wc_time, "button_column",
+			 		IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling,
+			 		prt_call_start_time
+				FROM bf_participants
+				WHERE prt_grp_id = ? AND prt_registered = 1 ORDER BY prt_id',
+				array($grp_id_v), array('class'=>'details-table member-table'));
+			$member_table->setPagination('groups?mem_page=', 10, $mem_page->getValue());
 		}
 
 		if ($clear_group->submitted()) {
@@ -128,10 +179,6 @@ class Groups extends BF_Controller {
 			}
 		}
 
-		$grp_page = new Hidden('grp_page', 1);
-		$grp_page->makeGlobal();
-		$grp_page_v = $grp_page->getValue();
-
 		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS grp_id, grp_name, loc_name,
 			grp_from_age, grp_to_age, COUNT(prt_id) grp_count,
 			"button_column" FROM bf_groups
@@ -139,7 +186,7 @@ class Groups extends BF_Controller {
 				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered = 1
 			GROUP BY grp_id', array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
-		$table->setPagination('groups?grp_page=', 16, $grp_page_v);
+		$table->setPagination('groups?grp_page=', 16, $grp_page->getValue());
 		$table->setOrderBy('grp_name');
 
 		$this->header('Kleingruppen');
@@ -147,7 +194,7 @@ class Groups extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 
-		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top'));
+		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_group->open();
 			table(array('style'=>'border-collapse: collapse;'));
 			tr(td($table->paginationHtml()));
@@ -158,7 +205,7 @@ class Groups extends BF_Controller {
 
 		td(array('align'=>'left', 'valign'=>'top'));
 			$update_group->open();
-			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
+			table(array('style'=>'border-collapse: collapse; margin-right: 5px; min-width: 640px;'));
 			tbody();
 			tr();
 			td(array('style'=>'border: 1px solid black; padding: 10px 5px;'));
@@ -171,6 +218,16 @@ class Groups extends BF_Controller {
 		_td();
 
 		_tr();
+
+		if (isset($member_table)) {
+			tr(td(array('align'=>'left', 'valign'=>'top'), $member_table->paginationHtml()));
+			tr(td(array('align'=>'left', 'valign'=>'top'), $member_table->html()));
+		}
+		else {
+			tr(td(nbsp()));
+			tr(td(nbsp()));
+		}
+
 		_table();
 
 		$this->footer();
