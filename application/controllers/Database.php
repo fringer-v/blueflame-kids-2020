@@ -12,13 +12,15 @@ class Database extends BF_Controller {
 
 	public function index()
 	{
+		$this->load->library('session');
+
 		$form = new Form('update_database', 'database', 1);
 		$update = $form->addSubmit('submit', 'Update Database', array('class'=>'button-black'));
 
 		if ($update->submitted() && !$this->db_model->up_to_date()) {
 			if (empty($this->error)) {
 				$this->db_model->update_database();
-				$this->success = "Database updated";
+				$this->setSuccess("Database updated");
 			}
 		}
 

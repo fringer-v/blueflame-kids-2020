@@ -98,9 +98,9 @@ class CallList extends BF_Controller {
 
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id,
-					'hst_stf_id'=>$this->session->stf_id,
+					'hst_stf_id'=>$this->session->stf_login_id,
 					'hst_action'=>CALLED));
-				$this->success = $participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'].' gerufen';
+				$this->setSuccess($participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'].' gerufen');
 			}
 		}
 

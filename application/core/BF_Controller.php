@@ -36,12 +36,11 @@ define('TEXT_ESCALATED', 'Ruf Eskaliert');
 define('CALL_ENDED_DISPLAY_TIME', '00:00:30'); // Call cancel/end state shown for 30 seconds
 
 class BF_Controller extends CI_Controller {
-	public $stf_id = 0;
+	public $stf_login_id = 0;
 	public $stf_fullname = '';
 
 	public $error = "";
 	public $warning = "";
-	public $success = "";
 
 	public function __construct()
 	{
@@ -95,8 +94,8 @@ class BF_Controller extends CI_Controller {
 
 	public function authorize($redirect = true) {
 		$this->load->library('session');
-		if ($this->session->has_userdata('stf_id') && $this->session->stf_id > 0) {
-			$this->stf_id = $this->session->stf_id;
+		if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {
+			$this->stf_login_id = $this->session->stf_login_id;
 			$this->stf_fullname = $this->session->stf_fullname;
 			return true;
 		}
@@ -106,12 +105,16 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function header($title) {
+
+		$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered = 1');
+		$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
+
 		out('<!DOCTYPE html>');
 		tag('html');
 		tag('head');
 		tag('meta', array('http-equiv'=>'Content-Type', 'content'=>'text/html; charset=utf-8'));
 		tag('link', array('href'=>base_url('/css/blue-flame.css'), 'rel'=>'stylesheet', 'type'=>'text/css'));
-		tag('title', $title);
+		tag('title', "BlueFlame Kids: ".$title);
 		//script('https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js');
 		script(base_url('/js/jquery.js'));
 		script(base_url('/js/blue-flame.js'));
@@ -120,13 +123,18 @@ class BF_Controller extends CI_Controller {
 		
 		div(array('class'=>'header'));
 		tag('img', array('src'=>base_url('/img/bf-kids-logo.png')));
-		span($title);
+		if ($title == 'Kinder')
+			span($title.' ('.$prt_count.')');
+		else if ($title == 'Mitarbeiter')
+			span($title.' ('.$stf_count.')');
+ 		else
+			span($title);
 		div(array('class'=>'header_name'), $this->stf_fullname);
 		_div();
 		div(array('class'=>'topnav'));
-		href('participant', 'Kinder');
+		href('participant', 'Kinder ('.$prt_count.')');
 		href('groups', 'Kleingruppen');
-		href('staff', 'Mitarbeiter');
+		href('staff', 'Mitarbeiter ('.$stf_count.')');
 		href('calllist', 'Rufliste');
 		href(url('login', array('action'=>'logout')), 'Logout', array('style'=>'float:right'));
 		_div();
@@ -135,8 +143,11 @@ class BF_Controller extends CI_Controller {
 			print_error($this->error);
 		if (!empty($this->warning))
 			print_warning($this->warning);
-		if (!empty($this->success))
-			print_success($this->success);
+		if (!empty($this->session->bf_success)) {
+			print_success($this->session->bf_success);
+			// Only display this feedback once:
+			$this->session->set_userdata('bf_success', "");
+		}
 		_div();
 	}
 	
@@ -156,5 +167,9 @@ class BF_Controller extends CI_Controller {
 		_script();
 
 		_tag('html');
+	}
+	
+	public function setSuccess($message) {
+		$this->session->set_userdata('bf_success', $message);
 	}
 }

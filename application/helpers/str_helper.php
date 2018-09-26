@@ -55,11 +55,20 @@ function is_not_empty($val) {
 	return !is_empty($val);
 }
 
+function ifempty($val, $def) {
+	if (empty($val))
+		return $def;
+	return $val;
+}
+
 function arr_remove_empty($array) {
 	return array_filter($array, "is_not_empty");
 }
 
 function get_age($dob) {
+	if (empty($dob))
+		return null;
+
 	if ($dob instanceof DateTime)
 		return $dob->diff(new DateTime())->format('%y');
 

@@ -32,7 +32,7 @@ class Login extends BF_Controller {
 				else {
 					if (password_verify($stf_md5_pwd->getValue(), $staff_row['stf_password'])) {
 						$this->load->library('session');
-						$this->session->set_userdata('stf_id', $staff_row['stf_id']);
+						$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
 						$this->session->set_userdata('stf_fullname', $staff_row['stf_fullname']);
 						redirect("participant");
 					}

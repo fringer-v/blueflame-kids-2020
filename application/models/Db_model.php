@@ -1,7 +1,8 @@
 <?php
 
 // The current database version:
-define("DB_VERSION", 21);
+// 24 - Allow various fields in participant to be NULL
+define("DB_VERSION", 24);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -81,20 +82,23 @@ class DB_model extends CI_Model {
 			'stf_username'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
 			'stf_fullname'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
 			'stf_privs'=>array('type'=>'INTEGER', 'unsigned'=>true, 'default'=>0),
-			'stf_password VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL'
+			'stf_password VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL',
+			'stf_registered'=>array('type'=>'BOOLEAN', 'default'=>false),
+			'stf_loginallowed'=>array('type'=>'BOOLEAN', 'default'=>true),
+			'stf_technician'=>array('type'=>'BOOLEAN', 'default'=>false)
 		);
 		$this->create_or_update_table('bf_staff', $fields);
 
 		$fields = array(
 			'prt_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
 			'prt_number'=>array('type'=>'INTEGER', 'unsigned'=>true, 'unique'=>true),
-			'prt_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50'),
-			'prt_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80'),
-			'prt_birthday'=>array('type'=>'DATE'),
+			'prt_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
+			'prt_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
+			'prt_birthday'=>array('type'=>'DATE', 'null'=>true),
 			'prt_registered'=>array('type'=>'BOOLEAN', 'default'=>true),
-			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50'),
-			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80'),
-			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'50'),
+			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
+			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
+			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_grp_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
 			'prt_createtime TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
 			'prt_modifytime'=>array('type'=>'DATETIME', 'null'=>false),
@@ -115,7 +119,10 @@ class DB_model extends CI_Model {
 		$fields = array(
 			'grp_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
 			'grp_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
-			'grp_location'=>array('type'=>'VARCHAR', 'constraint'=>'100')
+			'grp_location'=>array('type'=>'VARCHAR', 'constraint'=>'100'),
+			'grp_from_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
+			'grp_to_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
+			'grp_notes'=>array('type'=>'TEXT')
 		);
 		$this->create_or_update_table('bf_groups', $fields); // Kleingruppe
 

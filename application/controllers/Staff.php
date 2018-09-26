@@ -11,6 +11,8 @@ class StaffTable extends Table {
 				return 'Username';
 			case 'stf_fullname':
 				return 'Name';
+			case 'stf_registered':
+				return 'Angem.';
 			case 'button_column':
 				return '&nbsp;';
 		}
@@ -22,6 +24,10 @@ class StaffTable extends Table {
 			case 'stf_username':
 			case 'stf_fullname':
 				return $row[$field];
+			case 'stf_registered':
+				if ($row[$field] == 1)
+					return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
+				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
 				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].');')))->html();
 		}
@@ -37,7 +43,12 @@ class Staff extends BF_Controller {
 	}
 
 	private function get_staff_row($stf_id) {
-		$query = $this->db->query('SELECT stf_id, stf_username, stf_fullname FROM bf_staff WHERE stf_id=?', array($stf_id));
+		if (empty($stf_id))
+			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
+			'confirm_password'=>'', 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>'');
+
+		$query = $this->db->query('SELECT stf_id, stf_username, stf_fullname, stf_registered,
+			stf_loginallowed, stf_technician FROM bf_staff WHERE stf_id=?', array($stf_id));
 		return $query->row_array();
 	}
 
@@ -45,30 +56,35 @@ class Staff extends BF_Controller {
 	{
 		$this->authorize();
 
-bugs($_POST);
-		$form = new Form('update_staff', 'staff', 1, array('class'=>'input-table'));
-		$set_stf_id = $form->addHidden('set_stf_id');
-		$stf_id = $form->addHidden('stf_id');
-		
-		$stf_id_v = $stf_id->getValue();
-		$set_stf_id_v = $set_stf_id->getValue();
-		if (!empty($set_stf_id_v)) {
-			$set_stf_id->setValue('');
-			$stf_id_v = $set_stf_id_v;
-			$stf_id->setValue($stf_id_v);
+		$display_staff = new Form('display_staff', 'staff', 1, array('class'=>'input-table'));
+		$set_stf_id = $display_staff->addHidden('set_stf_id');
+
+		$update_staff = new Form('update_staff', 'staff', 1, array('class'=>'input-table'));
+		$stf_id = $update_staff->addHidden('stf_id');
+		$stf_id->makeGlobal();
+
+		if ($set_stf_id->submitted()) {
+			$stf_id->setValue($set_stf_id->getValue());
+			redirect("staff");
 		}
 
-		$empty_row = array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'', 'confirm_password'=>'');
-		if (empty($stf_id_v))
-			$staff_row = $empty_row;
-		else
-			$staff_row = $this->get_staff_row($stf_id_v);
+		$stf_id_v = $stf_id->getValue();
+		$staff_row = $this->get_staff_row($stf_id_v);
 
 		// Fields
-		$stf_username = $form->addTextInput('stf_username', 'Username', $staff_row['stf_username']);
-		$stf_fullname = $form->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
-		$stf_password = $form->addPassword('stf_password', 'Passwort');
-		$confirm_password = $form->addPassword('confirm_password', 'Passwort wiederholen');
+		if (!empty($stf_id_v)) {
+			$stf_registered = $update_staff->addField('Status');
+			if ($staff_row['stf_registered'])
+				$stf_registered->setValue(div(array('class'=>'green-box'), 'Angemeldet'));
+			else
+				$stf_registered->setValue(div(array('class'=>'red-box'), 'Abgemeldet'));
+		}
+		$stf_username = $update_staff->addTextInput('stf_username', 'Username', $staff_row['stf_username']);
+		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
+		$stf_password = $update_staff->addPassword('stf_password', 'Passwort');
+		$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
+		$stf_loginallowed = $update_staff->addCheckbox('stf_loginallowed', 'Die Mitarbeiter darf sich bei dieser Anwendung anmelden', $staff_row['stf_loginallowed']);
+		$stf_technician = $update_staff->addCheckbox('stf_technician', 'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
 
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]');
@@ -80,76 +96,106 @@ bugs($_POST);
 		else
 			$confirm_password->setRule('matches[stf_password]');
 		// Buttons:
-		if (empty($stf_id_v))
-			$save_staff = $form->addSubmit('submit', 'Mitarbeiter Hinzufügen', array('class'=>'button-black'));
-		else
-			$save_staff = $form->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
-		$clear_staff = $form->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="staff";'));
+		if (empty($stf_id_v)) {
+			$save_staff = $update_staff->addSubmit('save_staff', 'Mitarbeiter Hinzufügen', array('class'=>'button-black'));
+			$clear_staff = $update_staff->addSubmit('clear_staff', 'Clear', array('class'=>'button-black'));
+		}
+		else {
+			$save_staff = $update_staff->addSubmit('save_staff', 'Änderung Sichern', array('class'=>'button-black'));
+			$clear_staff = $update_staff->addSubmit('clear_staff', 'Weiteres Aufnehmen...', array('class'=>'button-black'));
+			if ($staff_row['stf_registered'])
+				$reg_unregister = $update_staff->addSubmit('reg_unregister', 'Abmelden', array('class'=>'button-red'));
+			else
+				$reg_unregister = $update_staff->addSubmit('reg_unregister', 'Anmelden', array('class'=>'button-green'));
+		}
 
-		if ($clear_staff->submitted())
-			$form->setValues($empty_row);
+		if ($clear_staff->submitted()) {
+			$stf_id->setValue(0);
+			redirect("staff");
+		}
 
 		if ($save_staff->submitted()) {
-			$this->error = $form->validate();
+			$this->error = $update_staff->validate();
 			if (empty($this->error)) {
 				$pwd = $stf_password->getValue();
 				if (!empty($pwd))
 					$pwd = password_hash(strtolower(md5($pwd."129-3026-19-2089")), PASSWORD_DEFAULT);
+				$data = array(
+					'stf_username' => $stf_username->getValue(),
+					'stf_fullname' => $stf_fullname->getValue(),
+					'stf_loginallowed' => $stf_loginallowed->getValue(),
+					'stf_technician' => $stf_technician->getValue()
+				);
 				if (empty($stf_id_v)) {
 					//$this->news_model->set_news();
-					$data = array(
-						'stf_username' => $stf_username->getValue(),
-						'stf_fullname' => $stf_fullname->getValue(),
-						'stf_password' => $pwd
-					);
+					$data['stf_password'] = $pwd;
 					$this->db->insert('bf_staff', $data);
-					$this->success = $stf_fullname->getValue().' hinzugefügt';
+					$stf_id_v = $this->db->insert_id();
+					$stf_id->setValue($stf_id_v);
+					$this->setSuccess($stf_fullname->getValue().' hinzugefügt');
 				}
 				else {
-					$data = array(
-						'stf_username' => $stf_username->getValue(),
-						'stf_fullname' => $stf_fullname->getValue(),
-					);
 					if (!is_empty($pwd))
 						$data['stf_password'] = $pwd;
 					$this->db->where('stf_id', $stf_id_v);
 					$this->db->update('bf_staff', $data);
-					$this->success = $stf_fullname->getValue().' geändert';
+					$this->setSuccess($stf_fullname->getValue().' geändert');
 				}
+				redirect("staff");
 			}
+		}
+
+		if (!empty($stf_id_v) && $reg_unregister->submitted()) {
+			$registered = !$staff_row['stf_registered'];
+			$sql = 'UPDATE bf_staff SET stf_registered = ? WHERE stf_id = ?';
+			$this->db->query($sql, array($registered, $stf_id_v));
+			$this->setSuccess($stf_fullname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet'));
+			redirect("staff");
 		}
 
 		if (!empty($stf_id_v)) {
 			$staff_row = $this->get_staff_row($stf_id_v);
-			$form->setValues($staff_row);
+			$update_staff->setValues($staff_row);
 		}
 
 		$stf_page = new Hidden('stf_page', 1);
 		$stf_page->makeGlobal();
 		$stf_page_v = $stf_page->getValue();
 
-		$table = new StaffTable('SELECT SQL_CALC_FOUND_ROWS stf_id, stf_username, stf_fullname,
-			"button_column" FROM bf_staff ', array(), array('class'=>'details-table no-wrap-table'));
+		$table = new StaffTable('SELECT SQL_CALC_FOUND_ROWS stf_id, stf_username, stf_fullname, stf_registered,
+			"button_column" FROM bf_staff ', array(), array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$table->setOrderBy('stf_username');
 
+		// Generate page ------------------------------------------
 		$this->header('Mitarbeiter');
-		$form->open();
+
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
-		table(array('style'=>'border-collapse: collapse;'));
-		tr(td($table->paginationHtml()));
-		tr(td($table->html()));
-		_table();
+			$display_staff->open();
+			table(array('style'=>'border-collapse: collapse;'));
+			tr(td($table->paginationHtml()));
+			tr(td($table->html()));
+			_table();
+			$display_staff->close();
 		_td();
 		td(array('align'=>'left', 'valign'=>'top'));
-		$form->show();
+			$update_staff->open();
+			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
+			tbody();
+			tr();
+			td(array('style'=>'border: 1px solid black; padding: 10px 5px;'));
+			$update_staff->show();
+			_td();
+			_tr();
+			_tbody();
+			_table();
+			$update_staff->close();
 		_td();
 		_tr();
 		_table();
 
-		$form->close();
 		$this->footer();
 	}
 }

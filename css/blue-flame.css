@@ -3,6 +3,7 @@
 
 body {
     font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
     background: #f1f1f1;
 	margin: 0;
 	padding: 0;
@@ -14,11 +15,14 @@ h2 {
 	border: 1px solid red;
 }
 
-input {
-	border: 1px solid lightgrey;
-	padding: 0px 4px;
-	height: 26px;
+input, select, option {
     font-size: 14px;
+	padding: 0px 4px;
+}
+
+input[type=text], input[type=password] {
+	border: 1px solid lightgrey;
+	height: 26px;
 }
 
 button, input[type=submit], input[type=button] {
@@ -32,14 +36,15 @@ button, input[type=submit], input[type=button] {
 }
 
 input[type=text] {
-    min-width: 240px;
+    width: 240px;
 }
 
 textarea {
 	border: 1px solid lightgrey;
 	padding: 2px 4px;
-    min-height: 24px;
+    height: 24px;
     font-size: 14px;
+    width: 494px;
 }
 
 .button-red {
@@ -212,12 +217,21 @@ button:active, input[type=submit]:active {
 }
 
 .pagination-div a {
-    color: black;
+    color: white;
+    font-size: 14px;
     text-decoration: none;
+	background-color: black;
+	padding: 2px 6px 2px 6px;
+	border: 1px solid black;
+	border-radius: 5px;
 }
 
 .pagination-div a:hover {
-    text-decoration: underline;
+	background-color: #009DDE;
+}
+
+.pagination-div a[selected] {
+	background-color: #009DDE;
 }
 
 /* --------------------------- */
@@ -338,11 +352,6 @@ table.scrollable-table tbody {
 
 #update_participant tr th:first-child {
 	width: 112px;
-}
-
-#update_participant textarea {
-    min-width: 494px;
-    max-width: 494px;
 }
 
 .button-white.wc {

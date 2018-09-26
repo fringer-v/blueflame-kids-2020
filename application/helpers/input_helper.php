@@ -37,8 +37,8 @@ class Form {
 		return $field;
 	}
 
-	function addText($label, $text) {
-		$field = new OutputField($text);
+	function addField($label) {
+		$field = new OutputField();
 		$field->setForm($this);
 		$this->fields['$'.count($this->fields)] = array($label, $field);
 		return $field;
@@ -78,7 +78,14 @@ class Form {
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
-	
+
+	function addCheckbox($name, $label, $default_value = '', $attributes = array()) {
+		$field = new Checkbox($name, $default_value, $attributes);
+		$field->setForm($this);
+		$this->fields[$name] = array($label, $field);
+		return $field;
+	}
+
 	function addSubmit($name, $label, $attributes = array()) {
 		$button = new Submit($name, $label, $attributes);
 		$button->setForm($this);
@@ -238,6 +245,12 @@ class Form {
 						$field->show();
 						_td();
 					}
+					else if ($field instanceof Checkbox) {
+						td(array('colspan'=>$colspan*2));
+						$field->show();
+						label(array('for'=>$name), ' '.$label);
+						_td();
+					}
 					else {
 						th(label(array('for'=>$name), $label.':'));
 						if ($colspan*2-1 != 1)
@@ -341,14 +354,15 @@ class InputField {
 		$this->attributes[$name] = $value;
 	}
 	
-	public function getAttributes($type) {
+	public function getAttributes($type, $include_value = true) {
 		if (empty($this->name))
 			$attr = array();
 		else
 			$attr = array('name'=>$this->name, 'id'=>$this->name);
-		if (!empty($type) && $type)
+		if (!empty($type))
 			$attr['type'] = $type;
-		$attr['value'] = $this->getValue();
+		if ($include_value)
+			$attr['value'] = $this->getValue();
 		if ($this->disabled)
 			$attr['disabled'] = null;
 		$attr = array_merge($attr, $this->attributes);
@@ -401,19 +415,23 @@ class InputField {
 		return $this->default_value;
 	}
 
-	public function getDate() {
+	public function getDate($fmt = '') {
 		$val = $this->getValue();
+		if (empty($val))
+			return null;
 		if (str_contains($val, '.'))
 			$ts = DateTime::createFromFormat('d.m.Y', $val);
 		else
 			$ts = DateTime::createFromFormat('d-m-Y', $val);
 		if ($ts === false)
-			return new Datetime();
+			return null;
 		$year = (integer) $ts->format('Y');
 		$month = (integer) $ts->format('m');
 		$day = (integer) $ts->format('d');
 		if ($year < 100)
 			$ts->setDate($year+2000, $month, $day);
+		if (!empty($fmt))
+			return $ts->format($fmt);
 		return $ts;
 	}
 
@@ -480,8 +498,10 @@ class InputField {
 					$error = $this->getLabel(true).' ist nicht gleich '.$form->getLabel($arg, true);
 			}
 			else if (str_startswith($rule, 'is_valid_date')) {
-				if (date_create_from_format('d.m.Y', $value) === false)
-					$error = $this->getLabel(true).' ist kein gültiges Datum';
+				if (!empty($value)) {
+					if (date_create_from_format('d.m.Y', $value) === false)
+						$error = $this->getLabel(true).' ist kein gültiges Datum';
+				}
 			}
 			if (!empty($error))
 				break;		
@@ -544,18 +564,10 @@ class Password extends InputField {
 }
 
 class TextArea extends InputField {
-	public function getAttributes($type = '') {
-		$attr = array('name'=>$this->name, 'id'=>$this->name);
-		if ($this->disabled)
-			$attr['disabled'] = null;
-		$attr = array_merge($attr, $this->attributes);
-		return $attr;
-	}
-
 	public function html() {
 		if ($this->hidden)
 			return out('');
-		$out = tag('textarea', $this->getAttributes());
+		$out = tag('textarea', $this->getAttributes('', false));
 		$out->add(out('[]', $this->getValue()));
 		$out->add(_tag('textarea'));
 		return $out;
@@ -574,7 +586,7 @@ class Select extends TextArea {
 		if ($this->hidden)
 			return out('');
 		$current_value = $this->getValue();
-		$out = tag('select', $this->getAttributes());
+		$out = tag('select', $this->getAttributes('', true));
 		foreach ($this->values as $value => $text) {
 			$attr = array('value'=>$value);
 			if ($value == $current_value)
@@ -585,3 +597,19 @@ class Select extends TextArea {
 		return $out;
 	}
 }
+
+class Checkbox extends InputField {
+	public function html() {
+		if ($this->hidden)
+			return out('');
+		$out = tag('input', array('type'=>'hidden', 'name'=>$this->name, 'value'=>'0'));
+		$attr = $this->getAttributes('checkbox', false);
+		$attr['value'] = '1';
+		$value = $this->getValue();
+		if (!empty($value))
+			$attr['checked'] = null;
+		$out->add(tag('input', $attr));
+		return $out;
+	}
+}
+

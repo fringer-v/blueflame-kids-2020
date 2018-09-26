@@ -101,14 +101,26 @@ class HistoryTable extends Table {
 					case ENDED:
 						return TEXT_COMPLETED;
 					case GO_TO_WC:
-						return 'Nach WC Gegangen';
+						return 'Zum WC gegangen';
 					case BACK_FROM_WC:
-						return 'Von WC Zurück';
+						return 'Von WC zurück';
 				}
 				return '';
 			case 'hst_timestamp':
-				$val = date_create_from_format('Y-m-d H:i:s', $row[$field]);
-				return $val->format('d.m.Y H:i:s');
+				$today = new DateTime();
+				$today->setTime(0, 0, 0);
+				$date = date_create_from_format('Y-m-d H:i:s', $row[$field]);
+				$diff = $today->diff($date);
+				$diff_days = (integer) $diff->format("%R%a");
+				switch($diff_days) {
+				    case 0:
+						return 'Heute '.$date->format('H:i');
+				    case -1:
+						return 'Gestern '.$date->format('H:i');
+				    case -2:
+						return 'Vorgestern '.$date->format('H:i');
+				}
+				return $date->format('d.m.Y H:i');
 			case 'stf_username':
 				return $row[$field];
 			case 'hst_notes';
@@ -136,7 +148,8 @@ class Participant extends BF_Controller {
 		$prt_filter->makeGlobal();
 		$prt_page = new Hidden('prt_page', 1);
 		$prt_page->makeGlobal();
-		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear', array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val("");'));
+		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
+			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
 		$prt_id = $update_participant->addHidden('prt_id');
@@ -147,11 +160,12 @@ class Participant extends BF_Controller {
 		if ($set_prt_id->submitted()) {
 			$prt_id->setValue($set_prt_id->getValue());
 			$hst_page->setValue(1);
+			redirect("participant");
 		}
-
+		
 		$participant_row = $this->get_participant_row($prt_id->getValue());
 
-		$number1 = $update_participant->addText('Kinder-Nr', '');
+		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat('colspan=2');
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
 		$prt_firstname->setRule('required');
@@ -160,20 +174,22 @@ class Participant extends BF_Controller {
 		$prt_lastname->setRule('required');
 		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtsdatum',
 			$participant_row['prt_birthday'], array('placeholder'=>'DD.MM.JJJJ'));
-		$prt_birthday->setRule('required|is_valid_date');
+		$prt_birthday->setRule('is_valid_date');
 		$age_field = $update_participant->addSpace();
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
-		$prt_supervision_firstname->setRule('required');
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', 'Begleitperson Nachname',
 			$participant_row['prt_supervision_lastname'], array('placeholder'=>'Nachname'));
 		$prt_supervision_lastname->setFormat('nolabel');
-		$prt_supervision_lastname->setRule('required');
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
-		$prt_supervision_cellphone->setRule('required');
 		$update_participant->addSpace();
-		$values = array_merge(array(0=>''), db_array_2('SELECT grp_id, grp_name FROM bf_groups ORDER BY grp_name'));
-		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $values, $participant_row['prt_grp_id']);
+		$groups = db_array_2('SELECT g.grp_id, CONCAT(g.grp_name, ", ", '.
+			'IF(g.grp_from_age IS NULL OR g.grp_from_age = 0, "", g.grp_from_age), "-",  '.
+			'IF(g.grp_to_age IS NULL OR g.grp_to_age = 0, "", g.grp_to_age), " (", COUNT(p.prt_id), ")") grp_name '.
+			'FROM bf_groups g '.
+			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered = 1 GROUP BY g.grp_id ORDER BY grp_name');
+		$groups = array(0 => '') + $groups;
+		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
 		$update_participant->addSpace();
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
@@ -185,13 +201,15 @@ class Participant extends BF_Controller {
 
 		$update_participant->createGroup('tab_modify');
 
-		$number2 = $update_participant->addText('Kinder-Nr', '');
+		$number2 = $update_participant->addField('Kinder-Nr');
 		$number2->setFormat('colspan=2');
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
 		$f1->disable();
 		$f2 = $update_participant->addTextInput('prt_lastname', 'Nachname', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
 		$f2->disable();
 		$f2->setFormat('nolabel');
+		$register_group = $update_participant->addSelect('register_group', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
+		$update_participant->addSpace();
 		$register_comment = $update_participant->addTextArea('register_comment', 'Kommentar');
 		$register_comment->setFormat('colspan=2');
 
@@ -202,7 +220,7 @@ class Participant extends BF_Controller {
 
 		$update_participant->createGroup('tab_register');
 
-		$number3 = $update_participant->addText('Kinder-Nr', '');
+		$number3 = $update_participant->addField('Kinder-Nr');
 		$number3->setFormat('colspan=2');
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
 		$f1->disable();
@@ -226,15 +244,15 @@ class Participant extends BF_Controller {
 		$update_participant->createGroup('tab_supervisor');
 
 		if ($clear_participant->submitted()) {
-			$participant_row = $this->get_empty_participant();
-			$update_participant->setValues($participant_row);
+			$prt_id->setValue(0);
+			redirect("participant");
 		}
 
 		if ($clear_nr_name->submitted()) {
 			$participant_row['prt_id'] = '';
 			$participant_row['prt_number'] = '';
 			$participant_row['prt_firstname'] = '';
-			$participant_row['prt_birthday'] = '';
+			$participant_row['prt_birthday'] = null;
 			$prt_id->setValue('');
 			$prt_firstname->setValue('');
 			$prt_birthday->setValue('');
@@ -247,7 +265,7 @@ class Participant extends BF_Controller {
 				$data = array(
 					'prt_firstname' => $prt_firstname->getValue(),
 					'prt_lastname' => $prt_lastname->getValue(),
-					'prt_birthday' => $prt_birthday->getDate()->format('Y-m-d'),
+					'prt_birthday' => $prt_birthday->getDate('Y-m-d'),
 					'prt_supervision_firstname' => $prt_supervision_firstname->getValue(),
 					'prt_supervision_lastname' => $prt_supervision_lastname->getValue(),
 					'prt_supervision_cellphone' => $prt_supervision_cellphone->getValue(),
@@ -259,7 +277,7 @@ class Participant extends BF_Controller {
 					$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
 
 					$data['prt_number'] = $prt_number;
-					$data['prt_create_stf_id'] = $this->session->stf_id;
+					$data['prt_create_stf_id'] = $this->session->stf_login_id;
 					$this->db->set('prt_modifytime', 'NOW()', FALSE);
 
 					$this->db->insert('bf_participants', $data);
@@ -267,21 +285,22 @@ class Participant extends BF_Controller {
 
 					$this->db->insert('bf_history', array(
 						'hst_prt_id'=>$prt_id_v,
-						'hst_stf_id'=>$this->session->stf_id,
+						'hst_stf_id'=>$this->session->stf_login_id,
 						'hst_action'=>CREATED));
 
 					$prt_filter->setValue('');
 					$prt_page->setValue(1);
-					$this->success = $prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet';
+					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
 				}
 				else {
-					$data['prt_modify_stf_id'] = $this->session->stf_id;
+					$data['prt_modify_stf_id'] = $this->session->stf_login_id;
 					$this->db->set('prt_modifytime', 'NOW()', FALSE);
 
 					$this->db->where('prt_id', $prt_id_v);
 					$this->db->update('bf_participants', $data);
-					$this->success = $prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert';
+					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert');
 				}
+				redirect("participant");
 			}
 		}
 
@@ -297,21 +316,25 @@ class Participant extends BF_Controller {
 
 					$this->db->insert('bf_history', array(
 						'hst_prt_id'=>$prt_id_v,
-						'hst_stf_id'=>$this->session->stf_id,
+						'hst_stf_id'=>$this->session->stf_login_id,
 						'hst_action'=>CANCELLED,
 						'hst_escalation'=>0));
 				}
+				if (!empty($participant_row['prt_wc_time'])) {
+					$sql .= ', prt_wc_time = NULL';
+				}
+				$sql .= ', prt_grp_id = '.$register_group->getValue();
 				$sql .= ' WHERE prt_id = ?';
 				$this->db->query($sql, array($registered, $prt_id_v));
 
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
-					'hst_stf_id'=>$this->session->stf_id,
+					'hst_stf_id'=>$this->session->stf_login_id,
 					'hst_action'=>($registered ? REGISTER : UNREGISTER),
 					'hst_notes'=>$register_comment->getValue()));
 
-				$this->success = $prt_firstname->getValue()." ".$prt_lastname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet');
-				$register_comment->setValue('');
+				$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet'));
+				redirect("participant");
 			}
 
 			$call_status = $participant_row['prt_call_status'];
@@ -341,13 +364,14 @@ class Participant extends BF_Controller {
 
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
-					'hst_stf_id'=>$this->session->stf_id,
+					'hst_stf_id'=>$this->session->stf_login_id,
 					'hst_action'=>$action,
 					'hst_escalation'=>0,
 					'hst_notes'=>$supervisor_comment->getValue()));
 
-				$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg;
+				$this->setSuccess($prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg);
 				$supervisor_comment->setValue('');
+				redirect("participant");
 			}
 			
 			if ($escallate->submitted()) {
@@ -362,13 +386,14 @@ class Participant extends BF_Controller {
 
 					$this->db->insert('bf_history', array(
 						'hst_prt_id'=>$prt_id_v,
-						'hst_stf_id'=>$this->session->stf_id,
+						'hst_stf_id'=>$this->session->stf_login_id,
 						'hst_action'=>ESCALATE,
 						'hst_escalation'=>$call_esc,
 						'hst_notes'=>$supervisor_comment->getValue()));
 
-					$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' ruf eskaliert';
+					$this->setSuccess($prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' ruf eskaliert');
 					$supervisor_comment->setValue('');
+					redirect("participant");
 				}
 			}
 			
@@ -387,12 +412,12 @@ class Participant extends BF_Controller {
 
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
-					'hst_stf_id'=>$this->session->stf_id,
+					'hst_stf_id'=>$this->session->stf_login_id,
 					'hst_action'=>$action,
 					'hst_notes'=>$register_comment->getValue()));
 
-				$this->success = $prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg;
-				$register_comment->setValue('');
+				$this->setSuccess($prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg);
+				redirect("participant");
 			}
 		}
 
@@ -415,6 +440,7 @@ class Participant extends BF_Controller {
 			$escallate->hide();
 			$reg_field = '';
 			$call_field = '';
+			$age_field->setValue(div(array('id' => 'prt_age'), ''));
 		}
 		else {
 			$clear_participant->setValue('Weiteres Aufnehmen...');
@@ -476,10 +502,13 @@ class Participant extends BF_Controller {
 				array($prt_id_v), array('class'=>'details-table history-table'));
 			$history_table->setPagination('participant?hst_page=', 10, $hst_page->getValue());
 
-			$age_field->setValue(b(nbsp().get_age($prt_birthday->getDate())." Jahre alt"));
+			$curr_age = get_age($prt_birthday->getDate());
+			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre alt")));
 		}
 
-		$status_line = table(array('width'=>'100%'), tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field), td(array('align'=>'right', 'nowrap'=>''), $reg_field)));
+		$status_line = table(array('width'=>'100%'),
+			tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field),
+			td(array('align'=>'right', 'nowrap'=>''), $reg_field)));
 		$number1->setValue($status_line);
 		$number2->setValue($status_line);
 		$number3->setValue($status_line);
@@ -489,9 +518,12 @@ class Participant extends BF_Controller {
 		$prt_tab = new Hidden('prt_tab', 'modify');
 		$prt_tab->makeGlobal();
 
+		// Generate page ------------------------------------------
 		$this->header('Kinder');
+
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
+
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
@@ -500,8 +532,10 @@ class Participant extends BF_Controller {
 			_table(); // 
 			$display_participant->close();
 		_td();
+
 		td(array('align'=>'left', 'valign'=>'top'));
 			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
+			tbody();
 			tr();
 
 			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'modify', 'margin-right: 2px;'), 'Aufnehmen u. Ändern'));
@@ -544,6 +578,21 @@ class Participant extends BF_Controller {
 			tr(td(nbsp()));
 		}
 		_table();
+
+		script();
+		out('
+			function birthday_changed() {
+				var value = $("#prt_birthday").val();
+				var age = getAge(value);
+				if (age < 0)
+					$("#prt_age").html("&nbsp;-");
+				else
+					$("#prt_age").html("&nbsp;<b>"+age+" Jahre alt</b>");
+				console.log(value);
+			}
+			$("#prt_birthday").keyup(birthday_changed);
+		');
+		_script();
 
 		$this->footer();
 	}

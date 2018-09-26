@@ -266,24 +266,23 @@ class Table {
 			$this->curr_page = $max_page;
 
 		$out = div(array('class'=>'pagination-div'));
-		$out->add(href(url($this->page_url.'1'), '|<'));
+		$out->add(href(url($this->page_url.'1'), '⇤'));
 		$out->add(nbsp());
 		$out->add(href(url($this->page_url.max(1, $this->curr_page-1)), '<'));
 		for ($i = 1; $i <= $max_page; $i++) {
 			$out->add(nbsp());
 			if ($this->curr_page == $i)
-				$out->add(b(href(url($this->page_url.$i), $i)));
+				$out->add(href(url($this->page_url.$i), $i, array("selected" => null)));
 			else
 				$out->add(href(url($this->page_url.$i), $i));
 		}
 		$out->add(nbsp());
 		$out->add(href(url($this->page_url.min($max_page, $this->curr_page+1)), '>'));
 		$out->add(nbsp());
-		$out->add(href(url($this->page_url.$max_page), '>|'));
+		$out->add(href(url($this->page_url.$max_page), '⇥'));
 		$out->add(_div());
 		return $out;
 	}
-
 }
 
 class AsyncLoader {
