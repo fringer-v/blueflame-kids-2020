@@ -2,7 +2,8 @@
 
 // The current database version:
 // 24 - Allow various fields in participant to be NULL
-define("DB_VERSION", 24);
+// 25 - Added bf_locations table
+define("DB_VERSION", 25);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -119,7 +120,7 @@ class DB_model extends CI_Model {
 		$fields = array(
 			'grp_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
 			'grp_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
-			'grp_location'=>array('type'=>'VARCHAR', 'constraint'=>'100'),
+			'grp_loc_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
 			'grp_from_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
 			'grp_to_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
 			'grp_notes'=>array('type'=>'TEXT')
@@ -139,10 +140,18 @@ class DB_model extends CI_Model {
 		);
 		$this->create_or_update_table('bf_history', $fields);
 
-		$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_username = "Admin"');
-		if ($count == 0)
-			$this->db->query('INSERT bf_staff (stf_username, stf_fullname, stf_password)
-				VALUES ("Admin", "Administrator", "$2y$10$orVZz8QD6iuSqg7G//Rvm.OFWFxFEQ1fSFFuc8H2Kn5bJYqRZ7FZW")');
+		$fields = array(
+			'loc_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
+			'loc_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true)
+		);
+		$this->create_or_update_table('bf_locations', $fields);
+		
+		$this->add_staff('Admin', 'Administrator', '$2y$10$orVZz8QD6iuSqg7G//Rvm.OFWFxFEQ1fSFFuc8H2Kn5bJYqRZ7FZW');
+
+		$this->add_location('Buurndeel');
+		$this->add_location('Thronsaal');
+		$this->add_location('Raum A (alter Thronsaal)');
+		$this->add_location('Raum B (Catering Zelt)');
 
 		$this->set_setting('database-version', DB_VERSION);
 
@@ -154,18 +163,21 @@ class DB_model extends CI_Model {
 		}
 	}
 
-	public function create_or_update_table($table_name, $fields, $keys = array()) {
-		foreach ($fields as $field => $details) {
-			if (is_array($details))
-				$this->dbforge->add_field(array($field=>$details));
-			else
-				$this->dbforge->add_field($details);
-		}	
-		foreach ($keys as $key) {
-			$this->dbforge->add_key($key);
-		}
-		$attributes = array('ENGINE' => 'InnoDB');
+	public function add_staff($username, $fullname, $password) {
+		$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_username = ?', array($username));
+		if ($count == 0)
+			$this->db->query('INSERT bf_staff (stf_username, stf_fullname, stf_password) VALUES (?, ?, ?)',
+				array($username, $fullname, $password));
+	}
 
+	public function add_location($loc_name) {
+		$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_locations WHERE loc_name = ?', array($loc_name));
+		if ($count == 0)
+			$this->db->query('INSERT bf_locations (loc_name) VALUES (?)',
+				array($loc_name));
+	}
+
+	public function create_or_update_table($table_name, $fields, $keys = array()) {
 		$new_table = 'new_'.DB_VERSION.'_'.$table_name;
 		$old_table = 'old_'.DB_VERSION.'_'.$table_name;
 		
@@ -175,15 +187,18 @@ class DB_model extends CI_Model {
 
 		if (!$current_exists && !$old_exists && !$new_exists)
 			// New table:
-			$this->dbforge->create_table($table_name, true, $attributes);
+			$this->create_table($table_name, $fields, $keys);
 		else {
 			if (!$old_exists) {
-				$this->dbforge->create_table($new_table, true, $attributes);
+				$this->create_table($new_table, $fields, $keys);
 				$this->db->truncate($new_table);
 				$new_exists = true;
 			
 				// Copy data:
 				$fields = $this->db->list_fields($table_name);
+				$new_fields = $this->db->list_fields($new_table);
+				$fields = array_intersect($fields, $new_fields);
+
 				$sql = 'INSERT INTO '.$new_table.' ('.implode(",", $fields).') ';
 				$sql .= 'SELECT '.implode(",", $fields).' FROM '.$table_name;
 				$this->db->query($sql);
@@ -197,6 +212,20 @@ class DB_model extends CI_Model {
 				$this->dbforge->rename_table($new_table, $table_name);
 			}
 		}
+	}
+
+	public function create_table($table_name, $fields, $keys = array()) {
+		foreach ($fields as $field => $details) {
+			if (is_array($details))
+				$this->dbforge->add_field(array($field=>$details));
+			else
+				$this->dbforge->add_field($details);
+		}	
+		foreach ($keys as $key) {
+			$this->dbforge->add_key($key);
+		}
+		$attributes = array('ENGINE' => 'InnoDB');
+		$this->dbforge->create_table($table_name, true, $attributes);
 	}
 }
 

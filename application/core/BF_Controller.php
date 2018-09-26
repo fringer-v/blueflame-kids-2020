@@ -50,42 +50,25 @@ class BF_Controller extends CI_Controller {
 		$this->load->helper('url_helper');
 	}
 
-	public function get_empty_participant() {
-		$participant_row = array(
-			'prt_id'=>'',
-			'prt_number'=>'',
-			'prt_firstname'=>'',
-			'prt_lastname'=>'',
-			'prt_birthday'=>'',
-			'prt_registered'=>null,
-			'prt_supervision_firstname'=>'',
-			'prt_supervision_lastname'=>'',
-			'prt_supervision_cellphone'=>'',
-			'prt_grp_id'=>'',
-			'prt_call_status'=>'',
-			'prt_call_escalation'=>'',
-			'prt_call_start_time'=>'',
-			'prt_call_change_time'=>'',
-			'prt_notes'=>'',
-			'grp_name'=>'',
-			'grp_location'=>''
-			);
-		return $participant_row;
-	}
-
 	public function get_participant_row($prt_id) {
 		if (empty($prt_id))
-			$participant_row = $this->get_empty_participant();
+			$participant_row = array('prt_id'=>'', 'prt_number'=>'', 'prt_firstname'=>'', 'prt_lastname'=>'',
+				'prt_birthday'=>'',
+				'prt_registered'=>null, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
+				'prt_supervision_cellphone'=>'', 'prt_notes'=>'', 'prt_grp_id'=>'',
+				'prt_call_status'=>'', 'prt_call_escalation'=>'', 'prt_call_start_time'=>'', 'prt_call_change_time'=>'',
+				'prt_wc_time'=>'', 'grp_name'=>'', 'loc_name'=>''
+			);
 		else {
 			$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
 				DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
 				prt_registered, prt_supervision_firstname, prt_supervision_lastname,
-				prt_supervision_cellphone, prt_notes,
-				prt_grp_id,
+				prt_supervision_cellphone, prt_notes, prt_grp_id,
 				prt_call_status, prt_call_escalation, prt_call_start_time, prt_call_change_time,
-				prt_wc_time,
-				grp_name, grp_location
-				FROM bf_participants LEFT JOIN bf_groups ON grp_id = prt_grp_id
+				prt_wc_time, grp_name, loc_name
+				FROM bf_participants
+					LEFT JOIN bf_groups ON grp_id = prt_grp_id
+					LEFT JOIN bf_locations ON loc_id = grp_loc_id
 				WHERE prt_id=?', array($prt_id));
 			$participant_row = $query->row_array();
 		}

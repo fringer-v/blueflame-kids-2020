@@ -51,6 +51,12 @@ class Form {
 		return $field;
 	}
 
+	function addText($text) {
+		$field = $this->addSpace();
+		$field->setValue($text);
+		return $field;
+	}
+
 	function addTextInput($name, $label, $default_value = '', $attributes = array()) {
 		$field = new TextInput($name, $default_value, $attributes);
 		$field->setForm($this);

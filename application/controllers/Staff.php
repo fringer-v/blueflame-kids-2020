@@ -158,11 +158,6 @@ class Staff extends BF_Controller {
 			redirect("staff");
 		}
 
-		if (!empty($stf_id_v)) {
-			$staff_row = $this->get_staff_row($stf_id_v);
-			$update_staff->setValues($staff_row);
-		}
-
 		$stf_page = new Hidden('stf_page', 1);
 		$stf_page->makeGlobal();
 		$stf_page_v = $stf_page->getValue();

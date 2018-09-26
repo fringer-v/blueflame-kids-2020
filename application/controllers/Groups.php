@@ -9,7 +9,7 @@ class GroupsTable extends Table {
 		switch ($field) {
 			case 'grp_name':
 				return 'Name';
-			case 'grp_location':
+			case 'loc_name':
 				return 'Raum';
 			case 'grp_from_age':
 				return 'Altersgruppe';
@@ -24,13 +24,14 @@ class GroupsTable extends Table {
 	public function cellValue($field, $row) {
 		switch ($field) {
 			case 'grp_name':
-			case 'grp_location':
+			case 'loc_name':
 			case 'grp_count':
 				return $row[$field];
 			case 'grp_from_age':
 				return ifempty($row['grp_from_age'], '').' - '.ifempty($row['grp_to_age'], '');
 			case 'button_column':
-				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_grp_id").val('.$row['grp_id'].');')))->html();
+				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black',
+					'onclick'=>'$("#set_grp_id").val('.$row['grp_id'].');')))->html();
 		}
 		return nix();
 	}
@@ -45,12 +46,13 @@ class Groups extends BF_Controller {
 
 	private function get_group_row($grp_id) {
 		if (empty($grp_id))
-			return array('grp_id'=>'', 'grp_name'=>'', 'grp_location'=>'', 'grp_notes'=>'',
+			return array('grp_id'=>'', 'grp_name'=>'', 'grp_loc_id'=>'', 'grp_notes'=>'',
 				'grp_from_age'=>'', 'grp_to_age'=>'');
 
-		$query = $this->db->query('SELECT g.grp_id, g.grp_name, g.grp_location, g.grp_notes, '.
-			'g.grp_from_age, g.grp_to_age '.
-		'FROM bf_groups g WHERE g.grp_id=?', array($grp_id));
+		$query = $this->db->query('SELECT grp_id, grp_name, grp_loc_id, grp_notes,
+				grp_from_age, grp_to_age
+			FROM bf_groups WHERE grp_id=?',
+			array($grp_id));
 		return $query->row_array();
 	}
 
@@ -74,7 +76,9 @@ class Groups extends BF_Controller {
 		$group_row = $this->get_group_row($grp_id_v);
 
 		$grp_name = $update_group->addTextInput('grp_name', 'Name', $group_row['grp_name']);
-		$grp_location = $update_group->addTextInput('grp_location', 'Raum', $group_row['grp_location']);
+		$locations = db_array_2('SELECT loc_id, loc_name FROM bf_locations ORDER BY loc_id');
+		$grp_loc_id = $update_group->addSelect('grp_loc_id', 'Raum', $locations, $group_row['grp_loc_id']);
+
 		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
 		$age_range_field = $update_group->addField('Altersgruppe');
 		$grp_from_age = new TextInput('grp_from_age', ifempty($group_row['grp_from_age'], ''), array('style'=>'width: 20px;'));
@@ -87,11 +91,14 @@ class Groups extends BF_Controller {
 		$age_range_field->setValue($grp_from_age->html()->add(' - ')->add($grp_to_age->html()));
 		$grp_notes = $update_group->addTextArea('grp_notes', 'Notizen', $group_row['grp_notes']);
 
-		if (empty($grp_id_v))
+		if (empty($grp_id_v)) {
 			$save_group = $update_group->addSubmit('submit', 'Kleingruppe Hinzufügen', array('class'=>'button-black'));
-		else
+			$clear_group = $update_group->addSubmit('clear', 'Clear', array('class'=>'button-black'));
+		}
+		else {
 			$save_group = $update_group->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
-		$clear_group = $update_group->addButton('clear', 'Clear', array('class'=>'button-black', 'onclick'=>'location.href="groups";'));
+			$clear_group = $update_group->addSubmit('clear', 'Weiteres Aufnehmen...', array('class'=>'button-black'));
+		}
 
 		if ($clear_group->submitted()) {
 			$grp_id->setValue(0);
@@ -103,38 +110,34 @@ class Groups extends BF_Controller {
 			if (empty($this->error)) {
 				$data = array(
 					'grp_name' => $grp_name->getValue(),
-					'grp_location' => $grp_location->getValue(),
+					'grp_loc_id' => $grp_loc_id->getValue(),
 					'grp_from_age' => $grp_from_age->getValue(),
 					'grp_to_age' => $grp_to_age->getValue(),
 					'grp_notes' => $grp_notes->getValue()
 				);
 				if (empty($grp_id_v)) {
 					$this->db->insert('bf_groups', $data);
-					$this->setSuccess($grp_location->getValue().' hinzugefügt');
+					$this->setSuccess($grp_name->getValue().' hinzugefügt');
 				}
 				else {
 					$this->db->where('grp_id', $grp_id_v);
 					$this->db->update('bf_groups', $data);
-					$this->setSuccess($grp_location->getValue().' geändert');
+					$this->setSuccess($grp_name->getValue().' geändert');
 				}
 				redirect("groups");
 			}
-		}
-
-		if (!empty($grp_id_v)) {
-			$group_row = $this->get_group_row($grp_id_v);
-			$update_group->setValues($group_row);
 		}
 
 		$grp_page = new Hidden('grp_page', 1);
 		$grp_page->makeGlobal();
 		$grp_page_v = $grp_page->getValue();
 
-		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS g.grp_id, g.grp_name, g.grp_location,'.
-			'g.grp_from_age, g.grp_to_age, COUNT(p.prt_id) grp_count, '.
-			'"button_column" FROM bf_groups g '.
-			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id '.
-			'AND p.prt_registered = 1 GROUP BY g.grp_id', array(),
+		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS grp_id, grp_name, loc_name,
+			grp_from_age, grp_to_age, COUNT(prt_id) grp_count,
+			"button_column" FROM bf_groups
+				LEFT JOIN bf_locations ON loc_id = grp_loc_id 
+				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered = 1
+			GROUP BY grp_id', array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('groups?grp_page=', 16, $grp_page_v);
 		$table->setOrderBy('grp_name');

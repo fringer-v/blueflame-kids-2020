@@ -192,7 +192,7 @@ class Participant extends BF_Controller {
 			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered = 1 GROUP BY g.grp_id ORDER BY grp_name');
 		$groups = array(0 => '') + $groups;
 		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
-		$update_participant->addSpace();
+		$update_participant->addText($participant_row['loc_name']);
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
