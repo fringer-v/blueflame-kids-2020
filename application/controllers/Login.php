@@ -13,17 +13,23 @@ class Login extends BF_Controller {
 	public function index()
 	{
 		$now = (integer) time();
-		$form = new Form('user_login', url('login'), 1, array('class'=>'input-table'));
-		$stf_username = $form->addTextInput('stf_username', 'Username');
-		$stf_password = $form->addPassword('stf_password', 'Password');
-		$stf_md5_pwd = $form->addHidden('stf_md5_pwd', 'Password');
-		$login = $form->addSubmit('login', 'Login', array('class'=>'button-black', 'onclick'=>'doLogin();'));
+		$login_form = new Form('user_login', url('login'), 1, array('class'=>'input-table'));
+		$stf_username = $login_form->addTextInput('stf_username', 'Username');
+		$stf_password = $login_form->addPassword('stf_password', 'Password');
+		$stf_md5_pwd = $login_form->addHidden('stf_md5_pwd', 'Password');
+		$login = $login_form->addSubmit('login', 'Login', array('class'=>'button-black', 'onclick'=>'doLogin();'));
 
 		$stf_username->setRule('required');
 		$stf_md5_pwd->setRule('required');
 
+		$logout_action = new Hidden('action', '');
+		if ($logout_action->getValue() == "logout") {
+			$this->load->library('session');
+			$this->session->sess_destroy();
+		}
+
 		if ($login->submitted()) {
-			$this->error = $form->validate();
+			$this->error = $login_form->validate();
 			if (is_empty($this->error)) {
 				$query = $this->db->query(
 					'SELECT stf_id, stf_username, stf_fullname, stf_password, '.
@@ -62,7 +68,7 @@ class Login extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
-		$form->show();
+		$login_form->show();
 		_td();
 		_tr();
 		_table();
