@@ -88,9 +88,14 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function header($title) {
-
-		$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered = 1');
-		$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
+		if ($title == 'Database update') {
+			$prt_count = '-';
+			$stf_count = '-';
+		}
+		else {
+			$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered = 1');
+			$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
+		}
 
 		out('<!DOCTYPE html>');
 		tag('html');
