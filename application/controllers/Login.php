@@ -52,7 +52,7 @@ class Login extends BF_Controller {
 						$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
 						$this->session->set_userdata('stf_fullname', $staff_row['stf_fullname']);
 						$this->session->set_userdata('stf_technician', $staff_row['stf_technician']);
-						if (is_empty($staff_row['stf_loginallowed']))
+						if (is_empty($staff_row['stf_technician']))
 							redirect("participant");
 						redirect("calllist");
 					}
