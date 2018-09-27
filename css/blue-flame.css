@@ -30,7 +30,6 @@ button, input[type=submit], input[type=button] {
     font-size: 14px;
 	border: 1px solid black;
 	color: white;
-	background: black;
 	border-radius: 6px;  
 	-moz-border-radius: 6px; 
 	-webkit-border-radius: 6px;
