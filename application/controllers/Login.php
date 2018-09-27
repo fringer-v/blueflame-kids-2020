@@ -25,6 +25,10 @@ class Login extends BF_Controller {
 		$logout_action = new Hidden('action', '');
 		if ($logout_action->getValue() == "logout") {
 			$this->load->library('session');
+			if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {
+				$this->db->query('UPDATE bf_staff SET stf_registered = 0 WHERE stf_id = ?',
+					array($this->session->stf_login_id));
+			}
 			$this->session->sess_destroy();
 		}
 
@@ -52,6 +56,10 @@ class Login extends BF_Controller {
 						$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
 						$this->session->set_userdata('stf_fullname', $staff_row['stf_fullname']);
 						$this->session->set_userdata('stf_technician', $staff_row['stf_technician']);
+
+						$this->db->query('UPDATE bf_staff SET stf_registered = 1 WHERE stf_id = ?',
+							array($staff_row['stf_id']));
+
 						if (is_empty($staff_row['stf_technician']))
 							redirect("participant");
 						redirect("calllist");
