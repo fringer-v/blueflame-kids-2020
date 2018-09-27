@@ -200,7 +200,7 @@ class Table {
 
 		$sql = $this->sql;
 
-		if (!empty($this->order_by))
+		if (!is_empty($this->order_by))
 			$sql .= ' ORDER BY '.$this->order_by;
 
 		if ($this->per_page > 0) {
@@ -255,7 +255,7 @@ class Table {
 	}
 
 	public function paginationHtml() {
-		if (empty($this->per_page))
+		if (is_empty($this->per_page))
 			return;
 
 		$this->doQuery();

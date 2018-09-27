@@ -28,7 +28,7 @@ class GroupsTable extends Table {
 			case 'grp_count':
 				return $row[$field];
 			case 'grp_from_age':
-				return ifempty($row['grp_from_age'], '').' - '.ifempty($row['grp_to_age'], '');
+				return if_empty($row['grp_from_age'], '').' - '.if_empty($row['grp_to_age'], '');
 			case 'button_column':
 				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black',
 					'onclick'=>'$("#set_grp_id").val('.$row['grp_id'].');')))->html();
@@ -61,7 +61,7 @@ class MemberTable extends Table {
 				return $value;
 			case 'prt_call_status': {
 				$call_status = $row['prt_call_status'];
-				if (empty($call_status))
+				if (is_empty($call_status))
 					return nbsp();					
 				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
 					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
@@ -80,7 +80,7 @@ class Groups extends BF_Controller {
 	}
 
 	private function get_group_row($grp_id) {
-		if (empty($grp_id))
+		if (is_empty($grp_id))
 			return array('grp_id'=>'', 'grp_name'=>'', 'grp_loc_id'=>'', 'grp_notes'=>'',
 				'grp_from_age'=>'', 'grp_to_age'=>'');
 
@@ -121,9 +121,9 @@ class Groups extends BF_Controller {
 
 		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
 		$age_range_field = $update_group->addField('Altersgruppe');
-		$grp_from_age = new TextInput('grp_from_age', ifempty($group_row['grp_from_age'], ''), array('style'=>'width: 20px;'));
-		$grp_to_age = new TextInput('grp_to_age', ifempty($group_row['grp_to_age'], ''), array('style'=>'width: 20px;'));
-		if (!empty($this->session->stf_technician)) {
+		$grp_from_age = new TextInput('grp_from_age', if_empty($group_row['grp_from_age'], ''), array('style'=>'width: 20px;'));
+		$grp_to_age = new TextInput('grp_to_age', if_empty($group_row['grp_to_age'], ''), array('style'=>'width: 20px;'));
+		if (!is_empty($this->session->stf_technician)) {
 			$update_group->disable();
 			$grp_from_age->disable();
 			$grp_to_age->disable();
@@ -131,7 +131,7 @@ class Groups extends BF_Controller {
 		$age_range_field->setValue($grp_from_age->html()->add(' - ')->add($grp_to_age->html()));
 		$grp_notes = $update_group->addTextArea('grp_notes', 'Notizen', $group_row['grp_notes']);
 
-		if (empty($grp_id_v)) {
+		if (is_empty($grp_id_v)) {
 			$save_group = $update_group->addSubmit('submit', 'Kleingruppe Hinzufügen', array('class'=>'button-black'));
 			$clear_group = $update_group->addSubmit('clear', 'Clear', array('class'=>'button-black'));
 		}
@@ -158,7 +158,7 @@ class Groups extends BF_Controller {
 
 		if ($save_group->submitted()) {
 			$this->error = $update_group->validate();
-			if (empty($this->error)) {
+			if (is_empty($this->error)) {
 				$data = array(
 					'grp_name' => $grp_name->getValue(),
 					'grp_loc_id' => $grp_loc_id->getValue(),
@@ -166,7 +166,7 @@ class Groups extends BF_Controller {
 					'grp_to_age' => $grp_to_age->getValue(),
 					'grp_notes' => $grp_notes->getValue()
 				);
-				if (empty($grp_id_v)) {
+				if (is_empty($grp_id_v)) {
 					$this->db->insert('bf_groups', $data);
 					$this->setSuccess($grp_name->getValue().' hinzugefügt');
 				}

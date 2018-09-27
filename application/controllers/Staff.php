@@ -43,7 +43,7 @@ class Staff extends BF_Controller {
 	}
 
 	private function get_staff_row($stf_id) {
-		if (empty($stf_id))
+		if (is_empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
 				'confirm_password'=>'', 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>'');
 
@@ -60,7 +60,7 @@ class Staff extends BF_Controller {
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
 
 		$update_staff = new Form('update_staff', 'staff', 1, array('class'=>'input-table'));
-		if (!empty($this->session->stf_technician))
+		if (!is_empty($this->session->stf_technician))
 			$update_staff->disable();
 		$stf_id = $update_staff->addHidden('stf_id');
 		$stf_id->makeGlobal();
@@ -74,7 +74,7 @@ class Staff extends BF_Controller {
 		$staff_row = $this->get_staff_row($stf_id_v);
 
 		// Fields
-		if (!empty($stf_id_v)) {
+		if (!is_empty($stf_id_v)) {
 			$stf_registered = $update_staff->addField('Status');
 			if ($staff_row['stf_registered'])
 				$stf_registered->setValue(div(array('class'=>'green-box'), 'Angemeldet'));
@@ -93,7 +93,7 @@ class Staff extends BF_Controller {
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]');
 		$stf_fullname->setRule('required|is_unique[bf_staff.stf_fullname.stf_id]');
-		if (empty($stf_id_v)) {
+		if (is_empty($stf_id_v)) {
 			$stf_password->setRule('required');
 			$confirm_password->setRule('required|matches[stf_password]');
 		}
@@ -101,7 +101,7 @@ class Staff extends BF_Controller {
 			$confirm_password->setRule('matches[stf_password]');
 
 		// Buttons:
-		if (empty($stf_id_v)) {
+		if (is_empty($stf_id_v)) {
 			$save_staff = $update_staff->addSubmit('save_staff', 'Mitarbeiter Hinzufügen', array('class'=>'button-black'));
 			$clear_staff = $update_staff->addSubmit('clear_staff', 'Clear', array('class'=>'button-black'));
 		}
@@ -121,9 +121,9 @@ class Staff extends BF_Controller {
 
 		if ($save_staff->submitted()) {
 			$this->error = $update_staff->validate();
-			if (empty($this->error)) {
+			if (is_empty($this->error)) {
 				$pwd = $stf_password->getValue();
-				if (!empty($pwd))
+				if (!is_empty($pwd))
 					$pwd = password_hash(strtolower(md5($pwd."129-3026-19-2089")), PASSWORD_DEFAULT);
 				$data = array(
 					'stf_username' => $stf_username->getValue(),
@@ -131,7 +131,7 @@ class Staff extends BF_Controller {
 					'stf_loginallowed' => $stf_loginallowed->getValue(),
 					'stf_technician' => $stf_technician->getValue()
 				);
-				if (empty($stf_id_v)) {
+				if (is_empty($stf_id_v)) {
 					//$this->news_model->set_news();
 					$data['stf_password'] = $pwd;
 					$this->db->insert('bf_staff', $data);
@@ -150,7 +150,7 @@ class Staff extends BF_Controller {
 			}
 		}
 
-		if (!empty($stf_id_v) && $reg_unregister->submitted()) {
+		if (!is_empty($stf_id_v) && $reg_unregister->submitted()) {
 			$registered = !$staff_row['stf_registered'];
 			$sql = 'UPDATE bf_staff SET stf_registered = ? WHERE stf_id = ?';
 			$this->db->query($sql, array($registered, $stf_id_v));

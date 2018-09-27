@@ -42,7 +42,7 @@ class ParticipantTable extends Table {
 				//return href(url('participant', array('prt_id'=>$row['prt_id'])), $value);
 			case 'prt_call_status': {
 				$call_status = $row['prt_call_status'];
-				if (empty($call_status))
+				if (is_empty($call_status))
 					return nbsp();					
 				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
 					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
@@ -50,7 +50,7 @@ class ParticipantTable extends Table {
 			}
 			case 'prt_registered':
 				if ($row[$field] == 1) {
-					if (empty($row['prt_wc_time']))
+					if (is_empty($row['prt_wc_time']))
 						return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
 					$out = div(array('class'=>'white-box', 'style'=>'width: 25px; height: 22px; font-size: 12px;'), 'WC');
 					$out->add(" ");
@@ -125,7 +125,7 @@ class HistoryTable extends Table {
 				return $row[$field];
 			case 'hst_notes';
 				$val = $row[$field];
-				return empty($val) ? '' : $val;
+				return is_empty($val) ? '' : $val;
 		}
 		return nix();
 	}
@@ -152,7 +152,7 @@ class Participant extends BF_Controller {
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
-		if (!empty($this->session->stf_technician))
+		if (!is_empty($this->session->stf_technician))
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->makeGlobal();
@@ -263,7 +263,7 @@ class Participant extends BF_Controller {
 		$prt_id_v = $prt_id->getValue();
 		if ($new_participant->submitted() || $save_participant->submitted()) {
 			$this->error = $update_participant->validate('tab_modify');
-			if (empty($this->error)) {
+			if (is_empty($this->error)) {
 				$data = array(
 					'prt_firstname' => $prt_firstname->getValue(),
 					'prt_lastname' => $prt_lastname->getValue(),
@@ -274,7 +274,7 @@ class Participant extends BF_Controller {
 					'prt_grp_id' => $prt_grp_id->getValue(),
 					'prt_notes' => $prt_notes->getValue()
 				);
-				if (empty($prt_id_v)) {
+				if (is_empty($prt_id_v)) {
 					$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
 					$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
 
@@ -306,12 +306,12 @@ class Participant extends BF_Controller {
 			}
 		}
 
-		if (!empty($prt_id_v)) {
+		if (!is_empty($prt_id_v)) {
 			if ($unregister->submitted() || $register->submitted()) {
 				$registered = !$participant_row['prt_registered'];
 
 				$sql = 'UPDATE bf_participants SET prt_registered = ?, prt_modifytime = NOW()';
-				if (!empty($participant_row['prt_call_status'])) {
+				if (!is_empty($participant_row['prt_call_status'])) {
 					$sql .= ', prt_call_status = '.CALL_NOCALL;
 					$sql .= ', prt_call_escalation = 0';
 					$sql .= ', prt_call_start_time = NOW()';
@@ -322,7 +322,7 @@ class Participant extends BF_Controller {
 						'hst_action'=>CANCELLED,
 						'hst_escalation'=>0));
 				}
-				if (!empty($participant_row['prt_wc_time'])) {
+				if (!is_empty($participant_row['prt_wc_time'])) {
 					$sql .= ', prt_wc_time = NULL';
 				}
 				$sql .= ', prt_grp_id = '.$register_group->getValue();
@@ -342,7 +342,7 @@ class Participant extends BF_Controller {
 			$call_status = $participant_row['prt_call_status'];
 			if ($call_super->submitted() || $cancel_super->submitted()) {
 				$sql = 'UPDATE bf_participants SET prt_call_escalation = 0, ';
-				if (empty($call_status) || $call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED) {
+				if (is_empty($call_status) || $call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED) {
 					$action = CALL;
 					$sql .= 'prt_call_status = '.CALL_PENDING.', ';
 					$sql .= 'prt_call_start_time = NOW(), ';
@@ -378,7 +378,7 @@ class Participant extends BF_Controller {
 			
 			if ($escallate->submitted()) {
 				$call_esc = $participant_row['prt_call_escalation']+1;
-				if (!empty($call_status) && $call_status != CALL_CANCELLED && $call_status != CALL_COMPLETED) {
+				if (!is_empty($call_status) && $call_status != CALL_CANCELLED && $call_status != CALL_COMPLETED) {
 					$sql = 'UPDATE bf_participants SET
 						prt_call_status = '.CALL_PENDING.',
 						prt_call_escalation = ?,
@@ -400,7 +400,7 @@ class Participant extends BF_Controller {
 			}
 			
 			if ($go_to_wc->submitted() || $back_from_wc->submitted()) {
-				if (empty($participant_row['prt_wc_time'])) {
+				if (is_empty($participant_row['prt_wc_time'])) {
 					$action = GO_TO_WC;
 					$msg = 'ging nach WC';
 					$sql = 'UPDATE bf_participants SET prt_wc_time = NOW() WHERE prt_id = ?';
@@ -423,13 +423,13 @@ class Participant extends BF_Controller {
 			}
 		}
 
-		//if (!empty($this->success)) {
+		//if (!is_empty($this->success)) {
 		//	$participant_row = $this->get_participant_row($prt_id_v);
 		//	$update_participant->setValues($participant_row);
 		//}
 
 		//$prt_id_v = $prt_id->getValue();
-		if (empty($prt_id_v)) {
+		if (is_empty($prt_id_v)) {
 			$clear_participant->setValue('Clear');
 			$clear_nr_name->hide();
 			$save_participant->hide();
@@ -449,7 +449,7 @@ class Participant extends BF_Controller {
 
 			$new_participant->hide();
 			if ($participant_row['prt_registered']) {
-				if (empty($participant_row['prt_wc_time'])) {
+				if (is_empty($participant_row['prt_wc_time'])) {
 					$reg_field = out("");
 					$back_from_wc->hide();
 				}
@@ -469,7 +469,7 @@ class Participant extends BF_Controller {
 			}
 
 			$call_status = $participant_row['prt_call_status'];
-			if (empty($call_status) || $call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED) {
+			if (is_empty($call_status) || $call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED) {
 				if ($call_status == CALL_CANCELLED)
 					$call_field = div(array('class'=>'red-box'), TEXT_CANCELLED);
 				else if ($call_status == CALL_COMPLETED)
@@ -481,7 +481,7 @@ class Participant extends BF_Controller {
 			}
 			else {
 				$str = how_long_ago($participant_row['prt_call_start_time']);
-				if (!empty($participant_row['prt_call_escalation']))
+				if (!is_empty($participant_row['prt_call_escalation']))
 					$str .= ' ('.$participant_row['prt_call_escalation'].')';
 				if ($participant_row['prt_call_status'] == CALL_CALLED) {
 					$cancel_super->setValue('Ruf Beenden');
@@ -489,7 +489,7 @@ class Participant extends BF_Controller {
 				}
 				else {
 					$cancel_super->setValue('Ruf Aufheben');
-					if (!empty($participant_row['prt_call_escalation']))
+					if (!is_empty($participant_row['prt_call_escalation']))
 						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_ESCALATED.': '.$str);
 					else
 						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_PENDING.': '.$str);
@@ -639,7 +639,7 @@ class Participant extends BF_Controller {
 		
 		$prt_filter_v = $prt_filter->getValue();
 
-		if (empty($prt_filter_v)) {
+		if (is_empty($prt_filter_v)) {
 			$prt_filter_v = '%';
 			$order_by = 'prt_number DESC';
 		}

@@ -111,13 +111,13 @@ class Form {
 	}
 
 	private function getFields($group = '') {
-		if (empty($group))
+		if (is_empty($group))
 			 return $this->fields;
 		return $this->groups[$group]['fields'];
 	}
 	
 	private function getButtons($group = '') {
-		if (empty($group))
+		if (is_empty($group))
 			return $this->buttons;
 		return $this->groups[$group]['buttons'];
 	}
@@ -178,7 +178,7 @@ class Form {
 			$label = $field_info[0];
 			$field = $field_info[1];
 			$error = $field->validate($this);
-			if (!empty($error))
+			if (!is_empty($error))
 				$errors[] = $error;
 		}
 		return $errors;
@@ -210,10 +210,10 @@ class Form {
 
 		$fields = $this->getFields($group);
 		$buttons = $this->getButtons($group);
-		if (!empty($fields) || !empty($buttons)) {
+		if (!is_empty($fields) || !is_empty($buttons)) {
 			table($this->attributes);
 			
-			if (!empty($fields)) {
+			if (!is_empty($fields)) {
 				tr();
 				$cols = 0;
 				$fields_shown = 0;
@@ -246,7 +246,7 @@ class Form {
 						}
 					}
 
-					if (!$haslabel || empty($label)) {
+					if (!$haslabel || is_empty($label)) {
 						td(array('colspan'=>$colspan*2));
 						$field->show();
 						_td();
@@ -290,7 +290,7 @@ class Form {
 				}
 			}
 
-			if (!empty($buttons)) {
+			if (!is_empty($buttons)) {
 				$attr = array('colspan'=>$this->columns*2, 'class'=>'button-row');
 				$i = 0;
 				$start_row = true;
@@ -363,11 +363,11 @@ class InputField {
 	}
 	
 	public function getAttributes($type, $include_value = true) {
-		if (empty($this->name))
+		if (is_empty($this->name))
 			$attr = array();
 		else
 			$attr = array('name'=>$this->name, 'id'=>$this->name);
-		if (!empty($type))
+		if (!is_empty($type))
 			$attr['type'] = $type;
 		if ($include_value)
 			$attr['value'] = $this->getValue();
@@ -378,7 +378,7 @@ class InputField {
 	}
 
 	public function submitted() {
-		if (empty($this->name))
+		if (is_empty($this->name))
 			return false;
 		if (isset($_POST[$this->name]))
 			return true;
@@ -388,7 +388,7 @@ class InputField {
 	}
 
 	public function setValue($value = '') {
-		if (!empty($this->name)) {
+		if (!is_empty($this->name)) {
 			if (isset($_POST[$this->name]))
 				unset($_POST[$this->name]);
 			if (isset($_GET[$this->name]))
@@ -400,7 +400,7 @@ class InputField {
 	}
 
 	public function getValue() {
-		if (empty($this->name))
+		if (is_empty($this->name))
 			$this->default_value;
 
 		if (isset($_POST[$this->name])) {
@@ -425,7 +425,7 @@ class InputField {
 
 	public function getDate($fmt = '') {
 		$val = $this->getValue();
-		if (empty($val))
+		if (is_empty($val))
 			return null;
 		if (str_contains($val, '.'))
 			$ts = DateTime::createFromFormat('d.m.Y', $val);
@@ -438,7 +438,7 @@ class InputField {
 		$day = (integer) $ts->format('d');
 		if ($year < 100)
 			$ts->setDate($year+2000, $month, $day);
-		if (!empty($fmt))
+		if (!is_empty($fmt))
 			return $ts->format($fmt);
 		return $ts;
 	}
@@ -493,7 +493,7 @@ class InputField {
 				$column = $dots[1];
 				$id = $dots[2];
 				$sql = 'SELECT COUNT(*) AS count FROM '.$table.' WHERE '.$column.' = ?';
-				if (!empty($id))
+				if (!is_empty($id))
 					$sql .= ' AND '.$id.' != ?';
 				$query = $cii->db->query($sql, array($value, $form->getField($id)->getValue()));
 				$row = $query->row_array()['count'];
@@ -506,12 +506,12 @@ class InputField {
 					$error = $this->getLabel(true).' ist nicht gleich '.$form->getLabel($arg, true);
 			}
 			else if (str_startswith($rule, 'is_valid_date')) {
-				if (!empty($value)) {
+				if (!is_empty($value)) {
 					if (date_create_from_format('d.m.Y', $value) === false)
 						$error = $this->getLabel(true).' ist kein gültiges Datum';
 				}
 			}
-			if (!empty($error))
+			if (!is_empty($error))
 				break;		
 		}
 		return $error;
@@ -614,7 +614,7 @@ class Checkbox extends InputField {
 		$attr = $this->getAttributes('checkbox', false);
 		$attr['value'] = '1';
 		$value = $this->getValue();
-		if (!empty($value))
+		if (!is_empty($value))
 			$attr['checked'] = null;
 		$out->add(tag('input', $attr));
 		return $out;

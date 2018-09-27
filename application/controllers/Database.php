@@ -18,7 +18,7 @@ class Database extends BF_Controller {
 		$update = $form->addSubmit('submit', 'Update Database', array('class'=>'button-black'));
 
 		if ($update->submitted() && !$this->db_model->up_to_date()) {
-			if (empty($this->error)) {
+			if (is_empty($this->error)) {
 				$this->db_model->update_database();
 				$this->setSuccess("Database updated");
 			}

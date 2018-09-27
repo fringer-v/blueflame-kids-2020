@@ -47,7 +47,8 @@ function str_contains($haystack, $needle) {
 	
 // This function fixes a bug that empty() has with the results of function calls
 function is_empty($val) {
-	$val = trim($val);
+	if (!is_array($val))
+		$val = trim($val);
 	return empty($val);
 }
 
@@ -55,7 +56,7 @@ function is_not_empty($val) {
 	return !is_empty($val);
 }
 
-function ifempty($val, $def) {
+function if_empty($val, $def) {
 	if (empty($val))
 		return $def;
 	return $val;
@@ -117,7 +118,7 @@ function format_seconds($totalseconds) {
 }
 
 function how_long_ago($then) {
-	if (empty($then))
+	if (is_empty($then))
 		return '';
 	$start_time = strtotime($then);
 	return format_seconds(time() - $start_time);

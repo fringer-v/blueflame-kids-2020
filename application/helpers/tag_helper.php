@@ -45,10 +45,10 @@ function _tag($name) {
 
 function script($src = "") {
 	$args = array('type'=>'text/javascript');
-	if (!empty($src))
+	if (!is_empty($src))
 		$args["src"] = $src;
 	$tag = tag('script', $args);
-	if (!empty($src))
+	if (!is_empty($src))
 		$tag->add(_script());
 	return $tag;
 }
