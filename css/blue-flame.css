@@ -186,16 +186,16 @@ button:active, input[type=submit]:active {
 /* Details Table: */
 
 .details-table {
-	text-align:left;
-	border:1px solid black;
-	border-collapse:collapse;
+	text-align: left;
+	border: 1px solid black;
+	border-collapse: collapse;
 }
 
 .details-table th {
 	padding: 5px 5px; 
-	background-color:black;
-	color:white; 
-	font-weight:bold;
+	background-color: black;
+	color: white; 
+	font-weight: bold;
 	white-space: nowrap;
 }
 
@@ -411,4 +411,39 @@ table.scrollable-table tbody {
 	margin-right: 5px;
 	min-width: 640px;
 }
+
+.output-table td {
+	padding: 3px 0px 3px 2px; 
+}
+
+.output-table th {
+	text-align: right;
+	vertical-align: top;
+	padding: 3px 0px; 
+}
+
+.printable-table {
+	text-align: left;
+	border: 1px solid black;
+	border-collapse: collapse;
+	width: 100%;
+}
+
+.printable-table th {
+	padding: 5px 5px; 
+	text-align: left;
+	background-color: white;
+	color: black; 
+	font-weight: bold;
+	white-space: nowrap;
+}
+
+.printable-table td {
+	padding: 5px; 
+}
+
+.printable-table tr:nth-child(odd) {
+	background: lightgrey;
+}
+
 

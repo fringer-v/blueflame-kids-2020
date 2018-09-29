@@ -107,7 +107,7 @@ class BF_Controller extends CI_Controller {
 		script(base_url('/js/jquery.js'));
 		script(base_url('/js/blue-flame.js'));
 		_tag('head');
-		tag('body', array('onload'=>'setHeaderSizesOfScrollableTables();'));
+		tag('body'/*, array('onload'=>'setHeaderSizesOfScrollableTables();')*/);
 		
 		div(array('class'=>'header'));
 		tag('img', array('src'=>base_url('/img/bf-kids-logo.png')));
@@ -134,7 +134,7 @@ class BF_Controller extends CI_Controller {
 		if (!empty($this->session->bf_success)) {
 			print_success($this->session->bf_success);
 			// Only display this feedback once:
-			$this->session->set_userdata('bf_success', "");
+			$this->session->set_userdata('bf_success', '');
 		}
 		_div();
 	}
@@ -148,11 +148,11 @@ class BF_Controller extends CI_Controller {
 
 		if (!empty($js_src))
 			script($js_src);
-		script();
-		out('$(window).resize(function() {
-			setHeaderSizesOfScrollableTables();
-		}).resize();');
-		_script();
+		//script();
+		//out('$(window).resize(function() {
+		//	setHeaderSizesOfScrollableTables();
+		//}).resize();');
+		//_script();
 
 		_tag('html');
 	}

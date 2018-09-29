@@ -85,8 +85,8 @@ class Groups extends BF_Controller {
 				'grp_from_age'=>'', 'grp_to_age'=>'');
 
 		$query = $this->db->query('SELECT grp_id, grp_name, grp_loc_id, grp_notes,
-				grp_from_age, grp_to_age
-			FROM bf_groups WHERE grp_id=?',
+				grp_from_age, grp_to_age, loc_name
+			FROM bf_groups LEFT JOIN bf_locations ON loc_id = grp_loc_id WHERE grp_id=?',
 			array($grp_id));
 		return $query->row_array();
 	}
@@ -100,7 +100,7 @@ class Groups extends BF_Controller {
 		$grp_page = new Hidden('grp_page', 1);
 		$grp_page->makeGlobal();
 
-		$update_group = new Form('update_group', 'groups', 1, array('class'=>'input-table'));
+		$update_group = new Form('update_group', 'groups', 2, array('class'=>'input-table'));
 		$grp_id = $update_group->addHidden('grp_id');
 		$grp_id->makeGlobal();
 		$mem_page = new Hidden('mem_page', 1);
@@ -116,10 +116,14 @@ class Groups extends BF_Controller {
 		$group_row = $this->get_group_row($grp_id_v);
 
 		$grp_name = $update_group->addTextInput('grp_name', 'Name', $group_row['grp_name']);
+		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
+		$print_link = $update_group->addSpace();
+		if (!is_empty($grp_id_v))
+			$print_link->setValue(div(array('style'=>'float: right;'), href('groups/printable',
+				tag('img', array('src'=>base_url('/img/print-50.png'), 'style'=>'width: 28px; height: 28px;')))));
 		$locations = db_array_2('SELECT loc_id, loc_name FROM bf_locations ORDER BY loc_id');
 		$grp_loc_id = $update_group->addSelect('grp_loc_id', 'Raum', $locations, $group_row['grp_loc_id']);
-
-		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
+		$update_group->addSpace();
 		$age_range_field = $update_group->addField('Altersgruppe');
 		$grp_from_age = new TextInput('grp_from_age', if_empty($group_row['grp_from_age'], ''), array('style'=>'width: 20px;'));
 		$grp_to_age = new TextInput('grp_to_age', if_empty($group_row['grp_to_age'], ''), array('style'=>'width: 20px;'));
@@ -129,7 +133,9 @@ class Groups extends BF_Controller {
 			$grp_to_age->disable();
 		}
 		$age_range_field->setValue($grp_from_age->html()->add(' - ')->add($grp_to_age->html()));
+		$update_group->addSpace();
 		$grp_notes = $update_group->addTextArea('grp_notes', 'Notizen', $group_row['grp_notes']);
+		$grp_notes->setFormat('colspan=2');
 
 		if (is_empty($grp_id_v)) {
 			$save_group = $update_group->addSubmit('submit', 'Kleingruppe Hinzufügen', array('class'=>'button-black'));
@@ -231,5 +237,49 @@ class Groups extends BF_Controller {
 		_table();
 
 		$this->footer();
+	}
+
+	public function printable() {
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
+		}
+
+		$grp_id = new Hidden('grp_id');
+		$grp_id->makeGlobal();
+		$grp_id_v = $grp_id->getValue();
+		$group_row = $this->get_group_row($grp_id_v);
+
+		$update_group = new Form('update_group', 'groups', 1, array('class'=>'output-table'));
+		$update_group->addField('Name', $group_row['grp_name']);
+		$update_group->addField('Raum', $group_row['loc_name']);
+		$update_group->addField('Altersgruppe', $group_row['grp_from_age'].' - '.$group_row['grp_to_age']);
+		$update_group->addField('Notizen', $group_row['grp_notes']);
+
+		$member_table = new MemberTable('SELECT prt_id, prt_number, 
+				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
+				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name
+			FROM bf_participants
+			WHERE prt_grp_id = ? AND prt_registered = 1 ORDER BY prt_id',
+			array($grp_id_v), array('class'=>'printable-table'));
+
+		out('<!DOCTYPE html>');
+		tag('html');
+		tag('head');
+		tag('meta', array('http-equiv'=>'Content-Type', 'content'=>'text/html; charset=utf-8'));
+		tag('link', array('href'=>base_url('/css/blue-flame.css'), 'rel'=>'stylesheet', 'type'=>'text/css'));
+		tag('title', '');
+		_tag('head');
+		tag('body', array('style'=>'background: white;'));
+		table(array('style' => 'width: 640px; padding: 5px;'));
+		tr();
+		td();
+		$update_group->show();
+		_td();
+		_tr();
+		tr(td($member_table->html()));
+		_table();
+		_tag('body');
+		_tag('html');
 	}
 }

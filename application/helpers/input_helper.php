@@ -37,10 +37,11 @@ class Form {
 		return $field;
 	}
 
-	function addField($label) {
+	function addField($label, $value = '') {
 		$field = new OutputField();
 		$field->setForm($this);
 		$this->fields['$'.count($this->fields)] = array($label, $field);
+		$field->setValue($value);
 		return $field;
 	}
 
