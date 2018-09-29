@@ -84,9 +84,13 @@ class Groups extends BF_Controller {
 			return array('grp_id'=>'', 'grp_name'=>'', 'grp_loc_id'=>'', 'grp_notes'=>'',
 				'grp_from_age'=>'', 'grp_to_age'=>'');
 
-		$query = $this->db->query('SELECT grp_id, grp_name, grp_loc_id, grp_notes,
-				grp_from_age, grp_to_age, loc_name
-			FROM bf_groups LEFT JOIN bf_locations ON loc_id = grp_loc_id WHERE grp_id=?',
+		$query = $this->db->query('SELECT grp_id, grp_name, grp_leader_stf_id, grp_coleader_stf_id,
+				grp_loc_id, grp_notes, grp_from_age, grp_to_age, a.stf_fullname stf_leader, b.stf_fullname stf_coleader, loc_name
+			FROM bf_groups
+			LEFT JOIN bf_locations ON loc_id = grp_loc_id
+			LEFT JOIN bf_staff a ON a.stf_id = grp_leader_stf_id
+			LEFT JOIN bf_staff b ON b.stf_id = grp_coleader_stf_id
+			WHERE grp_id=?',
 			array($grp_id));
 		return $query->row_array();
 	}
@@ -121,7 +125,15 @@ class Groups extends BF_Controller {
 		if (!is_empty($grp_id_v))
 			$print_link->setValue(div(array('style'=>'float: right;'), href('groups/printable',
 				tag('img', array('src'=>base_url('/img/print-50.png'), 'style'=>'width: 28px; height: 28px;')))));
-		$locations = db_array_2('SELECT loc_id, loc_name FROM bf_locations ORDER BY loc_id');
+
+		$staff = db_array_2('SELECT stf_id, stf_fullname FROM bf_staff ORDER BY stf_fullname');
+		$staff = array(0 => '') + $staff;
+		$grp_leader_stf_id = $update_group->addSelect('grp_leader_stf_id', 'Leiter', $staff, $group_row['grp_leader_stf_id']);
+		$update_group->addSpace();
+		$grp_coleader_stf_id = $update_group->addSelect('grp_coleader_stf_id', 'Co-Leiter', $staff, $group_row['grp_coleader_stf_id']);
+		$update_group->addSpace();
+
+		$locations = db_array_2('SELECT loc_id, loc_name FROM bf_locations ORDER BY loc_name');
 		$grp_loc_id = $update_group->addSelect('grp_loc_id', 'Raum', $locations, $group_row['grp_loc_id']);
 		$update_group->addSpace();
 		$age_range_field = $update_group->addField('Altersgruppe');
@@ -167,6 +179,8 @@ class Groups extends BF_Controller {
 			if (is_empty($this->error)) {
 				$data = array(
 					'grp_name' => $grp_name->getValue(),
+					'grp_leader_stf_id' => $grp_leader_stf_id->getValue(),
+					'grp_coleader_stf_id' => $grp_coleader_stf_id->getValue(),
 					'grp_loc_id' => $grp_loc_id->getValue(),
 					'grp_from_age' => $grp_from_age->getValue(),
 					'grp_to_age' => $grp_to_age->getValue(),
@@ -251,7 +265,9 @@ class Groups extends BF_Controller {
 		$group_row = $this->get_group_row($grp_id_v);
 
 		$update_group = new Form('update_group', 'groups', 1, array('class'=>'output-table'));
-		$update_group->addField('Name', $group_row['grp_name']);
+		$update_group->addField('Gruppe', b($group_row['grp_name']));
+		$update_group->addField('Leiter', $group_row['stf_leader']);
+		$update_group->addField('Co-Leiter', $group_row['stf_coleader']);
 		$update_group->addField('Raum', $group_row['loc_name']);
 		$update_group->addField('Altersgruppe', $group_row['grp_from_age'].' - '.$group_row['grp_to_age']);
 		$update_group->addField('Notizen', $group_row['grp_notes']);

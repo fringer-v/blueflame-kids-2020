@@ -3,7 +3,8 @@
 // The current database version:
 // 24 - Allow various fields in participant to be NULL
 // 25 - Added bf_locations table
-define("DB_VERSION", 25);
+// 26 - Added leader and coleader to groups
+define("DB_VERSION", 26);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -120,6 +121,8 @@ class DB_model extends CI_Model {
 		$fields = array(
 			'grp_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
 			'grp_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
+			'grp_leader_stf_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'grp_coleader_stf_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
 			'grp_loc_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
 			'grp_from_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
 			'grp_to_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),

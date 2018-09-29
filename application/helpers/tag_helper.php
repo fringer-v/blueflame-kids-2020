@@ -73,6 +73,10 @@ function b() {
 	return tag('b', func_get_args());
 }
 
+function u() {
+	return tag('u', func_get_args());
+}
+
 function em() {
 	return tag('em', func_get_args());
 }
