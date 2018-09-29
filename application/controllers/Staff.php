@@ -7,10 +7,10 @@ include_once(APPPATH.'helpers/output_helper.php');
 class StaffTable extends Table {
 	public function columnTitle($field) {
 		switch ($field) {
-			case 'stf_username':
-				return 'Username';
 			case 'stf_fullname':
 				return 'Name';
+			case 'group_list':
+				return 'Gruppe';
 			case 'stf_registered':
 				return 'Angem.';
 			case 'button_column':
@@ -21,8 +21,8 @@ class StaffTable extends Table {
 
 	public function cellValue($field, $row) {
 		switch ($field) {
-			case 'stf_username':
 			case 'stf_fullname':
+			case 'group_list':
 				return $row[$field];
 			case 'stf_registered':
 				if ($row[$field] == 1)
@@ -81,7 +81,7 @@ class Staff extends BF_Controller {
 			else
 				$stf_registered->setValue(div(array('class'=>'red-box'), 'Abgemeldet'));
 		}
-		$stf_username = $update_staff->addTextInput('stf_username', 'Username', $staff_row['stf_username']);
+		$stf_username = $update_staff->addTextInput('stf_username', 'Login-name', $staff_row['stf_username']);
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
 		$stf_password = $update_staff->addPassword('stf_password', 'Passwort');
 		$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
@@ -162,8 +162,13 @@ class Staff extends BF_Controller {
 		$stf_page->makeGlobal();
 		$stf_page_v = $stf_page->getValue();
 
-		$table = new StaffTable('SELECT SQL_CALC_FOUND_ROWS stf_id, stf_username, stf_fullname, stf_registered,
-			"button_column" FROM bf_staff ', array(),
+		// 
+		$table = new StaffTable('SELECT SQL_CALC_FOUND_ROWS stf_id, stf_username, stf_fullname,
+		    GROUP_CONCAT(DISTINCT grp_name ORDER BY grp_name DESC SEPARATOR ", ") group_list,
+			stf_registered, "button_column" FROM bf_staff
+			LEFT JOIN bf_groups ON stf_id = grp_leader_stf_id OR stf_id = grp_coleader_stf_id
+			GROUP BY stf_id',
+			array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$table->setOrderBy('stf_username');
