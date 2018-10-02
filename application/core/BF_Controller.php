@@ -116,19 +116,7 @@ class BF_Controller extends CI_Controller {
 		script(base_url('/js/blue-flame.js'));
 		_tag('head');
 		tag('body'/*, array('onload'=>'setHeaderSizesOfScrollableTables();')*/);
-		
-		/*
-		div(array('class'=>'header'));
-		tag('img', array('src'=>base_url('/img/bf-kids-logo.png')));
-		if ($title == 'Kinder')
-			span($title.' ('.$prt_count.')');
-		else if ($title == 'Mitarbeiter')
-			span($title.' ('.$stf_count.')');
- 		else
-			span($title);
-		div(array('class'=>'header_name'), $this->stf_fullname);
-		_div();
-		*/
+
 		div(array('class'=>'topnav'));
 		table();
 		tr(array('style'=>'height: 12px;'));
@@ -148,21 +136,21 @@ class BF_Controller extends CI_Controller {
 		td($this->link('staff', $title == 'Mitarbeiter'), 'Mitarbeiter ('.$stf_count.')');
 		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
 		td($this->link('calllist', $title == 'Rufliste'), 'Rufliste');
-		if ($title != 'Login')
-			td($this->link('login?action=logout', false), 'Logout: '.$this->stf_fullname);
+		hidden('login_full_name', $this->stf_fullname);
+		if ($title != 'Login') {
+			$attr = $this->link('login?action=logout', false);
+			$attr['id'] = 'logout_menu_item';
+			$attr['onmouseover'] = 'mouseOverLogout(this);';
+			$attr['onmouseout'] = 'mouseOutLogout(this, $(\'#login_full_name\'));';
+			td($attr, $this->stf_fullname);
+		}
 		else
 			td();
 		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
 		_tr();
 		_table();
-		/*
-		href('participant', 'Kinder ('.$prt_count.')', $title == 'Kinder' ? array('selected') : array());
-		href('groups', 'Kleingruppen', $title == 'Kleingruppen' ? array('selected') : array());
-		href('staff', 'Mitarbeiter ('.$stf_count.')', $title == 'Mitarbeiter' ? array('selected') : array());
-		href('calllist', 'Rufliste', $title == 'Rufliste' ? array('selected') : array());
-		href(url('login', array('action'=>'logout')), 'Logout', array('style'=>'float:right'));
-		*/
 		_div();
+
 		div(array('class'=>'breadcrumb'));
 		if (!empty($this->error))
 			print_error($this->error);

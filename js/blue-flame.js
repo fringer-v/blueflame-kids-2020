@@ -1,53 +1,4 @@
 
-function setHeaderSizesOfScrollableTables()
-{
-    $('table.scrollable-table').each(function() {
-        var scrollable_table = $(this);
-
-		var head_cols = scrollable_table.find('thead tr:first').children();
-		var head_col_width = head_cols.map(function() {
-			return $(this).width();
-		}).get();
-
-		// Get the tbody columns width array
-		var body_cols = scrollable_table.find('tbody tr:first').children();
-		var body_col_width;
-
-		//console.log(scrollable_table.attr('class'), body_cols.length, head_cols.length);
-		if (body_cols && body_cols.length == head_cols.length) {
-			body_col_width = body_cols.map(function() {
-				return $(this).width();
-			}).get();
-		}
-		else
-			body_col_width = head_col_width;
-
-		// Set the width of columns
-		var tot_w = 0;
-		scrollable_table.find('thead tr').children().each(function(i, v) {
-			var w = Math.max(head_col_width[i], body_col_width[i]);
-			$(v).width(w);
-			tot_w += w;
-		});    
-
-		if (body_cols && body_cols.length == head_cols.length) {
-			scrollable_table.find('tbody tr').children().each(function(i, v) {
-				var w = Math.max(head_col_width[i], body_col_width[i]);
-				$(v).width(w);
-			});
-		}
-
-		last_w = scrollable_table.find('thead tr th:last').width();
-		var tw = scrollable_table.width();
-		//console.log(scrollable_table.attr('class'), tot_w, tw, last_w);
-		
-		//if (tw > tot_w)
-		//	scrollable_table.find('thead tr th:last').width(last_w + (tw - tot_w));
-		//scrollable_table.find('thead tr th:last').width('width', '100%');
-		//scrollable_table.find('tbody tr td:last').css('width', '100%');
-    });
-}
-
 function doLogin() {
 	var pwd = $('#stf_password').val();
 	if (pwd != '')
@@ -70,7 +21,7 @@ function loadPage(target, page, field1 = null, field2 = null, field3 = null) {
 		var obj = $("#"+field3);
 		params[obj.attr("id")] = obj.val();
 	}
-	$("#"+target).load(page, params, setHeaderSizesOfScrollableTables);
+	$("#"+target).load(page, params);
 }
 
 function showTab(which_tab) {
@@ -117,4 +68,16 @@ function getAge(value) {
 		}
 	}
 	return -1;
+}
+
+function mouseOverLogout(object) {
+	var $this = $(object);
+	var w = $this.css("width");
+	$this.css('min-width', w);
+	$this.html('Logout');
+}
+
+function mouseOutLogout(object, value) {
+	var $this = $(object);
+	$this.html(value.val());
 }
