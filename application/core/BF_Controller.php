@@ -87,6 +87,14 @@ class BF_Controller extends CI_Controller {
 		return false;
 	}
 
+	private function link($target, $selected)
+	{
+		$attr = array('class'=>'menu-item', 'onclick'=>'window.location=\''.$target.'\';');
+		if ($selected)
+			$attr['selected'] = null;
+		return $attr;
+	}
+
 	public function header($title) {
 		if ($title == 'Database update') {
 			$prt_count = '-';
@@ -109,6 +117,7 @@ class BF_Controller extends CI_Controller {
 		_tag('head');
 		tag('body'/*, array('onload'=>'setHeaderSizesOfScrollableTables();')*/);
 		
+		/*
 		div(array('class'=>'header'));
 		tag('img', array('src'=>base_url('/img/bf-kids-logo.png')));
 		if ($title == 'Kinder')
@@ -119,12 +128,40 @@ class BF_Controller extends CI_Controller {
 			span($title);
 		div(array('class'=>'header_name'), $this->stf_fullname);
 		_div();
+		*/
 		div(array('class'=>'topnav'));
-		href('participant', 'Kinder ('.$prt_count.')');
-		href('groups', 'Kleingruppen');
-		href('staff', 'Mitarbeiter ('.$stf_count.')');
-		href('calllist', 'Rufliste');
+		table();
+		tr(array('style'=>'height: 12px;'));
+		td(array('colspan'=>'8'));
+		td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'width: 100%; border-bottom: 1px solid black;'));
+		if ($title != 'Login')
+			tag('img', array('src'=>base_url('/img/bf-kids-logo2.png'), 'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;'));
+		_td();
+		td(array('colspan'=>'2'));
+		_tr();
+		tr(array('style'=>'border-bottom: 1px solid black; padding: 8px 16px;'));
+		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+		td($this->link('participant', $title == 'Kinder'), 'Kinder ('.$prt_count.')');
+		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+		td($this->link('groups', $title == 'Kleingruppen'), 'Kleingruppen');
+		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+		td($this->link('staff', $title == 'Mitarbeiter'), 'Mitarbeiter ('.$stf_count.')');
+		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+		td($this->link('calllist', $title == 'Rufliste'), 'Rufliste');
+		if ($title != 'Login')
+			td($this->link('login?action=logout', false), 'Logout: '.$this->stf_fullname);
+		else
+			td();
+		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+		_tr();
+		_table();
+		/*
+		href('participant', 'Kinder ('.$prt_count.')', $title == 'Kinder' ? array('selected') : array());
+		href('groups', 'Kleingruppen', $title == 'Kleingruppen' ? array('selected') : array());
+		href('staff', 'Mitarbeiter ('.$stf_count.')', $title == 'Mitarbeiter' ? array('selected') : array());
+		href('calllist', 'Rufliste', $title == 'Rufliste' ? array('selected') : array());
 		href(url('login', array('action'=>'logout')), 'Logout', array('style'=>'float:right'));
+		*/
 		_div();
 		div(array('class'=>'breadcrumb'));
 		if (!empty($this->error))

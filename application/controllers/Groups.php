@@ -81,11 +81,13 @@ class Groups extends BF_Controller {
 
 	private function get_group_row($grp_id) {
 		if (is_empty($grp_id))
-			return array('grp_id'=>'', 'grp_name'=>'', 'grp_loc_id'=>'', 'grp_notes'=>'',
-				'grp_from_age'=>'', 'grp_to_age'=>'');
+			return array('grp_id'=>'', 'grp_name'=>'', 'grp_leader_stf_id'=>'', 'grp_coleader_stf_id'=>'' ,
+				'grp_loc_id'=>'', 'grp_notes'=>'', 'grp_from_age'=>'', 'grp_to_age'=>'',
+				'stf_leader'=>'', 'stf_coleader'=>'', 'loc_name'=>'');
 
 		$query = $this->db->query('SELECT grp_id, grp_name, grp_leader_stf_id, grp_coleader_stf_id,
-				grp_loc_id, grp_notes, grp_from_age, grp_to_age, a.stf_fullname stf_leader, b.stf_fullname stf_coleader, loc_name
+				grp_loc_id, grp_notes, grp_from_age, grp_to_age,
+				a.stf_fullname stf_leader, b.stf_fullname stf_coleader, loc_name
 			FROM bf_groups
 			LEFT JOIN bf_locations ON loc_id = grp_loc_id
 			LEFT JOIN bf_staff a ON a.stf_id = grp_leader_stf_id

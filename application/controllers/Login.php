@@ -73,13 +73,20 @@ class Login extends BF_Controller {
 
 		$this->header('Login');
 
-		table(array('style'=>'border-collapse: collapse;'));
+		table(array('style'=>'border-collapse: collapse; width: 100%'));
 		tr();
-		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
+		td(array('align'=>'center'));
+		tag('img', array('src'=>base_url('/img/bf-kids-logo.png'), 'style'=>'width: 200px; height: auto'));
+		_td();
+		tr(td(array('height'=>'5'), ''));
+		_tr();
+		tr();
+		td(array('align'=>'center'));
 		$login_form->show();
 		_td();
 		_tr();
 		_table();
+		_div();
 
 		$this->footer(base_url('/js/js-md5.js'));
 	}
