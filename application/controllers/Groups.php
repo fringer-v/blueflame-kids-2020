@@ -226,7 +226,6 @@ class Groups extends BF_Controller {
 		_td();
 
 		td(array('align'=>'left', 'valign'=>'top'));
-			$update_group->open();
 			table(array('style'=>'border-collapse: collapse; margin-right: 5px; min-width: 640px;'));
 			tbody();
 			tr();
@@ -236,7 +235,6 @@ class Groups extends BF_Controller {
 			_tr();
 			_tbody();
 			_table();
-			$update_group->close();
 		_td();
 
 		_tr();
