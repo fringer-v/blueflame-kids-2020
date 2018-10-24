@@ -166,7 +166,7 @@ class Groups extends BF_Controller {
 			 		IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling,
 			 		prt_call_start_time
 				FROM bf_participants
-				WHERE prt_grp_id = ? AND prt_registered = 1 ORDER BY prt_id',
+				WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
 				array($grp_id_v), array('class'=>'details-table member-table'));
 			$member_table->setPagination('groups?mem_page=', 10, $mem_page->getValue());
 		}
@@ -205,7 +205,7 @@ class Groups extends BF_Controller {
 			grp_from_age, grp_to_age, COUNT(prt_id) grp_count,
 			"button_column" FROM bf_groups
 				LEFT JOIN bf_locations ON loc_id = grp_loc_id 
-				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered = 1
+				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered != '.REG_NO.'
 			GROUP BY grp_id', array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('groups?grp_page=', 16, $grp_page->getValue());
@@ -276,7 +276,7 @@ class Groups extends BF_Controller {
 				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
 				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name
 			FROM bf_participants
-			WHERE prt_grp_id = ? AND prt_registered = 1 ORDER BY prt_id',
+			WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
 			array($grp_id_v), array('class'=>'printable-table'));
 
 		out('<!DOCTYPE html>');

@@ -1,6 +1,11 @@
 <?php
 defined('BASEPATH') OR exit('No direct script access allowed');
 
+// prt_registered
+define('REG_NO', 0);
+define('REG_YES', 1);
+define('REG_BEING_FETCHED', 2);
+
 // hst_action
 define('CREATED', 0);
 define('REGISTER', 1);
@@ -12,6 +17,7 @@ define('CALLED', 6);
 define('ENDED', 7);
 define('GO_TO_WC', 8);
 define('BACK_FROM_WC', 9);
+define('BEING_FETCHED', 10);
 
 // hst_action && prt_call_status 
 define('CALL_NOCALL', 0);
@@ -54,7 +60,7 @@ class BF_Controller extends CI_Controller {
 		if (empty($prt_id))
 			$participant_row = array('prt_id'=>'', 'prt_number'=>'', 'prt_firstname'=>'', 'prt_lastname'=>'',
 				'prt_birthday'=>'',
-				'prt_registered'=>null, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
+				'prt_registered'=>REG_NO, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
 				'prt_supervision_cellphone'=>'', 'prt_notes'=>'', 'prt_grp_id'=>'',
 				'prt_call_status'=>'', 'prt_call_escalation'=>'', 'prt_call_start_time'=>'', 'prt_call_change_time'=>'',
 				'prt_wc_time'=>'', 'grp_name'=>'', 'loc_name'=>''
@@ -101,7 +107,7 @@ class BF_Controller extends CI_Controller {
 			$stf_count = '-';
 		}
 		else {
-			$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered = 1');
+			$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered != '.REG_NO);
 			$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
 		}
 

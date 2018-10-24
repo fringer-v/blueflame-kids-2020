@@ -67,6 +67,11 @@ textarea {
 	background-color: blue;	
 }
 
+.button-yellow {
+	background-color: #FFD479;	
+	color: black;
+}
+
 button:active, input[type=submit]:active {
 	background-color: #009DDE;
 }
@@ -345,6 +350,17 @@ table.scrollable-table tbody {
 	color: black;
 }
 
+.yellow-box {
+	display: inline-block;
+	background-color: #FFD479;
+	border: 1px solid orange;
+	height: 24px;
+	width: 120px;
+	line-height: 24px;
+	text-align: center;
+	color: black;
+}
+
 .red-box {
 	display: inline-block;
 	background-color: #FFB7BC;
@@ -388,6 +404,14 @@ table.scrollable-table tbody {
 
 .button-green.register {
 	background-color: green;	
+	width: 200px;
+	height: 40px;
+	font-size: 20px;
+}
+
+.button-yellow.register {
+	background-color: #FFD479;	
+	color: black;
 	width: 200px;
 	height: 40px;
 	font-size: 20px;

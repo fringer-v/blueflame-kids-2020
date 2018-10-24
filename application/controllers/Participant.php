@@ -49,13 +49,16 @@ class ParticipantTable extends Table {
 				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
 			}
 			case 'prt_registered':
-				if ($row[$field] == 1) {
+				if ($row[$field] == REG_YES) {
 					if (is_empty($row['prt_wc_time']))
 						return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
 					$out = div(array('class'=>'white-box', 'style'=>'width: 25px; height: 22px; font-size: 12px;'), 'WC');
 					$out->add(" ");
 					$out->add(div(array('class'=>'green-box', 'style'=>'width: 25px; height: 22px;'), 'Ja'));
 					return $out;
+				}
+				if ($row[$field] == REG_BEING_FETCHED) {
+					return div(array('class'=>'yellow-box', 'style'=>'width: 56px; height: 22px;'), 'Abg.');
 				}
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
@@ -104,6 +107,8 @@ class HistoryTable extends Table {
 						return 'Zum WC gegangen';
 					case BACK_FROM_WC:
 						return 'Von WC zurück';
+					case BEING_FETCHED:
+						return 'Wird Abgeholt';
 				}
 				return '';
 			case 'hst_timestamp':
@@ -189,7 +194,7 @@ class Participant extends BF_Controller {
 			'IF(g.grp_from_age IS NULL OR g.grp_from_age = 0, "", g.grp_from_age), "-",  '.
 			'IF(g.grp_to_age IS NULL OR g.grp_to_age = 0, "", g.grp_to_age), " (", COUNT(p.prt_id), ")") grp_name '.
 			'FROM bf_groups g '.
-			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered = 1 GROUP BY g.grp_id ORDER BY grp_name');
+			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered != '.REG_NO.' GROUP BY g.grp_id ORDER BY grp_name');
 		$groups = array(0 => '') + $groups;
 		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
 		$update_participant->addText($participant_row['loc_name']);
@@ -217,6 +222,8 @@ class Participant extends BF_Controller {
 
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', array('class'=>'button-white wc'));
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', array('class'=>'button-white wc strike-thru'));
+		$being_fetched = $update_participant->addSubmit('being_fetched', 'Wird Abgeholt', array('class'=>'button-yellow register'));
+		$cancel_fetch = $update_participant->addSubmit('cancel_fetch', 'Abholen Abbrechen', array('class'=>'button-yellow register'));
 		$unregister = $update_participant->addSubmit('unregister', 'Abmelden', array('class'=>'button-red register'));
 		$register = $update_participant->addSubmit('register', 'Anmelden', array('class'=>'button-green register'));
 
@@ -307,8 +314,33 @@ class Participant extends BF_Controller {
 		}
 
 		if (!is_empty($prt_id_v)) {
-			if ($unregister->submitted() || $register->submitted()) {
-				$registered = !$participant_row['prt_registered'];
+			$reg_toggled = $unregister->submitted() || $register->submitted();
+			$fetch_toggled = $being_fetched->submitted() || $cancel_fetch->submitted();
+			if ($reg_toggled || $fetch_toggled) {
+				if ($reg_toggled) {
+					if ($participant_row['prt_registered'] == REG_NO) {
+						$registered = REG_YES;
+						$action = REGISTER;
+						$comment = 'angemeldet';
+					}
+					else {
+						$registered = REG_NO;
+						$action = UNREGISTER;
+						$comment = 'abgemeldet';
+					}
+				}
+				else { // fetch_toggled
+					if ($participant_row['prt_registered'] == REG_BEING_FETCHED) {
+						$registered = REG_YES;
+						$action = REGISTER;
+						$comment = 'erneut angemeldet';
+					}
+					else {
+						$registered = REG_BEING_FETCHED;
+						$action = BEING_FETCHED;
+						$comment = 'wird abgeholt';
+					}
+				}
 
 				$sql = 'UPDATE bf_participants SET prt_registered = ?, prt_modifytime = NOW()';
 				if (!is_empty($participant_row['prt_call_status'])) {
@@ -332,10 +364,10 @@ class Participant extends BF_Controller {
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
 					'hst_stf_id'=>$this->session->stf_login_id,
-					'hst_action'=>($registered ? REGISTER : UNREGISTER),
+					'hst_action'=>$action,
 					'hst_notes'=>$register_comment->getValue()));
 
-				$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet'));
+				$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.$comment);
 				redirect("participant");
 			}
 
@@ -435,6 +467,8 @@ class Participant extends BF_Controller {
 			$save_participant->hide();
 			$go_to_wc->hide();
 			$back_from_wc->hide();
+			$being_fetched->hide();
+			$cancel_fetch->hide();
 			$unregister->hide();
 			$register->hide();
 			$cancel_super->hide();
@@ -448,7 +482,7 @@ class Participant extends BF_Controller {
 			$clear_participant->setValue('Weiteres Aufnehmen...');
 
 			$new_participant->hide();
-			if ($participant_row['prt_registered']) {
+			if ($participant_row['prt_registered'] == REG_YES) {
 				if (is_empty($participant_row['prt_wc_time'])) {
 					$reg_field = out("");
 					$back_from_wc->hide();
@@ -459,13 +493,23 @@ class Participant extends BF_Controller {
 					$go_to_wc->hide();
 				}
 				$reg_field->add(div(array('class'=>'green-box'), 'Angemeldet'));
+				$cancel_fetch->hide();
+				$register->hide();
+			}
+			else if ($participant_row['prt_registered'] == REG_BEING_FETCHED) {
+				$reg_field = div(array('class'=>'yellow-box'), 'Wird abgeholt');
+				$go_to_wc->hide();
+				$back_from_wc->hide();
+				$being_fetched->hide();
 				$register->hide();
 			}
 			else {
 				$reg_field = div(array('class'=>'red-box'), 'Abgemeldet');
-				$unregister->hide();
 				$go_to_wc->hide();
 				$back_from_wc->hide();
+				$being_fetched->hide();
+				$cancel_fetch->hide();
+				$unregister->hide();
 			}
 
 			$call_status = $participant_row['prt_call_status'];

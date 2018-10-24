@@ -4,7 +4,8 @@
 // 24 - Allow various fields in participant to be NULL
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
-define("DB_VERSION", 26);
+// 27 - Changed prt_registered field to status
+define("DB_VERSION", 27);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -97,7 +98,7 @@ class DB_model extends CI_Model {
 			'prt_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
 			'prt_birthday'=>array('type'=>'DATE', 'null'=>true),
-			'prt_registered'=>array('type'=>'BOOLEAN', 'default'=>true),
+			'prt_registered'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>false, 'default'=>'1'),
 			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
 			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
