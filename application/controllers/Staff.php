@@ -93,12 +93,7 @@ class Staff extends BF_Controller {
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]');
 		$stf_fullname->setRule('required|is_unique[bf_staff.stf_fullname.stf_id]');
-		if (is_empty($stf_id_v)) {
-			$stf_password->setRule('required');
-			$confirm_password->setRule('required|matches[stf_password]');
-		}
-		else
-			$confirm_password->setRule('matches[stf_password]');
+		$confirm_password->setRule('matches[stf_password]');
 
 		// Buttons:
 		if (is_empty($stf_id_v)) {
@@ -120,9 +115,15 @@ class Staff extends BF_Controller {
 		}
 
 		if ($save_staff->submitted()) {
+			$pwd = $stf_password->getValue();
+
 			$this->error = $update_staff->validate();
+			if (is_empty($this->error) &&
+				$stf_loginallowed->getValue() &&
+				is_empty($pwd))
+				$this->error = '"Passwort" muss vorhanden sein';
+
 			if (is_empty($this->error)) {
-				$pwd = $stf_password->getValue();
 				if (!is_empty($pwd))
 					$pwd = password_hash(strtolower(md5($pwd."129-3026-19-2089")), PASSWORD_DEFAULT);
 				$data = array(
@@ -132,7 +133,6 @@ class Staff extends BF_Controller {
 					'stf_technician' => $stf_technician->getValue()
 				);
 				if (is_empty($stf_id_v)) {
-					//$this->news_model->set_news();
 					$data['stf_password'] = $pwd;
 					$this->db->insert('bf_staff', $data);
 					$stf_id_v = $this->db->insert_id();
