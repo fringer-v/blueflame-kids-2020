@@ -24,7 +24,7 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 |
 */
 //$config['base_url'] = 'http://54.78.87.217/blueflame/';
-$config['base_url'] = 'http://localhost:8080/blue-flame-kids/';
+$config['base_url'] = 'http://localhost:8080/blueflame/';
 
 /*
 |--------------------------------------------------------------------------
