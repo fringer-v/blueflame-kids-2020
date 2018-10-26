@@ -209,7 +209,7 @@ class Groups extends BF_Controller {
 			GROUP BY grp_id', array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('groups?grp_page=', 16, $grp_page->getValue());
-		$table->setOrderBy('grp_name');
+		$table->setOrderBy('grp_from_age, grp_name');
 
 		$this->header('Kleingruppen');
 

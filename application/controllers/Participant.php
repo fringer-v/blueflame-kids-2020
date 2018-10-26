@@ -194,7 +194,7 @@ class Participant extends BF_Controller {
 			'IF(g.grp_from_age IS NULL OR g.grp_from_age = 0, "", g.grp_from_age), "-",  '.
 			'IF(g.grp_to_age IS NULL OR g.grp_to_age = 0, "", g.grp_to_age), " (", COUNT(p.prt_id), ")") grp_name '.
 			'FROM bf_groups g '.
-			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered != '.REG_NO.' GROUP BY g.grp_id ORDER BY grp_name');
+			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered != '.REG_NO.' GROUP BY g.grp_id ORDER BY grp_from_age, grp_name');
 		$groups = array(0 => '') + $groups;
 		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
 		$update_participant->addText($participant_row['loc_name']);
