@@ -201,9 +201,9 @@ class Participant extends BF_Controller {
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
-		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-black'));
-		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-black'));
-		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen...', array('class'=>'button-black'));
+		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-green'));
+		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-green'));
+		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen...', array('class'=>'button-blue'));
 		$clear_participant = $update_participant->addSubmit('clear_participant', '', array('class'=>'button-black'));
 
 		$update_participant->createGroup('tab_modify');
@@ -299,6 +299,7 @@ class Participant extends BF_Controller {
 
 					$prt_filter->setValue('');
 					$prt_page->setValue(1);
+					$prt_id->setValue($prt_id_v);
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
 				}
 				else {
