@@ -12,12 +12,11 @@ class Login extends BF_Controller {
 
 	public function index()
 	{
-		$now = (integer) time();
 		$login_form = new Form('user_login', url('login'), 1, array('class'=>'input-table'));
 		$stf_username = $login_form->addTextInput('stf_username', 'Username');
 		$stf_password = $login_form->addPassword('stf_password', 'Password');
 		$stf_md5_pwd = $login_form->addHidden('stf_md5_pwd', 'Password');
-		$login = $login_form->addSubmit('login', 'Login', array('class'=>'button-black', 'onclick'=>'doLogin();'));
+		$login = $login_form->addSubmit('login', 'Login', array('class'=>'button-black'/*, 'onclick'=>'doLogin();'*/));
 
 		$stf_username->setRule('required');
 		$stf_md5_pwd->setRule('required');
@@ -51,7 +50,9 @@ class Login extends BF_Controller {
 					$this->error = "Zugangsberechtigung verweigert: ".$stf_username->getValue();
 				}
 				else {
-					if (password_verify($stf_md5_pwd->getValue(), $staff_row['stf_password'])) {
+					$pwd = $stf_password->getValue();
+					$pwd = md5($pwd.'129-3026-19-2089');
+					if (password_verify($pwd, $staff_row['stf_password'])) {
 						$this->load->library('session');
 						$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
 						$this->session->set_userdata('stf_fullname', $staff_row['stf_fullname']);
