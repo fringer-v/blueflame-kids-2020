@@ -282,25 +282,33 @@ class Participant extends BF_Controller {
 					'prt_notes' => $prt_notes->getValue()
 				);
 				if (is_empty($prt_id_v)) {
-					$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
-					$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
+					$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_firstname = ? '.
+						'AND prt_lastname = ?',
+						array($prt_firstname->getValue(), $prt_lastname->getValue()));
+					if ($count == 0) {
+						$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
+						$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
 
-					$data['prt_number'] = $prt_number;
-					$data['prt_create_stf_id'] = $this->session->stf_login_id;
-					$this->db->set('prt_modifytime', 'NOW()', FALSE);
+						$data['prt_number'] = $prt_number;
+						$data['prt_create_stf_id'] = $this->session->stf_login_id;
+						$this->db->set('prt_modifytime', 'NOW()', FALSE);
 
-					$this->db->insert('bf_participants', $data);
-					$prt_id_v = $this->db->insert_id();
+						$this->db->insert('bf_participants', $data);
+						$prt_id_v = $this->db->insert_id();
 
-					$this->db->insert('bf_history', array(
-						'hst_prt_id'=>$prt_id_v,
-						'hst_stf_id'=>$this->session->stf_login_id,
-						'hst_action'=>CREATED));
+						$this->db->insert('bf_history', array(
+							'hst_prt_id'=>$prt_id_v,
+							'hst_stf_id'=>$this->session->stf_login_id,
+							'hst_action'=>CREATED));
 
-					$prt_filter->setValue('');
-					$prt_page->setValue(1);
-					$prt_id->setValue($prt_id_v);
-					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
+						$prt_filter->setValue('');
+						$prt_page->setValue(1);
+						$prt_id->setValue($prt_id_v);
+						$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
+						redirect("participant");
+					}
+					else
+						$this->error = $prt_firstname->getValue()." ".$prt_lastname->getValue().' ist bereits registriert';
 				}
 				else {
 					$data['prt_modify_stf_id'] = $this->session->stf_login_id;
@@ -309,8 +317,8 @@ class Participant extends BF_Controller {
 					$this->db->where('prt_id', $prt_id_v);
 					$this->db->update('bf_participants', $data);
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert');
+					redirect("participant");
 				}
-				redirect("participant");
 			}
 		}
 

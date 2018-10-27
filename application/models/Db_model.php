@@ -156,6 +156,7 @@ class DB_model extends CI_Model {
 		$this->add_location('Thronsaal');
 		$this->add_location('Raum A (alter Thronsaal)');
 		$this->add_location('Raum B (Catering Zelt)');
+		$this->add_location('Ranger');
 
 		$this->set_setting('database-version', DB_VERSION);
 
