@@ -172,6 +172,7 @@ class Participant extends BF_Controller {
 		
 		$participant_row = $this->get_participant_row($prt_id->getValue());
 
+		// Aufnehmen u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat('colspan=2');
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
@@ -196,8 +197,11 @@ class Participant extends BF_Controller {
 			'FROM bf_groups g '.
 			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered != '.REG_NO.' GROUP BY g.grp_id ORDER BY grp_from_age, grp_name');
 		$groups = array(0 => '') + $groups;
+		$group_locations = db_array_2('SELECT g.grp_id, l.loc_name FROM bf_groups g '.
+			'LEFT JOIN bf_locations l ON l.loc_id = g.grp_loc_id');
 		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
-		$update_participant->addText($participant_row['loc_name']);
+		$update_participant->addText(div(array('id' => 'grp_loc_name1'), b(nbsp().$participant_row['loc_name'])));
+
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
@@ -208,6 +212,7 @@ class Participant extends BF_Controller {
 
 		$update_participant->createGroup('tab_modify');
 
+		// An u. Abmeldung
 		$number2 = $update_participant->addField('Kinder-Nr');
 		$number2->setFormat('colspan=2');
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
@@ -215,8 +220,15 @@ class Participant extends BF_Controller {
 		$f2 = $update_participant->addTextInput('prt_lastname', 'Nachname', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
 		$f2->disable();
 		$f2->setFormat('nolabel');
+		$update_participant->addField('Geburtsdatum', $participant_row['prt_birthday']);
+		$curr_age = get_age($prt_birthday->getDate());
+		$update_participant->addText(b(nbsp().$curr_age." Jahre alt"));
 		$register_group = $update_participant->addSelect('register_group', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
-		$update_participant->addSpace();
+		
+		// $group_locations
+		$update_participant->addText(div(array('id' => 'grp_loc_name2'), b(nbsp().$participant_row['loc_name'])));
+		
+		//$update_participant->addSpace();
 		$register_comment = $update_participant->addTextArea('register_comment', 'Kommentar');
 		$register_comment->setFormat('colspan=2');
 
@@ -229,6 +241,7 @@ class Participant extends BF_Controller {
 
 		$update_participant->createGroup('tab_register');
 
+		// Eltern Ruf
 		$number3 = $update_participant->addField('Kinder-Nr');
 		$number3->setFormat('colspan=2');
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
@@ -643,9 +656,42 @@ class Participant extends BF_Controller {
 					$("#prt_age").html("&nbsp;-");
 				else
 					$("#prt_age").html("&nbsp;<b>"+age+" Jahre alt</b>");
-				console.log(value);
 			}
 			$("#prt_birthday").keyup(birthday_changed);
+		');
+
+		out('
+			function group_changed1() {
+				var value = $("#prt_grp_id").val();
+				var loc_name = "-";
+				switch (parseInt(value)) {
+				');
+		foreach ($group_locations as $grp_id => $loc_name) {
+			out('case '.$grp_id.': loc_name = "'.$loc_name.'"; break;
+			');
+		}
+		out('
+				}
+				$("#grp_loc_name1").html("&nbsp;<b>"+loc_name+"</b>");
+			}
+			$("#prt_grp_id").change(group_changed1);
+		');
+
+		out('
+			function group_changed2() {
+				var value = $("#register_group").val();
+				var loc_name = "-";
+				switch (parseInt(value)) {
+				');
+		foreach ($group_locations as $grp_id => $loc_name) {
+			out('case '.$grp_id.': loc_name = "'.$loc_name.'"; break;
+			');
+		}
+		out('
+				}
+				$("#grp_loc_name2").html("&nbsp;<b>"+loc_name+"</b>");
+			}
+			$("#register_group").change(group_changed2);
 		');
 		_script();
 
