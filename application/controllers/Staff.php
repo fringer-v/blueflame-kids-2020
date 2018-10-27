@@ -170,6 +170,7 @@ class Staff extends BF_Controller {
 			GROUP BY stf_id',
 			array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
+		$table->setPageQuery('SELECT stf_fullname FROM bf_staff');
 		$table->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$table->setOrderBy('stf_username');
 
