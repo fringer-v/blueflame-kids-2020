@@ -46,8 +46,10 @@ class MemberTable extends Table {
 				return 'Name';
 			case 'prt_supervision_name':
 				return 'Begleitperson';
-			case 'prt_call_status';
-				return 'Ruf';
+			//case 'prt_call_status';
+			//	return 'Ruf';
+			case 'prt_notes':
+				return 'Notizen';
 		}
 		return nix();
 	}
@@ -59,6 +61,7 @@ class MemberTable extends Table {
 			case 'prt_supervision_name':
 				$value = $row[$field];
 				return $value;
+			/*
 			case 'prt_call_status': {
 				$call_status = $row['prt_call_status'];
 				if (is_empty($call_status))
@@ -67,6 +70,10 @@ class MemberTable extends Table {
 					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
 				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
 			}
+			*/
+			case 'prt_notes':
+				$value = $row[$field];
+				return $value;
 		}
 		return nix();
 	}
@@ -164,7 +171,8 @@ class Groups extends BF_Controller {
 					CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name, prt_call_status,
 			 		prt_registered, prt_wc_time, "button_column",
 			 		IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling,
-			 		prt_call_start_time
+			 		prt_call_start_time,
+			 		prt_notes
 				FROM bf_participants
 				WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
 				array($grp_id_v), array('class'=>'details-table member-table'));
@@ -274,7 +282,8 @@ class Groups extends BF_Controller {
 
 		$member_table = new MemberTable('SELECT prt_id, prt_number, 
 				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
-				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name
+				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name,
+			 	prt_notes
 			FROM bf_participants
 			WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
 			array($grp_id_v), array('class'=>'printable-table'));
@@ -287,7 +296,7 @@ class Groups extends BF_Controller {
 		tag('title', '');
 		_tag('head');
 		tag('body', array('style'=>'background: white;'));
-		table(array('style' => 'width: 640px; padding: 5px;'));
+		table(array('style' => 'width: 720px; padding: 5px;'));
 		tr();
 		td();
 		$update_group->show();
