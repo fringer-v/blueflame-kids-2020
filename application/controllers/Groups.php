@@ -7,12 +7,12 @@ include_once(APPPATH.'helpers/output_helper.php');
 class GroupsTable extends Table {
 	public function columnTitle($field) {
 		switch ($field) {
-			case 'grp_name':
-				return 'Name';
-			case 'loc_name':
-				return 'Raum';
-			case 'grp_from_age':
+			case 'grp_age_level':
 				return 'Altersgruppe';
+			case 'stf_fullname':
+				return 'Leiter';
+			case 'workers_column':
+				return 'Mitarbeiter';
 			case 'grp_count':
 				return 'Teiln.';
 			case 'button_column':
@@ -209,15 +209,15 @@ class Groups extends BF_Controller {
 			}
 		}
 
-		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS grp_id, grp_name, loc_name,
-			grp_from_age, grp_to_age, COUNT(prt_id) grp_count,
-			"button_column" FROM bf_groups
-				LEFT JOIN bf_locations ON loc_id = grp_loc_id 
+		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS grp_id, grp_age_level,
+			grp_count, stf_fullname, COUNT(prt_id) grp_count,
+			"workers_column", "button_column" FROM bf_groups
+				LEFT JOIN bf_staff ON grp_leader_stf_id = stf_id 
 				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered != '.REG_NO.'
 			GROUP BY grp_id', array(),
 			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
 		$table->setPagination('groups?grp_page=', 16, $grp_page->getValue());
-		$table->setOrderBy('grp_from_age, grp_name');
+		$table->setOrderBy('grp_age_level, grp_count');
 
 		$this->header('Kleingruppen');
 

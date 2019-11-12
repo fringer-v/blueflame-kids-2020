@@ -41,6 +41,55 @@ define('TEXT_ESCALATED', 'Ruf Eskaliert');
 
 define('CALL_ENDED_DISPLAY_TIME', '00:00:30'); // Call cancel/end state shown for 30 seconds
 
+// Staff roles:
+define('ROLE_OTHER', 0);
+define('ROLE_GROUP_LEADER', 1);
+define('ROLE_OFFICIAL', 2);
+define('ROLE_TECHNICIAN', 3);
+
+// Extended roles
+define('EXT_ROLE_TEAM_LEADER', 100);
+define('EXT_ROLE_TEAM_COLEADER', 101);
+
+// Periods:
+define('PERIOD_FRIDAY', 0);
+define('PERIOD_SAT_MORNING', 1);
+define('PERIOD_SAT_AFTERNOON', 2);
+define('PERIOD_SAT_EVENING', 3);
+define('PERIOD_SUNDAY', 4);
+define('PERIOD_COUNT', 5);
+
+define('CURRENT_PERIOD', 0);
+
+$period_names = array (
+	PERIOD_FRIDAY => 'Freitag Abend',
+	PERIOD_SAT_MORNING => 'Samstag Morgen',
+	PERIOD_SAT_AFTERNOON => 'Samstag Nachmittag',
+	PERIOD_SAT_EVENING => 'Samstag Abend',
+	PERIOD_SUNDAY => 'Sontag Morgen');
+
+$all_roles = array(
+	ROLE_OTHER => '',
+	ROLE_GROUP_LEADER => 'Gruppenleiter',
+	ROLE_OFFICIAL => 'Ordner',	
+	ROLE_TECHNICIAN => 'Techniker'	
+);
+
+$extended_roles = $all_roles + array(
+	EXT_ROLE_TEAM_LEADER => 'Teamleiter',
+	EXT_ROLE_TEAM_COLEADER => 'Team Coleiter'	
+);
+
+// Age levels:
+define('AGE_LEVEL_0', 0);
+define('AGE_LEVEL_1', 1);
+define('AGE_LEVEL_2', 2);
+define('AGE_LEVEL_COUNT', 3);
+
+$age_level_from = array (AGE_LEVEL_0 => 4, AGE_LEVEL_1 => 6, AGE_LEVEL_2 => 9);
+$age_level_to = array (AGE_LEVEL_0 => 5, AGE_LEVEL_1 => 8, AGE_LEVEL_2 => 11);
+
+
 class BF_Controller extends CI_Controller {
 	public $stf_login_id = 0;
 	public $stf_fullname = '';
@@ -61,20 +110,18 @@ class BF_Controller extends CI_Controller {
 			$participant_row = array('prt_id'=>'', 'prt_number'=>'', 'prt_firstname'=>'', 'prt_lastname'=>'',
 				'prt_birthday'=>'',
 				'prt_registered'=>REG_NO, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
-				'prt_supervision_cellphone'=>'', 'prt_notes'=>'', 'prt_grp_id'=>'',
+				'prt_supervision_cellphone'=>'', 'prt_notes'=>'',
 				'prt_call_status'=>'', 'prt_call_escalation'=>'', 'prt_call_start_time'=>'', 'prt_call_change_time'=>'',
-				'prt_wc_time'=>'', 'grp_name'=>'', 'loc_name'=>''
+				'prt_wc_time'=>'', 'prt_age_level'=>'', 'prt_group_number'=>''
 			);
 		else {
 			$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
 				DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
 				prt_registered, prt_supervision_firstname, prt_supervision_lastname,
-				prt_supervision_cellphone, prt_notes, prt_grp_id,
+				prt_supervision_cellphone, prt_notes,
 				prt_call_status, prt_call_escalation, prt_call_start_time, prt_call_change_time,
-				prt_wc_time, grp_name, loc_name
+				prt_wc_time, prt_age_level, prt_group_number
 				FROM bf_participants
-					LEFT JOIN bf_groups ON grp_id = prt_grp_id
-					LEFT JOIN bf_locations ON loc_id = grp_loc_id
 				WHERE prt_id=?', array($prt_id));
 			$participant_row = $query->row_array();
 		}
@@ -101,7 +148,7 @@ class BF_Controller extends CI_Controller {
 		return $attr;
 	}
 
-	public function header($title) {
+	public function header($title, $print_result = true) {
 		if ($title == 'Database update') {
 			$prt_count = '-';
 			$stf_count = '-';
@@ -158,6 +205,12 @@ class BF_Controller extends CI_Controller {
 		_div();
 
 		div(array('class'=>'breadcrumb'));
+		if ($print_result)
+			$this->printResult();
+		_div();
+	}
+
+	public function printResult() {
 		if (!empty($this->error))
 			print_error($this->error);
 		if (!empty($this->warning))
@@ -167,9 +220,8 @@ class BF_Controller extends CI_Controller {
 			// Only display this feedback once:
 			$this->session->set_userdata('bf_success', '');
 		}
-		_div();
 	}
-	
+
 	public function footer($js_src = "") {
 
 		//div(array('class'=>'footer'));

@@ -5,7 +5,8 @@
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
 // 27 - Changed prt_registered field to status
-define("DB_VERSION", 27);
+// 37 - Changes for Blueflame 2020
+define("DB_VERSION", 37);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -86,11 +87,31 @@ class DB_model extends CI_Model {
 			'stf_fullname'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
 			'stf_privs'=>array('type'=>'INTEGER', 'unsigned'=>true, 'default'=>0),
 			'stf_password VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL',
+			'stf_role'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'default'=>0),
 			'stf_registered'=>array('type'=>'BOOLEAN', 'default'=>false),
 			'stf_loginallowed'=>array('type'=>'BOOLEAN', 'default'=>true),
-			'stf_technician'=>array('type'=>'BOOLEAN', 'default'=>false)
+			'stf_technician'=>array('type'=>'BOOLEAN', 'default'=>false),
+			'stf_reserved_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'stf_reserved_count'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'INDEX stf_reserved (stf_reserved_age_level, stf_reserved_count)'
 		);
 		$this->create_or_update_table('bf_staff', $fields);
+
+		$fields = array(
+			'per_staff_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>false),
+			'per_period'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>false),
+			'per_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'per_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'per_location_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'per_present'=>array('type'=>'BOOLEAN', 'default'=>false, 'null'=>false),
+			'per_is_leader'=>array('type'=>'BOOLEAN', 'default'=>false, 'null'=>false),
+			'per_my_leader_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'per_age_level_0'=>array('type'=>'BOOLEAN', 'default'=>false, 'null'=>false),
+			'per_age_level_1'=>array('type'=>'BOOLEAN', 'default'=>false, 'null'=>false),
+			'per_age_level_2'=>array('type'=>'BOOLEAN', 'default'=>false, 'null'=>false),
+			'PRIMARY KEY per_primary_key (per_staff_id, per_period)'
+		);
+		$this->create_or_update_table('bf_period', $fields);
 
 		$fields = array(
 			'prt_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
@@ -102,7 +123,8 @@ class DB_model extends CI_Model {
 			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
 			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
-			'prt_grp_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'prt_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'prt_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'prt_createtime TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
 			'prt_modifytime'=>array('type'=>'DATETIME', 'null'=>false),
 			'prt_create_stf_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
@@ -114,20 +136,15 @@ class DB_model extends CI_Model {
 			'prt_wc_time'=>array('type'=>'DATETIME', 'null'=>true), // Not null means WC!
 			'prt_notes'=>array('type'=>'TEXT'),
 			'UNIQUE INDEX prt_name_index (prt_firstname, prt_lastname)',
-			'INDEX prt_grp_id_index (prt_grp_id)',
+			'INDEX prt_group_index (prt_age_level, prt_group_number)',
 			'INDEX prt_call_status_index (prt_call_status, prt_call_change_time)'
 		);
 		$this->create_or_update_table('bf_participants', $fields);
 
 		$fields = array(
-			'grp_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
-			'grp_name'=>array('type'=>'VARCHAR', 'constraint'=>'100', 'unique'=>true),
-			'grp_leader_stf_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
-			'grp_coleader_stf_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
-			'grp_loc_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
-			'grp_from_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
-			'grp_to_age'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>true),
-			'grp_notes'=>array('type'=>'TEXT')
+			'grp_period'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>false),
+			'grp_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'grp_count'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true)
 		);
 		$this->create_or_update_table('bf_groups', $fields); // Kleingruppe
 

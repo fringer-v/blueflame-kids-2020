@@ -1,6 +1,16 @@
 /* --------------------------- */
 /* Global Definitions: */
 
+:root {
+    --g-0: red; 
+    --g-1: #009DDE; 
+    --g-2: #FAAB00; 
+
+    --g--0: #FFB2BA; 
+    --g--1: #A2C4DE; 
+    --g--2: #FFF0C0; 
+}
+
 body {
     font-family: Arial, Helvetica, sans-serif;
 	font-size: 16px;
@@ -295,6 +305,158 @@ table.scrollable-table tbody {
 	display: block;
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+/* --------------------------- */
+/* Custom Checkboxes: */
+
+/* Main Classes */
+.check-box:before {
+    position: relative;
+    display: block;
+    /* This adjustment centers the checkbox around the original box! */
+    left: -4px;
+    top: -4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    border: 1px solid #797979; /*steel*/
+    content: "";
+    background-color: white;
+}
+
+.check-box:not(:disabled):hover:before {
+	background-color: #EBEBEB; /* mercury*/
+}
+
+.check-box:checked:before {
+	background-color: white; /* #EBEBEB mercury*/
+}
+
+.check-box:checked:after {
+    position: relative;
+    display: block;
+    /* This adjustment centers check mark in the box above */
+    left: 3px;
+    top: -22px;
+
+    width: 5px;
+    height: 10px;
+    content: "";
+
+	border: solid black;
+	border-width: 0 3px 3px 0;
+	-webkit-transform: rotate(45deg);
+	-ms-transform: rotate(45deg);
+	transform: rotate(45deg);
+}
+
+.check-box:disabled:before {
+	border-color: silver;
+}
+
+.check-box:disabled:after {
+	border-color: silver;
+}
+
+.check-box.g-0:not(:disabled):before {
+	border-color: var(--g-0);
+}
+
+.check-box.g-0:checked:not(:disabled):after {
+	border-color: var(--g-0);
+}
+
+.check-box.g-1:not(:disabled):before {
+	border-color: var(--g-1);
+}
+
+.check-box.g-1:checked:not(:disabled):after {
+    content: "";
+	border-color: var(--g-1);
+}
+
+.check-box.g-2:not(:disabled):before {
+	border-color: var(--g-2);
+}
+
+.check-box.g-2:checked:not(:disabled):after {
+	border-color: var(--g-2);
+}
+
+/* --------------------------- */
+/* Groups: */
+
+.group {
+	display: inline-block;
+	border: 1px solid black;
+	width: 100px;
+	height: 28px;
+	padding: 4px 4px 0px 4px;
+	color: white;
+	font-size: 20px;
+}
+
+.group.g-0 {
+	background-color: var(--g-0);
+}
+
+.group.g-1 {
+	background-color: var(--g-1);
+}
+
+.group.g-2 {
+	background-color: var(--g-2);
+}
+
+.group-number {
+	display: inline-block;
+	width: 22px;
+	height: 22px;
+    border-radius: 11px;
+	text-align: center;
+	border: 1px solid black;
+	color: black;
+}
+
+.g-0 .group-number {
+	background-color: var(--g--0);
+}
+
+.g-1 .group-number {
+	background-color: var(--g--1);
+}
+
+.g-2 .group-number {
+	background-color: var(--g--2);
+}
+
+/* --------------------------- */
+/* Staff schedule: */
+
+.schedule-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.schedule-table th {
+	text-align: center;
+}
+
+.schedule-table td {
+	white-space: nowrap;
+	border-top: 1px solid #dddddd;
+	text-align: center;
+	padding: 4px;
+	min-width: 120px;
+}
+
+.schedule-table .row-header {
+	text-align: right;
+	white-space: nowrap;
+	width: 100px;
+	font-weight: bold;
+	padding: 4px 0px;
 }
 
 /* --------------------------- */

@@ -81,3 +81,55 @@ function mouseOutLogout(object, value) {
 	var $this = $(object);
 	$this.html(value.val());
 }
+
+function toggleStaffPage(period_count, current_period, role, group_leader)
+{
+	toggleRole(role, group_leader);
+	for (var i=0; i<5; i++)
+		toggleSchedule(i, false);
+}
+
+function toggleRole(role, group_leader)
+{
+	if (role == group_leader)
+		$('[id="group-row"]').show();
+	else
+		$('[id="group-row"]').hide();
+}
+
+function toggleSchedule(i, my_leader_changed)
+{
+	var present = $('#present_'+i).is(":checked");
+	var leader = $('#leader_'+i).is(":checked");
+	var obj;
+	if (present) {
+		if (my_leader_changed) {
+			if ($('#my_leader_'+i).val() == 0) {
+				$('#leader_'+i).removeAttr('checked');
+				$('#leader_'+i).removeAttr('disabled');
+			}
+			else
+				$('#leader_'+i).attr('disabled', '');
+		}
+		else {
+			$('#leader_'+i).removeAttr('disabled');
+			if (leader) {
+				$('#my_leader_'+i).val(0);
+				$('#my_leader_'+i).attr('disabled', '');
+			}
+			else
+				$('#my_leader_'+i).removeAttr('disabled');
+		}
+		$('#groups_0_'+i).removeAttr('disabled');
+		$('#groups_1_'+i).removeAttr('disabled');
+		$('#groups_2_'+i).removeAttr('disabled');
+	}
+	else {
+		$('#leader_'+i).attr('disabled', '');
+		$('#my_leader_'+i).attr('disabled', '');
+		$('#groups_0_'+i).attr('disabled', '');
+		$('#groups_1_'+i).attr('disabled', '');
+		$('#groups_2_'+i).attr('disabled', '');
+	}
+}
+

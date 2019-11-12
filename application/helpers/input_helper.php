@@ -52,6 +52,14 @@ class Form {
 		return $field;
 	}
 
+	function addRow($value = '') {
+		$field = new OutputField();
+		$field->setForm($this);
+		$this->fields['$'.count($this->fields)] = array('', $field);
+		$field->setValue($value);
+		return $field;
+	}
+
 	function addText($text) {
 		$field = $this->addSpace();
 		$field->setValue($text);
@@ -458,7 +466,11 @@ class InputField {
 
 	public function html() {
 	}
-	
+
+	public function __toString() {
+		return $this->html()->html();
+	}
+
 	public function setRule($rules) {
 		$this->rules = $rules;
 	}
