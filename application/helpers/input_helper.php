@@ -524,6 +524,11 @@ class InputField {
 						$error = $this->getLabel(true).' ist kein gültiges Datum';
 				}
 			}
+			else if (str_startswith($rule, 'maxlength')) {
+				$arg = str_left(str_right($rule, '['), ']');
+				if (strlen($value) > $arg)
+					$error = $this->getLabel(true)." darf nicht länger als $arg Zeichen sein";
+			}
 			if (!is_empty($error))
 				break;		
 		}

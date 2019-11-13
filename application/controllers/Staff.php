@@ -7,7 +7,7 @@ include_once(APPPATH.'helpers/output_helper.php');
 class StaffTable extends Table {
 	public function columnTitle($field) {
 		switch ($field) {
-			case 'stf_fullname':
+			case 'stf_username':
 				return 'Name';
 			case 'stf_role':
 				return 'Aufgabe';
@@ -23,34 +23,41 @@ class StaffTable extends Table {
 		global $all_roles;
 
 		switch ($field) {
-			case 'stf_fullname':
+			case 'stf_username':
 				return $row[$field];
 			case 'stf_role':
-				return $all_roles[$row['stf_role']];
-			/*
-			{
+				$val = '';
+				$present = '';
+				$roles = [];
 				switch ($row['stf_role']) {
 					case ROLE_GROUP_LEADER:
-						$val = span(['style'=>'font-size:24px'], '&#10122;');
-						break;
-					case ROLE_GROUP_COWORKER:
-						$val = span(['style'=>'font-size:22px'], '&#10113;');
+						if ($row['age_level_0'] > 0)
+							$val .= span(['class'=>'group g-0', 'style'=>'height: 16px; width: 16px;'], '').' ';
+						if ($row['age_level_1'] > 0)
+							$val .= span(['class'=>'group g-1', 'style'=>'height: 16px; width: 16px;'], '').' ';
+						if ($row['age_level_2'] > 0)
+							$val .= span(['class'=>'group g-2', 'style'=>'height: 16px; width: 16px;'], '').' ';
+						if ($row['is_leader'] > 0)
+							$roles[] = 'Teamleiter';
+						if (!empty($row['my_leaders']))
+							$roles[] = 'Team: '.$row['my_leaders'];
 						break;
 					default:
-						$val = out($all_roles[$row['stf_role']]);
+						if (!empty($all_roles[$row['stf_role']]))
+							$roles[] = $all_roles[$row['stf_role']];
 						break;
 				}
-				if ($row['stf_age_level_0'])
-					$val .= nbsp().div(['class'=>'group-0', 'style'=>'height: 16px; width: 16px;'], '');
-				if ($row['stf_age_level_1'])
-					$val .= nbsp().div(['class'=>'group-1', 'style'=>'height: 16px; width: 16px;'], '');
-				if ($row['stf_age_level_2'])
-					$val .= nbsp().div(['class'=>'group-2', 'style'=>'height: 16px; width: 16px;'], '');
-				if (!empty($row['my_leader']))
-					$val .= ' &rarr; '.$row['my_leader'];
+				if ($row['all_periods']) {
+					if (empty($row['is_present']))
+						$present = 'Anw: -';
+					else if ($row['is_present'] == PERIOD_COUNT)
+						$present = 'Anw: Ja';
+					else
+						$present = 'Anw: '.$row['is_present'];
+					$roles[] = $present;
+				}
+				$val .= implode(', ', $roles);
 				return $val;
-			}
-			*/
 			case 'stf_registered':
 				if ($row[$field] == 1)
 					return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
@@ -129,7 +136,7 @@ class Staff extends BF_Controller {
 			else
 				$stf_registered->setValue(div(array('class'=>'red-box'), 'Abgemeldet'));
 		}
-		$stf_username = $update_staff->addTextInput('stf_username', 'Kurzname', $staff_row['stf_username']);
+		$stf_username = $update_staff->addTextInput('stf_username', 'Kurzname', $staff_row['stf_username'], [ 'maxlength'=>'9', 'style'=>'width: 100px' ]);
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
 		$stf_password = $update_staff->addPassword('stf_password', 'Passwort');
 		$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
@@ -181,7 +188,12 @@ class Staff extends BF_Controller {
 			$leaders = [ 0=>'' ] + db_array_2('SELECT stf_id, stf_username FROM bf_staff, bf_period
 				WHERE per_staff_id = stf_id AND per_period = ? AND
 				per_present = TRUE AND per_is_leader = TRUE AND stf_id != ?', [ $p, $stf_id_v ]);
-			$my_leader[$p] = new Select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'), [ 'onchange'=>'toggleSchedule('.$p.', true)' ]);
+			if (sizeof($leaders) > 1) {
+				$my_leader[$p] = new Select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'),
+					[ 'onchange'=>'toggleSchedule('.$p.', true)' ]);
+			}
+			else
+				$my_leader[$p] = b('-');
 			$schedule->add(td($my_leader[$p]));
 		}
 		$schedule->add(_tr());
@@ -223,7 +235,7 @@ class Staff extends BF_Controller {
 			'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
 
 		// Rules
-		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]');
+		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]|maxlength[9]');
 		$stf_fullname->setRule('required|is_unique[bf_staff.stf_fullname.stf_id]');
 		$confirm_password->setRule('matches[stf_password]');
 
@@ -283,7 +295,7 @@ class Staff extends BF_Controller {
 							'per_period' => $p,
 							'per_present' => $present[$p]->getValue(),
 							'per_is_leader' => $leader[$p]->getValue(),
-							'per_my_leader_id' => $my_leader[$p]->getValue(),
+							'per_my_leader_id' => (!$present[$p]->getValue() || $leader[$p]->getValue()) ? 0 : $my_leader[$p]->getValue(),
 							'per_age_level_0' => $groups[0][$p]->getValue(),
 							'per_age_level_1' => $groups[1][$p]->getValue(),
 							'per_age_level_2' => $groups[2][$p]->getValue(),
@@ -308,30 +320,48 @@ class Staff extends BF_Controller {
 		$stf_page->makeGlobal();
 		$stf_page_v = $stf_page->getValue();
 
+		$having = '';
 		if ($std_select_period->getValue() == -1) {
 			// No period
-			$sql = 'SELECT SQL_CALC_FOUND_ROWS s1.stf_id, s1.stf_username, s1.stf_fullname,
-				s1.stf_role, s1.stf_registered, "button_column"
-				per_present, per_is_leader, s2.stf_fullname my_leader_name,
-				per_age_level_0,  per_age_level_1, per_age_level_2
-				FROM bf_staff s1
-				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id AND per_period = ?
-				LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id
-				GROUP BY stf_id';
+			$sql = 'SELECT SQL_CALC_FOUND_ROWS TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+				s1.stf_role, s1.stf_registered, "button_column",
+				SUM(per_present) is_present, SUM(per_is_leader) is_leader,
+				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
+				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
+			$where = '';
 		}
 		else {
-			$sql = 'SELECT SQL_CALC_FOUND_ROWS s1.stf_id, s1.stf_username, s1.stf_fullname,
+			$sql = 'SELECT SQL_CALC_FOUND_ROWS FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
 				s1.stf_role, s1.stf_registered, "button_column",
-				COUNT(per_present) per_present, COUNT(per_is_leader) per_is_leader,
-				GROUP_CONCAT(DISTINCT s2.stf_username SEPARATOR ", ") my_leader_name,
-				COUNT(per_age_level_0) per_age_level_0, COUNT(per_age_level_1) per_age_level_1, COUNT(per_age_level_1) per_age_level_2
-				FROM bf_staff s1
-				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id
-				LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id
-				GROUP BY stf_id';
+				per_present is_present, per_is_leader is_leader,
+				s2.stf_fullname my_leaders,
+				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
+			$where = 'per_period = '.$std_select_period->getValue().' AND per_present = TRUE ';
 		}
-		$staff_list = new StaffTable($sql, [ $std_select_period->getValue() ],
-			[ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
+		$sql .= 'FROM bf_staff s1
+				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id
+				LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
+		switch ($stf_select_role->getValue()) {
+			case ROLE_OTHER:
+				break;
+			case ROLE_GROUP_LEADER:
+			case ROLE_OFFICIAL:
+			case ROLE_TECHNICIAN:
+				$where .= 's1.stf_role = '.$stf_select_role->getValue().' ';
+				break;
+			case EXT_ROLE_TEAM_LEADER:
+				$having = 'is_leader > 0 ';
+				break;
+			case EXT_ROLE_TEAM_COLEADER:
+				$having = 'my_leaders IS NOT NULL ';
+				break;
+		}
+		if (!empty($where))
+			$sql .= 'WHERE '.$where;
+		$sql .= 'GROUP BY stf_id';
+		if (!empty($having))
+			$sql .= ' HAVING '.$having;
+		$staff_list = new StaffTable($sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
 		$staff_list->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$staff_list->setOrderBy('stf_username');
 
