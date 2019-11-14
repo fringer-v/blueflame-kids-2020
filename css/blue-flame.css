@@ -390,11 +390,11 @@ table.scrollable-table tbody {
 .group {
 	display: inline-block;
 	border: 1px solid black;
-	width: 100px;
-	height: 28px;
+	/*width: 100px;*/
+	/*height: 28px;*/
 	padding: 4px 4px 0px 4px;
 	color: white;
-	font-size: 20px;
+	/*font-size: 20px;*/
 }
 
 .group.g-0 {
@@ -417,6 +417,7 @@ table.scrollable-table tbody {
 	text-align: center;
 	border: 1px solid black;
 	color: black;
+	font-size: 20px;
 }
 
 .g-0 .group-number {
@@ -429,6 +430,38 @@ table.scrollable-table tbody {
 
 .g-2 .group-number {
 	background-color: var(--g--2);
+}
+
+.group-add {
+	display: inline-block;
+	border: 1px solid black;
+	width: 100px;
+	height: 28px;
+	padding: 4px 4px 0px 4px;
+	background-color: darkgrey;
+	color: black;
+	font-size: 20px;
+	text-align: center;
+}
+
+.g--0 {
+	background-color: var(--g--0);
+}
+
+.g--1 {
+	background-color: var(--g--1);
+}
+
+.g--2 {
+	background-color: var(--g--2);
+}
+
+/* --------------------------- */
+/* Group listings: */
+
+.group-header {
+	border-bottom: 1px solid #dddddd;
+	padding: 4px 0px;
 }
 
 /* --------------------------- */

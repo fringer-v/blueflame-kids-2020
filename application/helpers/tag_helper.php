@@ -173,10 +173,6 @@ function _td() {
 	return _tag('td');
 }
 
-function hidden($name, $value) {
-	return (new Hidden($name, $value))->html();
-}
-
 function url($page, $args = array()) {
 	$url = out('[]', $page);
 	if (!empty($args)) {

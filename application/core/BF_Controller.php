@@ -77,7 +77,7 @@ $all_roles = array(
 
 $extended_roles = $all_roles + array(
 	EXT_ROLE_TEAM_LEADER => 'Teamleiter',
-	EXT_ROLE_TEAM_COLEADER => 'Team Coleiter'	
+	EXT_ROLE_TEAM_COLEADER => 'Teammitglieder'	
 );
 
 // Age levels:

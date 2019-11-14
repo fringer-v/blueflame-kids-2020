@@ -66,6 +66,12 @@ function arr_remove_empty($array) {
 	return array_filter($array, "is_not_empty");
 }
 
+function arr_nvl($array, $index, $default = null) {
+	if (isset($array[$index]))
+		return $array[$index];
+	return $default;
+}
+
 function get_age($dob) {
 	if (empty($dob))
 		return null;

@@ -106,159 +106,164 @@ class Groups extends BF_Controller {
 
 	public function index()
 	{
+		global $period_names;
+
 		$this->authorize();
-
-		$display_group = new Form('display_group', 'groups', 1, array('class'=>'input-table'));
-		$set_grp_id = $display_group->addHidden('set_grp_id');
-		$grp_page = new Hidden('grp_page', 1);
-		$grp_page->makeGlobal();
-
-		$update_group = new Form('update_group', 'groups', 2, array('class'=>'input-table'));
-		$grp_id = $update_group->addHidden('grp_id');
-		$grp_id->makeGlobal();
-		$mem_page = new Hidden('mem_page', 1);
-		$mem_page->makeGlobal();
-
-		if ($set_grp_id->submitted()) {
-			$grp_id->setValue($set_grp_id->getValue());
-			$mem_page->setValue(1);
-			redirect('groups');
-		}
-
-		$grp_id_v = $grp_id->getValue();
-		$group_row = $this->get_group_row($grp_id_v);
-
-		$grp_name = $update_group->addTextInput('grp_name', 'Name', $group_row['grp_name']);
-		$grp_name->setRule('required|is_unique[bf_groups.grp_name.grp_id]');
-		$print_link = $update_group->addSpace();
-		if (!is_empty($grp_id_v))
-			$print_link->setValue(div(array('style'=>'float: right;'), href('groups/printable',
-				tag('img', array('src'=>base_url('/img/print-50.png'), 'style'=>'width: 28px; height: 28px;')))));
-
-		$staff = db_array_2('SELECT stf_id, stf_fullname FROM bf_staff ORDER BY stf_fullname');
-		$staff = array(0 => '') + $staff;
-		$grp_leader_stf_id = $update_group->addSelect('grp_leader_stf_id', 'Leiter', $staff, $group_row['grp_leader_stf_id']);
-		$update_group->addSpace();
-		$grp_coleader_stf_id = $update_group->addSelect('grp_coleader_stf_id', 'Co-Leiter', $staff, $group_row['grp_coleader_stf_id']);
-		$update_group->addSpace();
-
-		$locations = db_array_2('SELECT loc_id, loc_name FROM bf_locations ORDER BY loc_name');
-		$grp_loc_id = $update_group->addSelect('grp_loc_id', 'Raum', $locations, $group_row['grp_loc_id']);
-		$update_group->addSpace();
-		$age_range_field = $update_group->addField('Altersgruppe');
-		$grp_from_age = new TextInput('grp_from_age', if_empty($group_row['grp_from_age'], ''), array('style'=>'width: 20px;'));
-		$grp_to_age = new TextInput('grp_to_age', if_empty($group_row['grp_to_age'], ''), array('style'=>'width: 20px;'));
-		if (!is_empty($this->session->stf_technician)) {
-			$update_group->disable();
-			$grp_from_age->disable();
-			$grp_to_age->disable();
-		}
-		$age_range_field->setValue($grp_from_age->html()->add(' - ')->add($grp_to_age->html()));
-		$update_group->addSpace();
-		$grp_notes = $update_group->addTextArea('grp_notes', 'Notizen', $group_row['grp_notes']);
-		$grp_notes->setFormat('colspan=2');
-
-		if (is_empty($grp_id_v)) {
-			$save_group = $update_group->addSubmit('submit', 'Kleingruppe Hinzufügen', array('class'=>'button-black'));
-			$clear_group = $update_group->addSubmit('clear', 'Clear', array('class'=>'button-black'));
-		}
-		else {
-			$save_group = $update_group->addSubmit('submit', 'Änderung Sichern', array('class'=>'button-black'));
-			$clear_group = $update_group->addSubmit('clear', 'Weiteres Aufnehmen...', array('class'=>'button-black'));
-
-			$member_table = new MemberTable('SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, 
-					CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
-					CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name, prt_call_status,
-			 		prt_registered, prt_wc_time, "button_column",
-			 		IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling,
-			 		prt_call_start_time,
-			 		prt_notes
-				FROM bf_participants
-				WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
-				array($grp_id_v), array('class'=>'details-table member-table'));
-			$member_table->setPagination('groups?mem_page=', 10, $mem_page->getValue());
-		}
-
-		if ($clear_group->submitted()) {
-			$grp_id->setValue(0);
-			redirect('groups');
-		}
-
-		if ($save_group->submitted()) {
-			$this->error = $update_group->validate();
-			if (is_empty($this->error)) {
-				$data = array(
-					'grp_name' => $grp_name->getValue(),
-					'grp_leader_stf_id' => $grp_leader_stf_id->getValue(),
-					'grp_coleader_stf_id' => $grp_coleader_stf_id->getValue(),
-					'grp_loc_id' => $grp_loc_id->getValue(),
-					'grp_from_age' => $grp_from_age->getValue(),
-					'grp_to_age' => $grp_to_age->getValue(),
-					'grp_notes' => $grp_notes->getValue()
-				);
-				if (is_empty($grp_id_v)) {
-					$this->db->insert('bf_groups', $data);
-					$this->setSuccess($grp_name->getValue().' hinzugefügt');
-				}
-				else {
-					$this->db->where('grp_id', $grp_id_v);
-					$this->db->update('bf_groups', $data);
-					$this->setSuccess($grp_name->getValue().' geändert');
-				}
-				redirect("groups");
-			}
-		}
-
-		$table = new GroupsTable('SELECT SQL_CALC_FOUND_ROWS grp_id, grp_age_level,
-			grp_count, stf_fullname, COUNT(prt_id) grp_count,
-			"workers_column", "button_column" FROM bf_groups
-				LEFT JOIN bf_staff ON grp_leader_stf_id = stf_id 
-				LEFT JOIN bf_participants ON prt_grp_id = grp_id AND prt_registered != '.REG_NO.'
-			GROUP BY grp_id', array(),
-			array('class'=>'details-table no-wrap-table', 'style'=>'width: 600px;'));
-		$table->setPagination('groups?grp_page=', 16, $grp_page->getValue());
-		$table->setOrderBy('grp_age_level, grp_count');
 
 		$this->header('Kleingruppen');
 
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
-
-		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
-			$display_group->open();
-			table(array('style'=>'border-collapse: collapse;'));
-			tr(td($table->paginationHtml()));
-			tr(td($table->html()));
-			_table();
-			$display_group->close();
-		_td();
-
-		td(array('align'=>'left', 'valign'=>'top'));
-			table(array('style'=>'border-collapse: collapse; margin-right: 5px; min-width: 640px;'));
-			tbody();
-			tr();
-			td(array('style'=>'border: 1px solid black; padding: 10px 5px;'));
-			$update_group->show();
-			_td();
-			_tr();
-			_tbody();
+		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
+			table();
+			for ($p=0; $p<PERIOD_COUNT; $p++) {
+				if ($p > 0)
+					tr(td([ 'style'=>'height: 10px' ]));
+				tr();
+				td([ 'class'=>'group-header' ], b($period_names[$p]));
+				_tr();
+				tr();
+				$async_loader = new AsyncLoader('group_list_'.$p, 'groups/getgrouplist?period='.$p,
+					[ 'age_level', 'args', 'action' ] );
+				td($async_loader->html());
+				_tr();
+			}
 			_table();
 		_td();
-
 		_tr();
-
-		if (isset($member_table)) {
-			tr(td(array('align'=>'left', 'valign'=>'top'), $member_table->paginationHtml()));
-			tr(td(array('align'=>'left', 'valign'=>'top'), $member_table->html()));
-		}
-		else {
-			tr(td(nbsp()));
-			tr(td(nbsp()));
-		}
-
 		_table();
 
 		$this->footer();
+	}
+
+	public function getGroupList()
+	{
+		global $age_level_from;
+		global $age_level_to;
+		global $all_roles;
+		global $extended_roles;
+
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
+		}
+
+		$period = hidden('period');
+		$p = $period->getValue();
+		if ($p < 0)
+			$p = 0;
+		if ($p >= PERIOD_COUNT)
+			$p = PERIOD_COUNT-1;
+
+		$display_groups = new Form('display_groups_'.$p, 'groups');
+
+		$age_level = $display_groups->addHidden('age_level');
+		$age = $age_level->getValue();
+		if ($age < 0)
+			$age = 0;
+		if ($age >= AGE_LEVEL_COUNT)
+			$age = AGE_LEVEL_COUNT-1;
+	
+		$arguments = $display_groups->addHidden('args');
+		$args = $arguments->getValue();
+		$action = $display_groups->addHidden('action');
+		$act = $action->getValue();
+
+		$group_counts = db_array_2('SELECT grp_age_level, grp_count
+			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $p ]);
+
+		if ($action->submitted()) {
+			switch ($act) {
+				case "add-group":
+					$group_counts[$age] = arr_nvl($group_counts, $age, 0) + 1;
+					$data = array(
+						'grp_period' => $p,
+						'grp_age_level' => $age,
+						'grp_count' => $group_counts[$age]
+					);
+					$this->db->replace('bf_groups', $data);
+					break;
+				case "remove-group":
+					if (arr_nvl($group_counts, $age, 0) > 0) {
+						$group_counts[$age] = arr_nvl($group_counts, $age, 0) - 1;
+						$data = array(
+							'grp_period' => $p,
+							'grp_age_level' => $age,
+							'grp_count' => $group_counts[$age]
+						);
+						$this->db->replace('bf_groups', $data);
+					}
+					break;
+				case "set-leader":
+					$group_number = str_left($args, '_');
+					$staff_id = str_right($args, '_');
+					// Remove the current leader of the group:
+					$this->db->query('UPDATE bf_period SET per_age_level = 0, per_group_number = 0
+						WHERE per_period = ? AND per_age_level = ? AND per_group_number = ?',
+						[ $p, $age, $group_number ]);
+					// Set the new leader
+					$this->db->query('UPDATE bf_period SET per_age_level = ?, per_group_number = ?
+						WHERE per_period = ? AND per_staff_id = ?',
+						[ $age, $group_number, $p, $staff_id ]);
+					break;					
+			}
+		}
+
+		$group_leaders = db_array_2('SELECT CONCAT(per_age_level, "_", per_group_number), per_staff_id
+			FROM bf_period WHERE per_period = ? AND per_is_leader = TRUE', [ $p ]);
+
+		$group_helpers = db_array_2('SELECT CONCAT(p1.per_age_level, "_", p1.per_group_number),
+			GROUP_CONCAT(DISTINCT stf_username ORDER BY stf_username SEPARATOR ", ")
+			FROM bf_period p1 JOIN bf_period p2 ON
+					p2.per_my_leader_id = p1.per_staff_id AND p2.per_period = ? AND p1.per_age_level = p2.per_age_level
+				JOIN bf_staff ON p2.per_staff_id = stf_id
+			WHERE p1.per_period = ? AND p1.per_is_leader = TRUE
+			GROUP BY p1.per_age_level, p1.per_group_number', [ $p, $p ]);
+bugs("-->", $group_leaders);
+bugs("-->", $group_helpers);
+
+		$display_groups->open();
+		table();
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			tr();
+			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
+			$count = arr_nvl($group_counts, $a, 0);
+			for ($i=1; $i<=$count; $i++) {
+				td();
+				table(['class'=>'group g-'.$a]);
+				tr();
+				td(span(['class'=>'group-number'], $i));
+				$leaders = [ 0=>'' ] + db_array_2("SELECT stf_id, stf_username FROM bf_staff, bf_period
+					WHERE stf_id = per_staff_id AND per_is_leader = TRUE AND
+						per_period = $p AND per_age_level_$a = TRUE
+						ORDER BY stf_username");
+				td(select('select_leader', $leaders, arr_nvl($group_leaders, $a.'_'.$i, 0),
+					[ 'onchange'=>'$("#age_level").val('.$a.');
+						$("#args").val("'.$i.'_" + $(this).val());
+						$("#action").val("set-leader");
+						group_list_'.$p.'();' ]));
+				_tr();
+				tr();
+				td();
+				td('.AAA');
+				_td();
+				_tr();
+				_table();
+				_td();
+			}
+			td();
+			if ($count > 0) {
+				span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 39px;',
+					'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-');
+				span(['style'=>'display: inline-block; width: 11px;'], '');
+			}
+			span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 39px;',
+				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+');
+			_td();
+			_tr();
+		}
+		_table();
+		$display_groups->close();
 	}
 
 	public function printable() {

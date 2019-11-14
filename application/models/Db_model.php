@@ -5,8 +5,8 @@
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
 // 27 - Changed prt_registered field to status
-// 37 - Changes for Blueflame 2020
-define("DB_VERSION", 37);
+// 38 - Changes for Blueflame 2020
+define("DB_VERSION", 28);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -144,7 +144,8 @@ class DB_model extends CI_Model {
 		$fields = array(
 			'grp_period'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>false),
 			'grp_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
-			'grp_count'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true)
+			'grp_count'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'PRIMARY KEY grp_primary_key (grp_period, grp_age_level)'
 		);
 		$this->create_or_update_table('bf_groups', $fields); // Kleingruppe
 

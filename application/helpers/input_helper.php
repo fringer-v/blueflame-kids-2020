@@ -31,7 +31,7 @@ class Form {
 	}
 
 	function addHidden($name, $default_value = '') {
-		$field = new Hidden($name, $default_value);
+		$field = hidden($name, $default_value);
 		$field->setForm($this);
 		$this->hiddens[$name] = $field;
 		return $field;
@@ -639,3 +639,17 @@ class Checkbox extends InputField {
 	}
 }
 
+function submit($name, $label, $attributes = [])
+{
+	return new Submit($name, $label, $attributes);
+}
+
+function select($name, $values, $default_value = '', $attributes = [])
+{
+	return new Select($name, $values, $default_value, $attributes);
+}
+
+function hidden($name, $default_value = '')
+{
+	return new Hidden($name, $default_value);
+}

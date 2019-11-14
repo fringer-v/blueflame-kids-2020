@@ -32,28 +32,28 @@ class StaffTable extends Table {
 				switch ($row['stf_role']) {
 					case ROLE_GROUP_LEADER:
 						if ($row['age_level_0'] > 0)
-							$val .= span(['class'=>'group g-0', 'style'=>'height: 16px; width: 16px;'], '').' ';
+							$val .= span(['class'=>'group g-0', 'style'=>'height: 16px; width: 12px;'], '').' ';
 						if ($row['age_level_1'] > 0)
-							$val .= span(['class'=>'group g-1', 'style'=>'height: 16px; width: 16px;'], '').' ';
+							$val .= span(['class'=>'group g-1', 'style'=>'height: 16px; width: 12px;'], '').' ';
 						if ($row['age_level_2'] > 0)
-							$val .= span(['class'=>'group g-2', 'style'=>'height: 16px; width: 16px;'], '').' ';
+							$val .= span(['class'=>'group g-2', 'style'=>'height: 16px; width: 12px;'], '').' ';
 						if ($row['is_leader'] > 0)
-							$roles[] = 'Teamleiter';
+							$roles[] = b('Teamleiter');
 						if (!empty($row['my_leaders']))
-							$roles[] = 'Team: '.$row['my_leaders'];
+							$roles[] = 'Team: '.b($row['my_leaders']);
 						break;
 					default:
 						if (!empty($all_roles[$row['stf_role']]))
-							$roles[] = $all_roles[$row['stf_role']];
+							$roles[] = b($all_roles[$row['stf_role']]);
 						break;
 				}
 				if ($row['all_periods']) {
 					if (empty($row['is_present']))
-						$present = 'Anw: -';
+						$present = 'Anw: '.b('-');
 					else if ($row['is_present'] == PERIOD_COUNT)
-						$present = 'Anw: Ja';
+						$present = 'Anw: '.b('Ja');
 					else
-						$present = 'Anw: '.$row['is_present'];
+						$present = 'Anw: '.b($row['is_present']);
 					$roles[] = $present;
 				}
 				$val .= implode(', ', $roles);
@@ -63,7 +63,7 @@ class StaffTable extends Table {
 					return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
-				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].');')))->html();
+				return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].');'))->html();
 		}
 		return nix();
 	}
@@ -81,9 +81,15 @@ class Staff extends BF_Controller {
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
 				'stf_role'=>ROLE_OTHER, 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>0);
 
-		$query = $this->db->query('SELECT stf_id, stf_username, stf_fullname, stf_password,
-			stf_role, stf_registered, stf_loginallowed, stf_technician
-			FROM bf_staff WHERE stf_id=?', array($stf_id));
+		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
+			s1.stf_role, s1.stf_registered, s1.stf_loginallowed, s1.stf_technician,
+			GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_team
+			FROM bf_staff s1
+			LEFT OUTER JOIN bf_period ON s1.stf_id = per_my_leader_id
+			LEFT OUTER JOIN bf_staff s2 ON s2.stf_id = per_staff_id
+			WHERE s1.stf_id=?
+			GROUP BY s1.stf_id',
+			array($stf_id));
 		return $query->row_array();
 	}
 
@@ -143,6 +149,9 @@ class Staff extends BF_Controller {
 
 		$stf_role = $update_staff->addSelect('stf_role', 'Aufgabe', $all_roles, $staff_row['stf_role'],
 				[ 'onchange'=>'toggleRole($(this).val(), '.ROLE_GROUP_LEADER.')' ]);
+
+		if (!empty($staff_row['my_team']))
+			$update_staff->addField('Teammitglieder', $staff_row['my_team']);
 
 		$periods = db_dim_2_array('SELECT per_period, per_age_level, per_group_number, per_location_id,
 			per_present, per_is_leader, per_my_leader_id, per_age_level_0, per_age_level_1, per_age_level_2
@@ -217,11 +226,11 @@ class Staff extends BF_Controller {
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$age_level = $this->period_val($periods, $p, 'per_age_level');
 			$group_nr = $this->period_val($periods, $p, 'per_group_number');
-			if (empty($age_level))
+			if (empty($group_nr))
 				$group_box = '';
 			else {
 				$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
-				$group_box = span(['class'=>'group g-'.$group_nr], span(['class'=>'group-number'], $group_nr), " ".$ages);
+				$group_box = span(['class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ], span(['class'=>'group-number'], $group_nr), " ".$ages);
 			}
 			$schedule->add(td($group_box));
 		}

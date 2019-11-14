@@ -583,7 +583,7 @@ class Participant extends BF_Controller {
 		$number2->setValue($status_line);
 		$number3->setValue($status_line);
 
-		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), array('prt_filter'));
+		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
 
 		$prt_tab = new Hidden('prt_tab', 'modify');
 		$prt_tab->makeGlobal();
