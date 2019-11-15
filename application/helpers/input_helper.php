@@ -57,6 +57,7 @@ class Form {
 		$field->setForm($this);
 		$this->fields['$'.count($this->fields)] = array('', $field);
 		$field->setValue($value);
+		$field->setFormat('colspan=*');
 		return $field;
 	}
 
@@ -250,7 +251,9 @@ class Form {
 							$haslabel = false;
 						else if (str_startswith($format, 'colspan=')) {
 							$colspan = (integer) str_right($format, 'colspan=');
-							if ($colspan <= 0)
+							if ($colspan == '*')
+								$colspan = $this->columns;
+							else if ($colspan <= 0)
 								$colspan = 1;
 						}
 					}

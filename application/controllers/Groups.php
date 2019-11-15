@@ -210,17 +210,20 @@ class Groups extends BF_Controller {
 		}
 
 		$group_leaders = db_array_2('SELECT CONCAT(per_age_level, "_", per_group_number), per_staff_id
-			FROM bf_period WHERE per_period = ? AND per_is_leader = TRUE', [ $p ]);
+			FROM bf_period, bf_staff WHERE per_staff_id = stf_id AND stf_role = ? AND
+				per_period = ? AND per_is_leader = TRUE AND per_group_number > 0',
+			[ ROLE_GROUP_LEADER, $p ]);
 
-		$group_helpers = db_array_2('SELECT CONCAT(p1.per_age_level, "_", p1.per_group_number),
-			GROUP_CONCAT(DISTINCT stf_username ORDER BY stf_username SEPARATOR ", ")
-			FROM bf_period p1 JOIN bf_period p2 ON
-					p2.per_my_leader_id = p1.per_staff_id AND p2.per_period = ? AND p1.per_age_level = p2.per_age_level
-				JOIN bf_staff ON p2.per_staff_id = stf_id
-			WHERE p1.per_period = ? AND p1.per_is_leader = TRUE
-			GROUP BY p1.per_age_level, p1.per_group_number', [ $p, $p ]);
-bugs("-->", $group_leaders);
-bugs("-->", $group_helpers);
+		$sql = 'SELECT CONCAT(p1.per_age_level, "_", p1.per_group_number) grp,
+			GROUP_CONCAT(DISTINCT stf_username ORDER BY stf_username SEPARATOR ", ") helpers
+			FROM bf_period p1
+			JOIN bf_period p2 ON p2.per_my_leader_id = p1.per_staff_id AND p2.per_period = ? AND
+				IF (p1.per_age_level = 0, p2.per_age_level_0,
+					IF (p1.per_age_level = 1, p2.per_age_level_1, p2.per_age_level_2))
+			JOIN bf_staff ON p2.per_staff_id = stf_id AND stf_role = ?
+			WHERE p1.per_period = ? AND p1.per_is_leader = TRUE AND p1.per_group_number > 0
+			GROUP BY p1.per_age_level, p1.per_group_number';
+		$group_helpers = db_array_2($sql, [ $p, ROLE_GROUP_LEADER, $p ]);
 
 		$display_groups->open();
 		table();
@@ -245,20 +248,29 @@ bugs("-->", $group_helpers);
 				_tr();
 				tr();
 				td();
-				td('.AAA');
+				td(arr_nvl($group_helpers, $a.'_'.$i, nbsp()));
 				_td();
 				_tr();
 				_table();
 				_td();
 			}
 			td();
+
+			table([ 'spacing'=>'0', 'style'=>'position: relative; top: -2px;' ]);
+			tr(td([ 'style'=>'border: 1px solid black; text-align: center; font-weight: bold;
+				width: 22px; height: 22px; background-color: black; color: white; font-size: 20px;',
+				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+'));
+			//span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 18px; height: 20px;',
+			//	'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+');
+			//span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 18px; height: 20px;',
+			//	'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-');
 			if ($count > 0) {
-				span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 39px;',
-					'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-');
-				span(['style'=>'display: inline-block; width: 11px;'], '');
 			}
-			span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 39px;',
-				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+');
+			tr(td(''));
+			tr(td([ 'style'=>'border: 1px solid black; text-align: center; font-weight: bold;
+				width: 22px; height: 22px;  font-size: 20px;',
+				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-'));
+			_table();
 			_td();
 			_tr();
 		}

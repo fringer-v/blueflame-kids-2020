@@ -120,7 +120,7 @@ class Staff extends BF_Controller {
 		$display_staff = new Form('display_staff', 'staff', 1, array('class'=>'input-table'));
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
 
-		$update_staff = new Form('update_staff', 'staff', 1, array('class'=>'input-table'));
+		$update_staff = new Form('update_staff', 'staff', 2, array('class'=>'input-table'));
 		if (!is_empty($this->session->stf_technician))
 			$update_staff->disable();
 		$stf_id = $update_staff->addHidden('stf_id');
@@ -141,6 +141,7 @@ class Staff extends BF_Controller {
 				$stf_registered->setValue(div(array('class'=>'green-box'), 'Angemeldet'));
 			else
 				$stf_registered->setValue(div(array('class'=>'red-box'), 'Abgemeldet'));
+			$update_staff->addSpace();
 		}
 		$stf_username = $update_staff->addTextInput('stf_username', 'Kurzname', $staff_row['stf_username'], [ 'maxlength'=>'9', 'style'=>'width: 100px' ]);
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
@@ -150,7 +151,9 @@ class Staff extends BF_Controller {
 		$stf_role = $update_staff->addSelect('stf_role', 'Aufgabe', $all_roles, $staff_row['stf_role'],
 				[ 'onchange'=>'toggleRole($(this).val(), '.ROLE_GROUP_LEADER.')' ]);
 
-		if (!empty($staff_row['my_team']))
+		if (empty($staff_row['my_team']))
+			$update_staff->addSpace();
+		else
 			$update_staff->addField('Teammitglieder', $staff_row['my_team']);
 
 		$periods = db_dim_2_array('SELECT per_period, per_age_level, per_group_number, per_location_id,
@@ -221,16 +224,30 @@ class Staff extends BF_Controller {
 		}
 
 		// The Group of the user:
+		$my_groups = db_array_2('SELECT p1.per_period, CONCAT(p1.per_age_level, "_", p1.per_group_number)
+			FROM bf_period p1
+			JOIN bf_period p2 ON p1.per_staff_id = p2.per_my_leader_id AND p1.per_period = p2.per_period
+			WHERE p2.per_staff_id = ? AND p1.per_group_number > 0 AND
+			p1.per_present = TRUE AND p2.per_present = TRUE AND p1.per_is_leader = TRUE', [ $stf_id_v ]);
+
 		$schedule->add(tr([ 'id'=>'group-row' ]));
 		$schedule->add(th([ 'class'=>'row-header' ], 'Gruppe:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$age_level = $this->period_val($periods, $p, 'per_age_level');
 			$group_nr = $this->period_val($periods, $p, 'per_group_number');
+			if (empty($group_nr)) {
+				if (isset($my_groups[$p])) {
+					$age_level = str_left($my_groups[$p], '_');
+					$group_nr = str_right($my_groups[$p], '_');
+				}
+			}
 			if (empty($group_nr))
-				$group_box = '';
-			else {
+				$group_box = div([ 'style'=>'height: 32px; font-size: 20px' ], nbsp());
+			else
+			{
 				$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
-				$group_box = span(['class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ], span(['class'=>'group-number'], $group_nr), " ".$ages);
+				$group_box = span(['class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ],
+					span(['class'=>'group-number'], $group_nr), " ".$ages);
 			}
 			$schedule->add(td($group_box));
 		}
@@ -240,8 +257,10 @@ class Staff extends BF_Controller {
 
 		$stf_loginallowed = $update_staff->addCheckbox('stf_loginallowed',
 			'Die Mitarbeiter darf sich bei dieser Anwendung anmelden', $staff_row['stf_loginallowed']);
+		$stf_loginallowed->setFormat('colspan=*');
 		$stf_technician = $update_staff->addCheckbox('stf_technician',
 			'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
+		$stf_technician->setFormat('colspan=*');
 
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]|maxlength[9]');
