@@ -65,12 +65,24 @@ function p() {
 	return tag('p', func_get_args());
 }
 
+function _p() {
+	return _tag('p');
+}
+
 function a() {
 	return tag('a', func_get_args());
 }
 
+function _a() {
+	return _tag('a');
+}
+
 function b() {
 	return tag('b', func_get_args());
+}
+
+function _b() {
+	return _tag('b');
 }
 
 function u() {

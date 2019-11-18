@@ -28,8 +28,8 @@ function db_1_value($sql, $sqlargs = array()) {
 	return null;
 }
 
-// Returns an array or rows, index by the first column returned!
-function db_dim_2_array($sql, $sqlargs = array()) {
+// Returns an array or rows, indexed by the first column
+function db_array_n($sql, $sqlargs = array()) {
 	$cii =& get_instance();
 	$cii->load->database();
 
@@ -40,3 +40,17 @@ function db_dim_2_array($sql, $sqlargs = array()) {
 	}
 	return $result;
 }
+
+// Return an array or rows
+function db_row_array($sql, $sqlargs = array()) {
+	$cii =& get_instance();
+	$cii->load->database();
+
+	$query = $cii->db->query($sql, $sqlargs);
+	$result = array();
+	while ($row = $query->unbuffered_row('array')) {
+		$result[] = $row;
+	}
+	return $result;
+}
+

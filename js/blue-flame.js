@@ -123,6 +123,7 @@ function toggleSchedule(i, my_leader_changed)
 		$('#groups_0_'+i).removeAttr('disabled');
 		$('#groups_1_'+i).removeAttr('disabled');
 		$('#groups_2_'+i).removeAttr('disabled');
+		$('#my_group_'+i).css('visibility', 'visible');
 	}
 	else {
 		$('#leader_'+i).attr('disabled', '');
@@ -130,6 +131,7 @@ function toggleSchedule(i, my_leader_changed)
 		$('#groups_0_'+i).attr('disabled', '');
 		$('#groups_1_'+i).attr('disabled', '');
 		$('#groups_2_'+i).attr('disabled', '');
+		$('#my_group_'+i).css('visibility', 'hidden');
 	}
 }
 

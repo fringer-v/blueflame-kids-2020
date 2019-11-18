@@ -112,20 +112,28 @@ class Groups extends BF_Controller {
 
 		$this->header('Kleingruppen');
 
-		table(array('style'=>'border-collapse: collapse;'));
+		table( [ 'style'=>'border-collapse: collapse; width: 100%;' ] );
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
-			table();
+			table( [ 'style'=>'width: 100%;' ] );
 			for ($p=0; $p<PERIOD_COUNT; $p++) {
 				if ($p > 0)
 					tr(td([ 'style'=>'height: 10px' ]));
 				tr();
 				td([ 'class'=>'group-header' ], b($period_names[$p]));
 				_tr();
+
 				tr();
+				td([ 'colspan'=>'100', 'style'=>'vertical-align: middle; padding: 5px;' ]);
+				_td();
+				_tr();
+				tr();
+				td();
+
 				$async_loader = new AsyncLoader('group_list_'.$p, 'groups/getgrouplist?period='.$p,
 					[ 'age_level', 'args', 'action' ] );
-				td($async_loader->html());
+				$async_loader->html();
+				_td();
 				_tr();
 			}
 			_table();
@@ -225,8 +233,48 @@ class Groups extends BF_Controller {
 			GROUP BY p1.per_age_level, p1.per_group_number';
 		$group_helpers = db_array_2($sql, [ $p, ROLE_GROUP_LEADER, $p ]);
 
+		$period_leaders = db_row_array('SELECT stf_id, stf_username, per_group_number, CONCAT(per_age_level_0, per_age_level_1, per_age_level_2) ages
+			FROM bf_period, bf_staff WHERE per_staff_id = stf_id AND stf_role = ? AND
+				per_period = ? AND per_is_leader = TRUE
+				GROUP BY stf_username ORDER BY stf_username',
+			[ ROLE_GROUP_LEADER, $p ]);
+
+		$i = 0;
+		table( [ 'width'=>'100%' ] );
+		tr();
+		td();
+		foreach ($period_leaders as $period_leader) {
+			$val = '';
+			if ($i > 0)
+				$val = ' ';
+			$st = 'border: 1px solid black; padding: 4px 8px; display: inline-block;';
+			if (empty($period_leader['per_group_number'])) {
+				$val .= div( [ 'style'=>$st ] );
+				$d = '-';
+			}
+			else {
+				$val .= div( [ 'style'=>$st.' color: grey; border-color: grey;' ] );
+				$d = '--';
+			}
+			$val .= a( [ 'href'=>'staff?set_stf_id='.$period_leader['stf_id'] ] );
+			$val .= $period_leader['stf_username'];
+			$val .= _a();
+			if ((integer) substr($period_leader['ages'], 0, 1) > 0)
+				$val .= ' '.span(['class'=>'group g'.$d.'0', 'style'=>'height: 8px; width: 5px;'], '');
+			if ((integer) substr($period_leader['ages'], 1, 1) > 0)
+				$val .= ' '.span(['class'=>'group g'.$d.'1', 'style'=>'height: 8px; width: 5px;'], '');
+			if ((integer) substr($period_leader['ages'], 2, 1) > 0)
+				$val .= ' '.span(['class'=>'group g'.$d.'2', 'style'=>'height: 8px; width: 5px;'], '');
+			$val .= _div();
+			out($val);
+			$i++;
+		}
+		_td();
+		_tr();
+		_table();
+		
 		$display_groups->open();
-		table();
+		table([ 'style'=>'border-spacing: 5px;' ]);
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
 			tr();
 			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
@@ -236,11 +284,24 @@ class Groups extends BF_Controller {
 				table(['class'=>'group g-'.$a]);
 				tr();
 				td(span(['class'=>'group-number'], $i));
-				$leaders = [ 0=>'' ] + db_array_2("SELECT stf_id, stf_username FROM bf_staff, bf_period
+				$rows = db_array_n("SELECT stf_id, per_group_number, stf_username
+					FROM bf_staff, bf_period
 					WHERE stf_id = per_staff_id AND per_is_leader = TRUE AND
 						per_period = $p AND per_age_level_$a = TRUE
 						ORDER BY stf_username");
-				td(select('select_leader', $leaders, arr_nvl($group_leaders, $a.'_'.$i, 0),
+				$leaders = [ 0=>'' ];
+				$group_leader = arr_nvl($group_leaders, $a.'_'.$i, 0);
+				foreach ($rows as $id => $row) {
+					if ($id == $group_leader)
+						$pre = '';
+					else if ($row['per_group_number'])
+						$pre = '&#x2717; ';
+					else
+						$pre = '';
+						
+					$leaders[$id] = $pre.$row['stf_username'];
+				}
+				td(select('select_leader', $leaders, $group_leader,
 					[ 'onchange'=>'$("#age_level").val('.$a.');
 						$("#args").val("'.$i.'_" + $(this).val());
 						$("#action").val("set-leader");
@@ -255,21 +316,14 @@ class Groups extends BF_Controller {
 				_td();
 			}
 			td();
-
 			table([ 'spacing'=>'0', 'style'=>'position: relative; top: -2px;' ]);
 			tr(td([ 'style'=>'border: 1px solid black; text-align: center; font-weight: bold;
 				width: 22px; height: 22px; background-color: black; color: white; font-size: 20px;',
 				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+'));
-			//span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 18px; height: 20px;',
-			//	'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+');
-			//span([ 'class'=>'group-add g--'.$a, 'style'=>'width: 18px; height: 20px;',
-			//	'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-');
-			if ($count > 0) {
-			}
 			tr(td(''));
-			tr(td([ 'style'=>'border: 1px solid black; text-align: center; font-weight: bold;
+			tr(td([ 'style'=>($count > 0 ? 'border: 1px solid black;' : 'border: 1px solid grey; color: grey;').' text-align: center; font-weight: bold;
 				width: 22px; height: 22px;  font-size: 20px;',
-				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' ], '-'));
+				'onclick'=> $count > 0 ? '$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' : '' ], '-'));
 			_table();
 			_td();
 			_tr();

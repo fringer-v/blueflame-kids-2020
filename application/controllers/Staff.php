@@ -156,7 +156,7 @@ class Staff extends BF_Controller {
 		else
 			$update_staff->addField('Teammitglieder', $staff_row['my_team']);
 
-		$periods = db_dim_2_array('SELECT per_period, per_age_level, per_group_number, per_location_id,
+		$periods = db_array_n('SELECT per_period, per_age_level, per_group_number, per_location_id,
 			per_present, per_is_leader, per_my_leader_id, per_age_level_0, per_age_level_1, per_age_level_2
 			FROM bf_period WHERE per_staff_id=?', [ $stf_id_v ]);
 		$schedule = table(['class'=>'schedule-table']);
@@ -228,7 +228,9 @@ class Staff extends BF_Controller {
 			FROM bf_period p1
 			JOIN bf_period p2 ON p1.per_staff_id = p2.per_my_leader_id AND p1.per_period = p2.per_period
 			WHERE p2.per_staff_id = ? AND p1.per_group_number > 0 AND
-			p1.per_present = TRUE AND p2.per_present = TRUE AND p1.per_is_leader = TRUE', [ $stf_id_v ]);
+				IF (p1.per_age_level = 0, p2.per_age_level_0,
+					IF (p1.per_age_level = 1, p2.per_age_level_1, p2.per_age_level_2)) AND
+				p1.per_present = TRUE AND p2.per_present = TRUE AND p1.per_is_leader = TRUE', [ $stf_id_v ]);
 
 		$schedule->add(tr([ 'id'=>'group-row' ]));
 		$schedule->add(th([ 'class'=>'row-header' ], 'Gruppe:'));
@@ -242,11 +244,10 @@ class Staff extends BF_Controller {
 				}
 			}
 			if (empty($group_nr))
-				$group_box = div([ 'style'=>'height: 32px; font-size: 20px' ], nbsp());
-			else
-			{
+				$group_box = div([ 'id'=>'my_group_'.$p, 'style'=>'height: 32px; font-size: 20px' ], nbsp());
+			else {
 				$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
-				$group_box = span(['class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ],
+				$group_box = span([ 'id'=>'my_group_'.$p, 'class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ],
 					span(['class'=>'group-number'], $group_nr), " ".$ages);
 			}
 			$schedule->add(td($group_box));
