@@ -54,7 +54,7 @@ class BaseOutput {
 		echo $this->html();
 	}
 
-	public function hide() {
+	public function no_show() {
 		$this->auto_show = false;
 	}
 

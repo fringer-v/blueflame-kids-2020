@@ -335,7 +335,7 @@ class Form {
 	}
 }
 
-class InputField {
+class InputField extends BaseOutput {
 	public $name; // Name and ID of the field
 	public $default_value;
 	protected $attributes; // Assoc. array of attributes
@@ -458,6 +458,7 @@ class InputField {
 		$this->hidden = true;
 	}
 
+/*
 	public function show() {
 		$this->html()->show();
 	}
@@ -468,6 +469,7 @@ class InputField {
 	public function __toString() {
 		return $this->html()->html();
 	}
+*/
 
 	public function setRule($rules) {
 		$this->rules = $rules;
@@ -537,27 +539,38 @@ class InputField {
 	}
 }
 
+class In extends InputField {
+	public function __construct($name = '', $default_value = '', $attributes = array()) {
+		$this->no_show();
+		parent::__construct($name, $default_value, $attributes);
+	}
+
+	public function output() {
+		return '';
+	}
+}
+
 class Submit extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		return tag('input', $this->getAttributes('submit'));
+			return '';
+		return tag('input', $this->getAttributes('submit'))->html();
 	}
 }
 
 class Button extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		return tag('input', $this->getAttributes('button'));
+			return '';
+		return tag('input', $this->getAttributes('button'))->html();
 	}
 }
 
 class Hidden extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		return tag('input', $this->getAttributes('hidden'));
+			return '';
+		return tag('input', $this->getAttributes('hidden'))->html();
 	}
 }
 
@@ -566,38 +579,37 @@ class OutputField extends InputField {
 		parent::__construct('', $default_value);
 	}
 
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		return out($this->default_value);
+			return '';
+		return out('[]', $this->default_value)->html();
 	}
 }
 
 class TextInput extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		$out = tag('input', $this->getAttributes('text'));
-		return $out;
+			return '';
+		return tag('input', $this->getAttributes('text'))->html();
 	}
 }
 
 class Password extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
-		return tag('input', $this->getAttributes('password'));
+			return '';
+		return tag('input', $this->getAttributes('password'))->html();
 	}
 }
 
 class TextArea extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
+			return '';
 		$out = tag('textarea', $this->getAttributes('', false));
 		$out->add(out('[]', $this->getValue()));
 		$out->add(_tag('textarea'));
-		return $out;
+		return $out->html();
 	}
 }
 
@@ -609,9 +621,9 @@ class Select extends TextArea {
 		parent::__construct($name, $default_value, $attributes);
 	}
 
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
+			return '';
 		$current_value = $this->getValue();
 		$out = tag('select', $this->getAttributes('', true));
 		foreach ($this->values as $value => $text) {
@@ -621,14 +633,14 @@ class Select extends TextArea {
 			$out->add(tag('option', $attr, $text));
 		}
 		$out->add(_tag('select'));
-		return $out;
+		return $out->html();
 	}
 }
 
 class Checkbox extends InputField {
-	public function html() {
+	public function output() {
 		if ($this->hidden)
-			return out('');
+			return '';
 		$out = tag('input', array('type'=>'hidden', 'name'=>$this->name, 'value'=>'0'));
 		$attr = $this->getAttributes('checkbox', false);
 		$attr['value'] = '1';
@@ -636,8 +648,13 @@ class Checkbox extends InputField {
 		if (!is_empty($value))
 			$attr['checked'] = null;
 		$out->add(tag('input', $attr));
-		return $out;
+		return $out->html();
 	}
+}
+
+function in($name, $default_value = '')
+{
+	return new In($name, $default_value);
 }
 
 function submit($name, $label, $attributes = [])
@@ -655,19 +672,19 @@ function hidden($name, $default_value = '')
 	return new Hidden($name, $default_value);
 }
 
-function textinput($name, $label, $attributes = [])
+function textinput($name, $default_value = '', $attributes = [])
 {
-	return new TextInput($name, $label, $attributes);
+	return new TextInput($name, $default_value, $attributes);
 }
 
-function password($name, $label, $attributes = [])
+function password($name, $default_value = '', $attributes = [])
 {
-	return new Password($name, $label, $attributes);
+	return new Password($name, $default_value, $attributes);
 }
 
-function textarea($name, $label, $attributes = [])
+function textarea($name, $default_value = '', $attributes = [])
 {
-	return new TextArea($name, $label, $attributes);
+	return new TextArea($name, $default_value, $attributes);
 }
 
 function select($name, $values, $default_value = '', $attributes = [])
@@ -675,7 +692,7 @@ function select($name, $values, $default_value = '', $attributes = [])
 	return new Select($name, $values, $default_value, $attributes);
 }
 
-function checkbox($name, $label, $attributes = [])
+function checkbox($name, $default_value = '', $attributes = [])
 {
-	return new Checkbox($name, $label, $attributes);
+	return new Checkbox($name, $default_value, $attributes);
 }

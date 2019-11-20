@@ -695,13 +695,13 @@ class Participant extends BF_Controller {
 		$this->db->where('prt_call_status IN ('.CALL_CANCELLED.', '.CALL_COMPLETED.') AND ADDTIME(prt_call_change_time, "'.CALL_ENDED_DISPLAY_TIME.'") <= NOW()');
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
 
-		$prt_filter = textinput('prt_filter');
+		$prt_filter = in('prt_filter');
 		$prt_filter->persistent();
-		$prt_last_filter = textinput('prt_last_filter');
+		$prt_last_filter = in('prt_last_filter');
 		$prt_last_filter->persistent();
-		$prt_page = hidden('prt_page', 1);
+		$prt_page = in('prt_page', 1);
 		$prt_page->persistent();
-		$prt_tab = hidden('prt_tab', 'modify');
+		$prt_tab = in('prt_tab', 'modify');
 		$prt_tab->persistent();
 		
 		$prt_filter_v = $prt_filter->getValue();
