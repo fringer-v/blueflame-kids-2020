@@ -11,12 +11,22 @@ class StaffTable extends Table {
 				return 'Name';
 			case 'stf_role':
 				return 'Aufgabe';
+			case 'is_present':
+				return 'Anw.';
 			case 'stf_registered':
 				return 'Angem.';
 			case 'button_column':
 				return '&nbsp;';
 		}
 		return nix();
+	}
+
+	public function columnAttributes($field) {
+		switch ($field) {
+			case 'is_present':
+				return [ 'style'=>'text-align: center;' ];
+		}
+		return [];
 	}
 
 	public function cellValue($field, $row) {
@@ -32,11 +42,11 @@ class StaffTable extends Table {
 				switch ($row['stf_role']) {
 					case ROLE_GROUP_LEADER:
 						if ($row['age_level_0'] > 0)
-							$val .= span(['class'=>'group g-0', 'style'=>'height: 16px; width: 12px;'], '').' ';
+							$val .= span(['class'=>'group g-0', 'style'=>'height: 8px; width: 5px;'], '').' ';
 						if ($row['age_level_1'] > 0)
-							$val .= span(['class'=>'group g-1', 'style'=>'height: 16px; width: 12px;'], '').' ';
+							$val .= span(['class'=>'group g-1', 'style'=>'height: 8px; width: 5px;'], '').' ';
 						if ($row['age_level_2'] > 0)
-							$val .= span(['class'=>'group g-2', 'style'=>'height: 16px; width: 12px;'], '').' ';
+							$val .= span(['class'=>'group g-2', 'style'=>'height: 8px; width: 5px;'], '').' ';
 						if ($row['is_leader'] > 0)
 							$roles[] = b('Teamleiter');
 						if (!empty($row['my_leaders']))
@@ -47,16 +57,23 @@ class StaffTable extends Table {
 							$roles[] = b($all_roles[$row['stf_role']]);
 						break;
 				}
+				$val .= implode(', ', $roles);
+				return $val;
+			case 'is_present':
 				if ($row['all_periods']) {
 					if (empty($row['is_present']))
-						$present = 'Anw: '.b('-');
+						$val = '&#x2717;';
 					else if ($row['is_present'] == PERIOD_COUNT)
-						$present = 'Anw: '.b('Ja');
+						$val = '&#x2713;';
 					else
-						$present = 'Anw: '.b($row['is_present']);
-					$roles[] = $present;
+						$val = $row['is_present'];
 				}
-				$val .= implode(', ', $roles);
+				else {
+					if (empty($row['is_present']))
+						$val = '&#x2717;';
+					else
+						$val = '&#x2713;';
+				}
 				return $val;
 			case 'stf_registered':
 				if ($row[$field] == 1)
@@ -83,7 +100,8 @@ class Staff extends BF_Controller {
 
 		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
 			s1.stf_role, s1.stf_registered, s1.stf_loginallowed, s1.stf_technician,
-			GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_team
+			GROUP_CONCAT(DISTINCT s2.stf_id ORDER BY s2.stf_username SEPARATOR ",") team_ids,
+			GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ",") team_names
 			FROM bf_staff s1
 			LEFT OUTER JOIN bf_period ON s1.stf_id = per_my_leader_id
 			LEFT OUTER JOIN bf_staff s2 ON s2.stf_id = per_staff_id
@@ -111,20 +129,20 @@ class Staff extends BF_Controller {
 		
 		$this->authorize();
 
-		$filter_staff = new Form('filter_staff', 'staff', 1, array('class'=>'input-table'));
+		$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
 		$stf_select_role = $filter_staff->addSelect('stf_select_role', '', $extended_roles, 0, [ 'onchange'=>'this.form.submit()' ]);
-		$stf_select_role->makeGlobal();
+		$stf_select_role->persistent();
 		$std_select_period = $filter_staff->addSelect('std_select_period', '', [ -1 => '']  + $period_names, -1, [ 'onchange'=>'this.form.submit()' ]);
-		$std_select_period->makeGlobal();
+		$std_select_period->persistent();
 
 		$display_staff = new Form('display_staff', 'staff', 1, array('class'=>'input-table'));
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
 
 		$update_staff = new Form('update_staff', 'staff', 2, array('class'=>'input-table'));
-		if (!is_empty($this->session->stf_technician))
+		if (!is_empty($this->session->stf_login_tech))
 			$update_staff->disable();
 		$stf_id = $update_staff->addHidden('stf_id');
-		$stf_id->makeGlobal();
+		$stf_id->persistent();
 
 		if ($set_stf_id->submitted()) {
 			$stf_id->setValue($set_stf_id->getValue());
@@ -151,10 +169,11 @@ class Staff extends BF_Controller {
 		$stf_role = $update_staff->addSelect('stf_role', 'Aufgabe', $all_roles, $staff_row['stf_role'],
 				[ 'onchange'=>'toggleRole($(this).val(), '.ROLE_GROUP_LEADER.')' ]);
 
-		if (empty($staff_row['my_team']))
+		if (empty($staff_row['team_names']))
 			$update_staff->addSpace();
 		else
-			$update_staff->addField('Teammitglieder', $staff_row['my_team']);
+			$update_staff->addField('Teammitglieder', $this->linkList('staff?set_stf_id=',
+						explode(',', $staff_row['team_ids']), explode(',', $staff_row['team_names'])));
 
 		$periods = db_array_n('SELECT per_period, per_age_level, per_group_number, per_location_id,
 			per_present, per_is_leader, per_my_leader_id, per_age_level_0, per_age_level_1, per_age_level_2
@@ -324,12 +343,19 @@ class Staff extends BF_Controller {
 							'per_period' => $p,
 							'per_present' => $present[$p]->getValue(),
 							'per_is_leader' => $leader[$p]->getValue(),
-							'per_my_leader_id' => (!$present[$p]->getValue() || $leader[$p]->getValue()) ? 0 : $my_leader[$p]->getValue(),
+							'per_my_leader_id' =>
+								(!$present[$p]->getValue() || $leader[$p]->getValue()) ? 0 : $my_leader[$p]->getValue(),
 							'per_age_level_0' => $groups[0][$p]->getValue(),
 							'per_age_level_1' => $groups[1][$p]->getValue(),
 							'per_age_level_2' => $groups[2][$p]->getValue(),
 						);
-						$this->db->replace('bf_period', $data);
+						if (isset($periods[$p])) {
+							$this->db->where('per_staff_id', $stf_id_v);
+							$this->db->where('per_period', $p);
+							$this->db->update('bf_period', $data);
+						}
+						else
+							$this->db->insert('bf_period', $data);
 					}
 					$this->setSuccess($stf_fullname->getValue().' geändert');
 				}
@@ -346,30 +372,29 @@ class Staff extends BF_Controller {
 		}
 
 		$stf_page = new Hidden('stf_page', 1);
-		$stf_page->makeGlobal();
+		$stf_page->persistent();
 		$stf_page_v = $stf_page->getValue();
 
 		$having = '';
+		$where = '';
 		if ($std_select_period->getValue() == -1) {
 			// No period
 			$sql = 'SELECT SQL_CALC_FOUND_ROWS TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
-				s1.stf_role, s1.stf_registered, "button_column",
-				SUM(per_present) is_present, SUM(per_is_leader) is_leader,
+				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
 				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
 				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
-			$where = '';
+			$on = '';
 		}
 		else {
 			$sql = 'SELECT SQL_CALC_FOUND_ROWS FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
-				s1.stf_role, s1.stf_registered, "button_column",
-				per_present is_present, per_is_leader is_leader,
+				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
 				s2.stf_fullname my_leaders,
 				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
-			$where = 'per_period = '.$std_select_period->getValue().' AND per_present = TRUE ';
+			$on = ' AND per_period = '.$std_select_period->getValue().' ';
 		}
 		$sql .= 'FROM bf_staff s1
-				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id
-				LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
+				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
+		$sql .= 'LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
 		switch ($stf_select_role->getValue()) {
 			case ROLE_OTHER:
 				break;

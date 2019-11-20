@@ -345,7 +345,6 @@ class InputField {
 	protected $rules = '';
 	public $format = '';
 	public $group = '';
-	protected $global = false;
 	
 	public function __construct($name = '', $default_value = '', $attributes = array()) {
 		$this->name = $name;
@@ -405,7 +404,7 @@ class InputField {
 				unset($_POST[$this->name]);
 			if (isset($_GET[$this->name]))
 				unset($_GET[$this->name]);
-			if ($this->global)
+			if (isset($_SESSION[$this->name]))
 				$_SESSION[$this->name] = $value;
 		}
 		$this->default_value = $value;
@@ -413,23 +412,19 @@ class InputField {
 
 	public function getValue() {
 		if (is_empty($this->name))
-			$this->default_value;
+			return $this->default_value;
 
 		if (isset($_POST[$this->name])) {
 			$value = $_POST[$this->name];
-			if ($this->global)
-				$_SESSION[$this->name] = $value;
 			return $value;
 		}
 
 		if (isset($_GET[$this->name])) {
 			$value = $_GET[$this->name];
-			if ($this->global)
-				$_SESSION[$this->name] = $value;
 			return $value;
 		}
 
-		if ($this->global && isset($_SESSION[$this->name]))
+		if (isset($_SESSION[$this->name]))
 			return $_SESSION[$this->name];
 
 		return $this->default_value;
@@ -482,8 +477,11 @@ class InputField {
 		$this->format = $format;
 	}
 
-	public function makeGlobal() {
-		$this->global = true;
+	public function persistent() {
+		if (!is_empty($this->name)) {
+			$value = $this->getValue();
+			$_SESSION[$this->name] = $value;
+		}
 	}
 
 	public function validate($form) {

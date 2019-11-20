@@ -92,7 +92,7 @@ $age_level_to = array (AGE_LEVEL_0 => 5, AGE_LEVEL_1 => 8, AGE_LEVEL_2 => 11);
 
 class BF_Controller extends CI_Controller {
 	public $stf_login_id = 0;
-	public $stf_fullname = '';
+	public $stf_login_name = '';
 
 	public $error = "";
 	public $warning = "";
@@ -132,7 +132,7 @@ class BF_Controller extends CI_Controller {
 		$this->load->library('session');
 		if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {
 			$this->stf_login_id = $this->session->stf_login_id;
-			$this->stf_fullname = $this->session->stf_fullname;
+			$this->stf_login_name = $this->session->stf_login_name;
 			return true;
 		}
 		if ($redirect)
@@ -189,13 +189,13 @@ class BF_Controller extends CI_Controller {
 		td($this->link('staff', $title == 'Mitarbeiter'), 'Mitarbeiter ('.$stf_count.')');
 		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
 		td($this->link('calllist', $title == 'Rufliste'), 'Rufliste');
-		hidden('login_full_name', $this->stf_fullname);
+		hidden('login_full_name', $this->stf_login_name);
 		if ($title != 'Login') {
 			$attr = $this->link('login?action=logout', false);
 			$attr['id'] = 'logout_menu_item';
 			$attr['onmouseover'] = 'mouseOverLogout(this);';
 			$attr['onmouseout'] = 'mouseOutLogout(this, $(\'#login_full_name\'));';
-			td($attr, $this->stf_fullname);
+			td($attr, $this->stf_login_name);
 		}
 		else
 			td();
@@ -223,24 +223,25 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function footer($js_src = "") {
-
-		//div(array('class'=>'footer'));
-		//em('&copy; ', 2018);
-		//_div();
 		_tag('body');
-
 		if (!empty($js_src))
 			script($js_src);
-		//script();
-		//out('$(window).resize(function() {
-		//	setHeaderSizesOfScrollableTables();
-		//}).resize();');
-		//_script();
-
 		_tag('html');
 	}
 	
 	public function setSuccess($message) {
 		$this->session->set_userdata('bf_success', $message);
+	}
+
+	// ---------------------------
+	public function linkList($page, $ids, $names)
+	{
+		$out = out('');
+		for ($j=0; $j<sizeof($ids); $j++) {
+			if ($j > 0)
+				$out->add(', ');
+			$out->add(a([ 'href'=>$page.$ids[$j] ], $names[$j] ));
+		}
+		return $out;
 	}
 }

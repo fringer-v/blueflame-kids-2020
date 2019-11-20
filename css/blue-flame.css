@@ -33,7 +33,7 @@ a {
 /* a:active, a:hover, a:focus */
 a:hover {
 	text-decoration: underline;
-	color: blue;
+	color: inherit;
 	cursor: grab;
 }
 
@@ -203,8 +203,8 @@ button:active, input[type=submit]:active {
 }
 
 .error-box {
-	border:1px solid red;
-	color:red;
+	border: 1px solid red;
+	color: red;
 }
 
 .warning-box {
@@ -457,15 +457,18 @@ table.scrollable-table tbody {
 }
 
 .g--0 {
-	background-color: var(--g--0);
+	background-color: var(--g-0);
+	opacity: 0.3;
 }
 
 .g--1 {
-	background-color: var(--g--1);
+	background-color: var(--g-1);
+	opacity: 0.3;
 }
 
 .g--2 {
-	background-color: var(--g--2);
+	background-color: var(--g-2);
+	opacity: 0.3;
 }
 
 /* --------------------------- */

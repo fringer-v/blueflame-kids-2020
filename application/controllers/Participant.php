@@ -150,19 +150,19 @@ class Participant extends BF_Controller {
 		$display_participant = new Form('display_participant', 'participant', 1, array('class'=>'input-table'));
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
 		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', array('placeholder'=>'Suchfilter'));
-		$prt_filter->makeGlobal();
+		$prt_filter->persistent();
 		$prt_page = new Hidden('prt_page', 1);
-		$prt_page->makeGlobal();
+		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
-		if (!is_empty($this->session->stf_technician))
+		if (!is_empty($this->session->stf_login_tech))
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
-		$prt_id->makeGlobal();
+		$prt_id->persistent();
 		$hst_page = new Hidden('hst_page', 1);
-		$hst_page->makeGlobal();
+		$hst_page->persistent();
 
 		if ($set_prt_id->submitted()) {
 			$prt_id->setValue($set_prt_id->getValue());
@@ -586,7 +586,7 @@ class Participant extends BF_Controller {
 		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
 
 		$prt_tab = new Hidden('prt_tab', 'modify');
-		$prt_tab->makeGlobal();
+		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
 		$this->header('Kinder');
@@ -696,13 +696,13 @@ class Participant extends BF_Controller {
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
 
 		$prt_filter = new TextInput('prt_filter');
-		$prt_filter->makeGlobal();
+		$prt_filter->persistent();
 		$prt_last_filter = new TextInput('prt_last_filter');
-		$prt_last_filter->makeGlobal();
+		$prt_last_filter->persistent();
 		$prt_page = new Hidden('prt_page', 1);
-		$prt_page->makeGlobal();
+		$prt_page->persistent();
 		$prt_tab = new Hidden('prt_tab', 'modify');
-		$prt_tab->makeGlobal();
+		$prt_tab->persistent();
 		
 		$prt_filter_v = $prt_filter->getValue();
 

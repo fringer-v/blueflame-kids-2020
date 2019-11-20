@@ -27,9 +27,50 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  * explicitly call the destroy() method;
  *
  */
-class Output {
+
+class BaseOutput {
+	private $auto_show = true;
+
+	public function __destruct() {
+		// If this instance has not been shownm then show it new.
+		// This is so you can print with out('text');
+		// rather than typing out('text')->show();
+		if ($this->auto_show)
+			$this->show();
+	}
+	
+	//destroy the object without printing it
+	public function destroy() {
+		$this->auto_show = false;
+		$this->__destruct();
+	}
+	
+	public function html() {
+		$this->auto_show = false;
+		return $this->output();
+	}
+
+	public function show() {
+		echo $this->html();
+	}
+
+	public function hide() {
+		$this->auto_show = false;
+	}
+
+	// This way you can append instances of Output to strings
+	public function __toString() {
+		return $this->html();
+	}
+
+	// Override this to produce the output:
+	public function output() {
+		return '';
+	}
+}
+
+class Output extends BaseOutput {
 	private $output = "";
-	private $used = false;
 	
 	//note that $format should always be a hardcoded, static string
 	public function __construct($format, $params = array()) {
@@ -59,24 +100,6 @@ class Output {
 		}
 	}
 	
-	public function __destruct() {
-		// if this instance has not been 'used', print it (this is so you can print
-		// with out("text"); rather than typing out("text")->show(); every time)
-		if (!$this->used)
-			$this->show();
-	}
-	
-	//destroy the object without printing it
-	public function destroy() {
-		$this->used = true;
-		$this->__destruct();
-	}
-	
-	// This way you can append instances of Output to strings
-	public function __toString() {
-		return $this->html();
-	}
-
 	//append strings or more output instances which will be printed after this one
 	public function add(/*item1, item2, ....*/){
 		foreach (func_get_args() as $item) {
@@ -85,14 +108,8 @@ class Output {
 
 		return $this;
 	}
-	
-	//print
-	public function show() {
-		echo $this->html();
-	}
 
-	public function html() {
-		$this->used = true;
+	public function output() {
 		return $this->output;
 	}
 }
@@ -192,6 +209,10 @@ class Table {
 		return $field;
 	}
 
+	public function columnAttributes($field) {
+		return [];
+	}
+
 	public function cellValue($field, $row) {
 		return $row[$field];
 	}
@@ -230,7 +251,7 @@ class Table {
 			$title = $this->columnTitle($field);
 			if (!($title instanceof Nix)) {
 				$row_count++;
-				$out->add(th($title));
+				$out->add(th($this->columnAttributes($field), $title));
 			}
 		}
 		$out->add(_tr());
@@ -243,7 +264,7 @@ class Table {
 				foreach ($fields as $field) {
 					$value = $this->cellValue($field, $row);
 					if (!($value instanceof Nix))
-						$out->add(td($value));
+						$out->add(td($this->columnAttributes($field), $value));
 				}
 				$out->add(_tr());
 			}

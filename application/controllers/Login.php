@@ -55,8 +55,8 @@ class Login extends BF_Controller {
 					if (password_verify($pwd, $staff_row['stf_password'])) {
 						$this->load->library('session');
 						$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
-						$this->session->set_userdata('stf_fullname', $staff_row['stf_fullname']);
-						$this->session->set_userdata('stf_technician', $staff_row['stf_technician']);
+						$this->session->set_userdata('stf_login_name', $staff_row['stf_fullname']);
+						$this->session->set_userdata('stf_login_tech', $staff_row['stf_technician']);
 
 						$this->db->query('UPDATE bf_staff SET stf_registered = 1 WHERE stf_id = ?',
 							array($staff_row['stf_id']));

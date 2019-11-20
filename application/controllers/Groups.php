@@ -122,14 +122,8 @@ class Groups extends BF_Controller {
 				tr();
 				td([ 'class'=>'group-header' ], b($period_names[$p]));
 				_tr();
-
-				tr();
-				td([ 'colspan'=>'100', 'style'=>'vertical-align: middle; padding: 5px;' ]);
-				_td();
-				_tr();
 				tr();
 				td();
-
 				$async_loader = new AsyncLoader('group_list_'.$p, 'groups/getgrouplist?period='.$p,
 					[ 'age_level', 'args', 'action' ] );
 				$async_loader->html();
@@ -223,7 +217,8 @@ class Groups extends BF_Controller {
 			[ ROLE_GROUP_LEADER, $p ]);
 
 		$sql = 'SELECT CONCAT(p1.per_age_level, "_", p1.per_group_number) grp,
-			GROUP_CONCAT(DISTINCT stf_username ORDER BY stf_username SEPARATOR ", ") helpers
+			GROUP_CONCAT(DISTINCT stf_id ORDER BY stf_username SEPARATOR ",") helper_ids,
+			GROUP_CONCAT(DISTINCT stf_username ORDER BY stf_username SEPARATOR ",") helper_names
 			FROM bf_period p1
 			JOIN bf_period p2 ON p2.per_my_leader_id = p1.per_staff_id AND p2.per_period = ? AND
 				IF (p1.per_age_level = 0, p2.per_age_level_0,
@@ -231,16 +226,17 @@ class Groups extends BF_Controller {
 			JOIN bf_staff ON p2.per_staff_id = stf_id AND stf_role = ?
 			WHERE p1.per_period = ? AND p1.per_is_leader = TRUE AND p1.per_group_number > 0
 			GROUP BY p1.per_age_level, p1.per_group_number';
-		$group_helpers = db_array_2($sql, [ $p, ROLE_GROUP_LEADER, $p ]);
+		$group_helpers = db_array_n($sql, [ $p, ROLE_GROUP_LEADER, $p ]);
 
-		$period_leaders = db_row_array('SELECT stf_id, stf_username, per_group_number, CONCAT(per_age_level_0, per_age_level_1, per_age_level_2) ages
+		$period_leaders = db_row_array('SELECT stf_id, stf_username, per_group_number,
+			CONCAT(per_age_level_0, per_age_level_1, per_age_level_2) ages
 			FROM bf_period, bf_staff WHERE per_staff_id = stf_id AND stf_role = ? AND
 				per_period = ? AND per_is_leader = TRUE
 				GROUP BY stf_username ORDER BY stf_username',
 			[ ROLE_GROUP_LEADER, $p ]);
 
 		$i = 0;
-		table( [ 'width'=>'100%' ] );
+		table( [ 'width'=>'100%', 'style'=>'margin-top: 4px;' ] );
 		tr();
 		td();
 		foreach ($period_leaders as $period_leader) {
@@ -308,9 +304,13 @@ class Groups extends BF_Controller {
 						group_list_'.$p.'();' ]));
 				_tr();
 				tr();
-				td();
-				td(arr_nvl($group_helpers, $a.'_'.$i, nbsp()));
-				_td();
+				td(nbsp());
+				$helpers = arr_nvl($group_helpers, $a.'_'.$i, []);
+				if (empty($helpers))
+					td(nbsp());
+				else
+					td($this->linkList('staff?set_stf_id=',
+						explode(',', $helpers['helper_ids']), explode(',', $helpers['helper_names'])));
 				_tr();
 				_table();
 				_td();
