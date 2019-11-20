@@ -46,11 +46,11 @@ class CallListTable extends Table {
 				return how_long_ago($row[$field]);
 			case 'button_column':
 				if ($row['prt_call_status'] == CALL_CANCELLED)
-					return (new Submit('ack_button', 'OK',
-						array('class'=>'button-black', 'onclick'=>'$("#cancel_ok").val('.$row['prt_id'].');')))->html();
+					return submit('ack_button', 'OK',
+						array('class'=>'button-black', 'onclick'=>'$("#cancel_ok").val('.$row['prt_id'].');'))->html();
 				if ($row['prt_call_status'] == CALL_PENDING)
-					return (new Submit('ack_button', 'Gerufen',
-						array('class'=>'button-green', 'onclick'=>'$("#call_done").val('.$row['prt_id'].');')))->html();
+					return submit('ack_button', 'Gerufen',
+						array('class'=>'button-green', 'onclick'=>'$("#call_done").val('.$row['prt_id'].');'))->html();
 				return '&nbsp;';
 		}
 		return nix();

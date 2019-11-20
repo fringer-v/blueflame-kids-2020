@@ -62,7 +62,7 @@ class ParticipantTable extends Table {
 				}
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
-				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');')))->html();
+				return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');'))->html();
 		}
 		return nix();
 	}
@@ -151,7 +151,7 @@ class Participant extends BF_Controller {
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
 		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', array('placeholder'=>'Suchfilter'));
 		$prt_filter->persistent();
-		$prt_page = new Hidden('prt_page', 1);
+		$prt_page = hidden('prt_page', 1);
 		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
@@ -161,7 +161,7 @@ class Participant extends BF_Controller {
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->persistent();
-		$hst_page = new Hidden('hst_page', 1);
+		$hst_page = hidden('hst_page', 1);
 		$hst_page->persistent();
 
 		if ($set_prt_id->submitted()) {
@@ -585,7 +585,7 @@ class Participant extends BF_Controller {
 
 		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
 
-		$prt_tab = new Hidden('prt_tab', 'modify');
+		$prt_tab = hidden('prt_tab', 'modify');
 		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
@@ -695,13 +695,13 @@ class Participant extends BF_Controller {
 		$this->db->where('prt_call_status IN ('.CALL_CANCELLED.', '.CALL_COMPLETED.') AND ADDTIME(prt_call_change_time, "'.CALL_ENDED_DISPLAY_TIME.'") <= NOW()');
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
 
-		$prt_filter = new TextInput('prt_filter');
+		$prt_filter = textinput('prt_filter');
 		$prt_filter->persistent();
-		$prt_last_filter = new TextInput('prt_last_filter');
+		$prt_last_filter = textinput('prt_last_filter');
 		$prt_last_filter->persistent();
-		$prt_page = new Hidden('prt_page', 1);
+		$prt_page = hidden('prt_page', 1);
 		$prt_page->persistent();
-		$prt_tab = new Hidden('prt_tab', 'modify');
+		$prt_tab = hidden('prt_tab', 'modify');
 		$prt_tab->persistent();
 		
 		$prt_filter_v = $prt_filter->getValue();

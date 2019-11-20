@@ -193,7 +193,7 @@ class Staff extends BF_Controller {
 		$schedule->add(tr());
 		$schedule->add(th([ 'class'=>'row-header' ], 'Anwesend:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
-			$present[$p] = new Checkbox('present_'.$p, $this->period_val($periods, $p, 'per_present'),
+			$present[$p] = checkbox('present_'.$p, $this->period_val($periods, $p, 'per_present'),
 				[ 'onchange'=>'toggleSchedule('.$p.', false)', 'class'=>'check-box' ]);
 			$schedule->add(td($present[$p]));
 		}
@@ -204,7 +204,7 @@ class Staff extends BF_Controller {
 		$schedule->add(tr([ 'id'=>'group-row' ]));
 		$schedule->add(th([ 'class'=>'row-header' ], 'Teamleiter:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
-			$leader[$p] = new Checkbox('leader_'.$p, $this->period_val($periods, $p, 'per_is_leader'),
+			$leader[$p] = checkbox('leader_'.$p, $this->period_val($periods, $p, 'per_is_leader'),
 				[ 'onchange'=>'toggleSchedule('.$p.', false)', 'class'=>'check-box' ]);
 			$schedule->add(td($leader[$p]));
 		}
@@ -220,7 +220,7 @@ class Staff extends BF_Controller {
 				WHERE per_staff_id = stf_id AND per_period = ? AND
 				per_present = TRUE AND per_is_leader = TRUE AND stf_id != ?', [ $p, $stf_id_v ]);
 			if (sizeof($leaders) > 1) {
-				$my_leader[$p] = new Select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'),
+				$my_leader[$p] = select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'),
 					[ 'onchange'=>'toggleSchedule('.$p.', true)' ]);
 			}
 			else
@@ -236,7 +236,7 @@ class Staff extends BF_Controller {
 			$schedule->add(th([ 'class'=>'row-header' ], $age_level_from[$i].' - '.$age_level_to[$i].':'));
 			$groups[$i] = [];
 			for ($p=0; $p<PERIOD_COUNT; $p++) {
-				$groups[$i][$p] = new Checkbox('groups_'.$i.'_'.$p, $this->period_val($periods, $p, 'per_age_level_'.$i), [ 'class'=>'check-box g-'.$i ]);
+				$groups[$i][$p] = checkbox('groups_'.$i.'_'.$p, $this->period_val($periods, $p, 'per_age_level_'.$i), [ 'class'=>'check-box g-'.$i ]);
 				$schedule->add(td($groups[$i][$p]));
 			}
 			$schedule->add(_tr());
@@ -371,7 +371,7 @@ class Staff extends BF_Controller {
 			redirect("staff");
 		}
 
-		$stf_page = new Hidden('stf_page', 1);
+		$stf_page = hidden('stf_page', 1);
 		$stf_page->persistent();
 		$stf_page_v = $stf_page->getValue();
 

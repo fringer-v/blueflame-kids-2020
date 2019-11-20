@@ -68,49 +68,49 @@ class Form {
 	}
 
 	function addTextInput($name, $label, $default_value = '', $attributes = array()) {
-		$field = new TextInput($name, $default_value, $attributes);
+		$field = textinput($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addPassword($name, $label, $default_value = '', $attributes = array()) {
-		$field = new Password($name, $default_value, $attributes);
+		$field = password($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addTextArea($name, $label, $default_value = '', $attributes = array()) {
-		$field = new TextArea($name, $default_value, $attributes);
+		$field = textarea($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 	
 	function addSelect($name, $label, $values, $default_value = '', $attributes = array()) {
-		$field = new Select($name, $values, $default_value, $attributes);
+		$field = select($name, $values, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addCheckbox($name, $label, $default_value = '', $attributes = array()) {
-		$field = new Checkbox($name, $default_value, $attributes);
+		$field = checkbox($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addSubmit($name, $label, $attributes = array()) {
-		$button = new Submit($name, $label, $attributes);
+		$button = submit($name, $label, $attributes);
 		$button->setForm($this);
 		$this->buttons[$name] = $button;
 		return $button;
 	}
 
 	function addButton($name, $label, $attributes = array()) {
-		$button = new Button($name, $label, $attributes);
+		$button = button($name, $label, $attributes);
 		$button->setForm($this);
 		$this->buttons[$name] = $button;
 		return $button;
@@ -645,12 +645,37 @@ function submit($name, $label, $attributes = [])
 	return new Submit($name, $label, $attributes);
 }
 
-function select($name, $values, $default_value = '', $attributes = [])
+function button($name, $label, $attributes = [])
 {
-	return new Select($name, $values, $default_value, $attributes);
+	return new Button($name, $label, $attributes);
 }
 
 function hidden($name, $default_value = '')
 {
 	return new Hidden($name, $default_value);
+}
+
+function textinput($name, $label, $attributes = [])
+{
+	return new TextInput($name, $label, $attributes);
+}
+
+function password($name, $label, $attributes = [])
+{
+	return new Password($name, $label, $attributes);
+}
+
+function textarea($name, $label, $attributes = [])
+{
+	return new TextArea($name, $label, $attributes);
+}
+
+function select($name, $values, $default_value = '', $attributes = [])
+{
+	return new Select($name, $values, $default_value, $attributes);
+}
+
+function checkbox($name, $label, $attributes = [])
+{
+	return new Checkbox($name, $label, $attributes);
 }

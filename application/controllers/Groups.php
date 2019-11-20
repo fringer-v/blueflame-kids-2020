@@ -30,8 +30,8 @@ class GroupsTable extends Table {
 			case 'grp_from_age':
 				return if_empty($row['grp_from_age'], '').' - '.if_empty($row['grp_to_age'], '');
 			case 'button_column':
-				return (new Submit('select', 'Bearbeiten', array('class'=>'button-black',
-					'onclick'=>'$("#set_grp_id").val('.$row['grp_id'].');')))->html();
+				return submit('select', 'Bearbeiten', array('class'=>'button-black',
+					'onclick'=>'$("#set_grp_id").val('.$row['grp_id'].');'))->html();
 		}
 		return nix();
 	}
@@ -338,7 +338,7 @@ class Groups extends BF_Controller {
 			return;
 		}
 
-		$grp_id = new Hidden('grp_id');
+		$grp_id = hidden('grp_id');
 		$grp_id->makeGlobal();
 		$grp_id_v = $grp_id->getValue();
 		$group_row = $this->get_group_row($grp_id_v);
