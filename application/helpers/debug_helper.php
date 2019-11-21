@@ -55,7 +55,12 @@ function fatal_error($message)
 }
 
 // This function may only be used temporarily in code:
-function bugs()
+function bugout()
+{
+	error_log_message(func_get_args());
+}
+
+function warningout()
 {
 	error_log_message(func_get_args());
 }

@@ -371,7 +371,7 @@ class Staff extends BF_Controller {
 			redirect("staff");
 		}
 
-		$stf_page = hidden('stf_page', 1);
+		$stf_page = in('stf_page', 1);
 		$stf_page->persistent();
 		$stf_page_v = $stf_page->getValue();
 

@@ -151,7 +151,7 @@ class Participant extends BF_Controller {
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
 		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', array('placeholder'=>'Suchfilter'));
 		$prt_filter->persistent();
-		$prt_page = hidden('prt_page', 1);
+		$prt_page = in('prt_page', 1);
 		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
@@ -161,7 +161,7 @@ class Participant extends BF_Controller {
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->persistent();
-		$hst_page = hidden('hst_page', 1);
+		$hst_page = in('hst_page', 1);
 		$hst_page->persistent();
 
 		if ($set_prt_id->submitted()) {
@@ -585,7 +585,7 @@ class Participant extends BF_Controller {
 
 		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
 
-		$prt_tab = hidden('prt_tab', 'modify');
+		$prt_tab = in('prt_tab', 'modify');
 		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
@@ -597,7 +597,7 @@ class Participant extends BF_Controller {
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
-			tr(td($prt_filter->html(), $clear_filter->html()));
+			tr(td($prt_filter, $clear_filter));
 			tr(td($async_loader->html()));
 			_table(); // 
 			$display_participant->close();

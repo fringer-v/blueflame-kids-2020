@@ -150,7 +150,7 @@ class Groups extends BF_Controller {
 			return;
 		}
 
-		$period = hidden('period');
+		$period = in('period');
 		$p = $period->getValue();
 		if ($p < 0)
 			$p = 0;
@@ -338,8 +338,8 @@ class Groups extends BF_Controller {
 			return;
 		}
 
-		$grp_id = hidden('grp_id');
-		$grp_id->makeGlobal();
+		$grp_id = in('grp_id');
+		$grp_id->persistent();
 		$grp_id_v = $grp_id->getValue();
 		$group_row = $this->get_group_row($grp_id_v);
 

@@ -31,7 +31,7 @@ class Form {
 	}
 
 	function addHidden($name, $default_value = '') {
-		$field = hidden($name, $default_value);
+		$field = new Hidden($name, $default_value);
 		$field->setForm($this);
 		$this->hiddens[$name] = $field;
 		return $field;
@@ -68,49 +68,49 @@ class Form {
 	}
 
 	function addTextInput($name, $label, $default_value = '', $attributes = array()) {
-		$field = textinput($name, $default_value, $attributes);
+		$field = new TextInput($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addPassword($name, $label, $default_value = '', $attributes = array()) {
-		$field = password($name, $default_value, $attributes);
+		$field = new Password($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addTextArea($name, $label, $default_value = '', $attributes = array()) {
-		$field = textarea($name, $default_value, $attributes);
+		$field = new TextArea($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 	
 	function addSelect($name, $label, $values, $default_value = '', $attributes = array()) {
-		$field = select($name, $values, $default_value, $attributes);
+		$field = new Select($name, $values, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addCheckbox($name, $label, $default_value = '', $attributes = array()) {
-		$field = checkbox($name, $default_value, $attributes);
+		$field = new Checkbox($name, $default_value, $attributes);
 		$field->setForm($this);
 		$this->fields[$name] = array($label, $field);
 		return $field;
 	}
 
 	function addSubmit($name, $label, $attributes = array()) {
-		$button = submit($name, $label, $attributes);
+		$button = new Submit($name, $label, $attributes);
 		$button->setForm($this);
 		$this->buttons[$name] = $button;
 		return $button;
 	}
 
 	function addButton($name, $label, $attributes = array()) {
-		$button = button($name, $label, $attributes);
+		$button = new Button($name, $label, $attributes);
 		$button->setForm($this);
 		$this->buttons[$name] = $button;
 		return $button;
@@ -201,7 +201,7 @@ class Form {
 		form($attr); 
 
 		foreach ($this->hiddens as $hidden) {
-			if (!$hidden->hidden)
+			if (!$hidden->isHidden())
 				$hidden->show();
 		}
 		
@@ -232,7 +232,7 @@ class Form {
 					$label = $field_info[0];
 					$field = $field_info[1];
 
-					if ($field->hidden)
+					if ($field->isHidden())
 						continue;
 
 					if ($this->disabled)
@@ -307,7 +307,7 @@ class Form {
 				$i = 0;
 				$start_row = true;
 				foreach ($buttons as $button) {
-					if ($button->hidden)
+					if ($button->isHidden())
 						continue;
 					if ($start_row) {
 						tr();
@@ -340,7 +340,6 @@ class InputField extends BaseOutput {
 	public $default_value;
 	protected $attributes; // Assoc. array of attributes
 	protected $disabled = false;
-	public $hidden = false;
 	protected $form = null;
 	protected $rules = '';
 	public $format = '';
@@ -353,6 +352,19 @@ class InputField extends BaseOutput {
 
 		if (!is_array($attributes))
 			fatal_error('InputField attributes, must be an array');
+
+		// Input fields do not "auto echo" by default. Use the
+		// short cut create functions below to get auto echo functionality
+		$this->autoEchoOff();
+	}
+
+	public function __destruct() {
+		// If this instance has not been shownm then show it new.
+		// This is so you can print with out('text');
+		// rather than typing out('text')->show();
+		if ($this->autoEcho() && !$this->isHidden())
+			warningout("> WARNING: AUTO-ECHO $this->name | auto_echo=".$this->autoEcho()." | hidden=".$this->isHidden());
+		parent::__destruct();
 	}
 
 	public function setForm($form) {
@@ -454,10 +466,6 @@ class InputField extends BaseOutput {
 		$this->disabled = true;
 	}
 
-	public function hide() {
-		$this->hidden = true;
-	}
-
 /*
 	public function show() {
 		$this->html()->show();
@@ -541,7 +549,7 @@ class InputField extends BaseOutput {
 
 class In extends InputField {
 	public function __construct($name = '', $default_value = '', $attributes = array()) {
-		$this->no_show();
+		$this->hide();
 		parent::__construct($name, $default_value, $attributes);
 	}
 
@@ -552,24 +560,18 @@ class In extends InputField {
 
 class Submit extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return tag('input', $this->getAttributes('submit'))->html();
 	}
 }
 
 class Button extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return tag('input', $this->getAttributes('button'))->html();
 	}
 }
 
 class Hidden extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return tag('input', $this->getAttributes('hidden'))->html();
 	}
 }
@@ -580,32 +582,24 @@ class OutputField extends InputField {
 	}
 
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return out('[]', $this->default_value)->html();
 	}
 }
 
 class TextInput extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return tag('input', $this->getAttributes('text'))->html();
 	}
 }
 
 class Password extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		return tag('input', $this->getAttributes('password'))->html();
 	}
 }
 
 class TextArea extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		$out = tag('textarea', $this->getAttributes('', false));
 		$out->add(out('[]', $this->getValue()));
 		$out->add(_tag('textarea'));
@@ -622,8 +616,6 @@ class Select extends TextArea {
 	}
 
 	public function output() {
-		if ($this->hidden)
-			return '';
 		$current_value = $this->getValue();
 		$out = tag('select', $this->getAttributes('', true));
 		foreach ($this->values as $value => $text) {
@@ -639,8 +631,6 @@ class Select extends TextArea {
 
 class Checkbox extends InputField {
 	public function output() {
-		if ($this->hidden)
-			return '';
 		$out = tag('input', array('type'=>'hidden', 'name'=>$this->name, 'value'=>'0'));
 		$attr = $this->getAttributes('checkbox', false);
 		$attr['value'] = '1';
@@ -659,40 +649,56 @@ function in($name, $default_value = '')
 
 function submit($name, $label, $attributes = [])
 {
-	return new Submit($name, $label, $attributes);
+	$field = new Submit($name, $label, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function button($name, $label, $attributes = [])
 {
-	return new Button($name, $label, $attributes);
+	$field = new Button($name, $label, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function hidden($name, $default_value = '')
 {
-	return new Hidden($name, $default_value);
+	$field = new Hidden($name, $default_value);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function textinput($name, $default_value = '', $attributes = [])
 {
-	return new TextInput($name, $default_value, $attributes);
+	$field = new TextInput($name, $default_value, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function password($name, $default_value = '', $attributes = [])
 {
-	return new Password($name, $default_value, $attributes);
+	$field = new Password($name, $default_value, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function textarea($name, $default_value = '', $attributes = [])
 {
-	return new TextArea($name, $default_value, $attributes);
+	$field = new TextArea($name, $default_value, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function select($name, $values, $default_value = '', $attributes = [])
 {
-	return new Select($name, $values, $default_value, $attributes);
+	$field = new Select($name, $values, $default_value, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }
 
 function checkbox($name, $default_value = '', $attributes = [])
 {
-	return new Checkbox($name, $default_value, $attributes);
+	$field = new Checkbox($name, $default_value, $attributes);
+	$field->autoEchoOff();
+	return $field;
 }

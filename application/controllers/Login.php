@@ -21,7 +21,7 @@ class Login extends BF_Controller {
 		$stf_username->setRule('required');
 		$stf_md5_pwd->setRule('required');
 
-		$logout_action = hidden('action', '');
+		$logout_action = in('action');
 		if ($logout_action->getValue() == "logout") {
 			$this->load->library('session');
 			if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {

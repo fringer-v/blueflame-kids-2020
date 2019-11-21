@@ -29,33 +29,53 @@ defined('BASEPATH') OR exit('No direct script access allowed');
  */
 
 class BaseOutput {
-	private $auto_show = true;
+	private $auto_echo = true;
+	private $hidden = false;
 
 	public function __destruct() {
 		// If this instance has not been shownm then show it new.
 		// This is so you can print with out('text');
 		// rather than typing out('text')->show();
-		if ($this->auto_show)
+		if ($this->auto_echo)
 			$this->show();
 	}
 	
-	//destroy the object without printing it
+	// Destroy the object without printing it
 	public function destroy() {
-		$this->auto_show = false;
+		$this->hidden = true;
 		$this->__destruct();
 	}
 	
+	public function autoEchoOff() {
+		$this->auto_echo = false;
+	}
+
+	public function autoEchoOn() {
+		$this->auto_echo = true;
+	}
+
+	public function autoEcho() {
+		return $this->auto_echo;
+	}
+
 	public function html() {
-		$this->auto_show = false;
+		$this->auto_echo = false;
+		if ($this->hidden)
+			return '';
 		return $this->output();
 	}
 
-	public function show() {
-		echo $this->html();
+	public function hide() {
+		$this->hidden = true;
 	}
 
-	public function no_show() {
-		$this->auto_show = false;
+	public function isHidden() {
+		return $this->hidden;
+	}
+
+	public function show() {
+		if (!$this->hidden)
+			echo $this->html();
 	}
 
 	// This way you can append instances of Output to strings
