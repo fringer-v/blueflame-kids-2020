@@ -91,6 +91,7 @@ class Staff extends BF_Controller {
 	{
 		parent::__construct();
 		$this->load->database();
+		$this->load->model('db_model');
 	}
 
 	private function get_staff_row($stf_id) {
@@ -128,6 +129,8 @@ class Staff extends BF_Controller {
 		global $period_names;
 		
 		$this->authorize();
+
+		$current_period = $this->db_model->get_setting('current-period');
 
 		$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
 		$stf_select_role = $filter_staff->addSelect('stf_select_role', '', $extended_roles, 0, [ 'onchange'=>'this.form.submit()' ]);
@@ -184,7 +187,8 @@ class Staff extends BF_Controller {
 		$schedule->add(tr());
 		$schedule->add(th([ 'class'=>'row-header' ], ''));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
-			$schedule->add(th(str_replace(' ', '<br>', $period_names[$p])));
+			$schedule->add(th([ 'style'=>($p < $current_period ? 'color: grey;' : 'color: inherit;') ],
+				str_replace(' ', '<br>', $period_names[$p])));
 		}
 		$schedule->add(_tr());
 
@@ -194,7 +198,9 @@ class Staff extends BF_Controller {
 		$schedule->add(th([ 'class'=>'row-header' ], 'Anwesend:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$present[$p] = checkbox('present_'.$p, $this->period_val($periods, $p, 'per_present'),
-				[ 'onchange'=>'toggleSchedule('.$p.', false)', 'class'=>'check-box' ]);
+				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')', 'class'=>'check-box' ]);
+			if ($p < $current_period)
+				$present[$p]->disable();
 			$schedule->add(td($present[$p]));
 		}
 		$schedule->add(_tr());
@@ -205,7 +211,7 @@ class Staff extends BF_Controller {
 		$schedule->add(th([ 'class'=>'row-header' ], 'Teamleiter:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$leader[$p] = checkbox('leader_'.$p, $this->period_val($periods, $p, 'per_is_leader'),
-				[ 'onchange'=>'toggleSchedule('.$p.', false)', 'class'=>'check-box' ]);
+				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')', 'class'=>'check-box' ]);
 			$schedule->add(td($leader[$p]));
 		}
 		$schedule->add(_tr());
@@ -221,7 +227,7 @@ class Staff extends BF_Controller {
 				per_present = TRUE AND per_is_leader = TRUE AND stf_id != ?', [ $p, $stf_id_v ]);
 			if (sizeof($leaders) > 1) {
 				$my_leader[$p] = select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'),
-					[ 'onchange'=>'toggleSchedule('.$p.', true)' ]);
+					[ 'onchange'=>'toggleSchedule('.$p.', true, '.$current_period.')' ]);
 			}
 			else
 				$my_leader[$p] = b('-');
@@ -337,7 +343,7 @@ class Staff extends BF_Controller {
 						$data['stf_password'] = $pwd;
 					$this->db->where('stf_id', $stf_id_v);
 					$this->db->update('bf_staff', $data);
-					for ($p=0; $p<PERIOD_COUNT; $p++) {
+					for ($p=$current_period; $p<PERIOD_COUNT; $p++) {
 						$data = array(
 							'per_staff_id' => $stf_id_v,
 							'per_period' => $p,
@@ -455,7 +461,7 @@ class Staff extends BF_Controller {
 		_table();
 
 		script();
-		out('toggleStaffPage('.PERIOD_COUNT.', '.CURRENT_PERIOD.', $("#stf_role").val(), '.ROLE_GROUP_LEADER.');');
+		out('toggleStaffPage('.PERIOD_COUNT.', '.$current_period.', $("#stf_role").val(), '.ROLE_GROUP_LEADER.');');
 		_script();
 		$this->footer();
 	}

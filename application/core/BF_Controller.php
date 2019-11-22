@@ -111,6 +111,7 @@ class BF_Controller extends CI_Controller {
 				'prt_birthday'=>'',
 				'prt_registered'=>REG_NO, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
 				'prt_supervision_cellphone'=>'', 'prt_notes'=>'',
+				'prt_age_level'=>'', 'prt_group_number'=>'',
 				'prt_call_status'=>'', 'prt_call_escalation'=>'', 'prt_call_start_time'=>'', 'prt_call_change_time'=>'',
 				'prt_wc_time'=>'', 'prt_age_level'=>'', 'prt_group_number'=>''
 			);
@@ -119,6 +120,7 @@ class BF_Controller extends CI_Controller {
 				DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
 				prt_registered, prt_supervision_firstname, prt_supervision_lastname,
 				prt_supervision_cellphone, prt_notes,
+				prt_age_level, prt_group_number,
 				prt_call_status, prt_call_escalation, prt_call_start_time, prt_call_change_time,
 				prt_wc_time, prt_age_level, prt_group_number
 				FROM bf_participants

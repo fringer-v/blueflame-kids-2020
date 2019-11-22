@@ -5,13 +5,14 @@
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
 // 27 - Changed prt_registered field to status
-// 38 - Changes for Blueflame 2020
-define("DB_VERSION", 28);
+// 39 - Changes for Blueflame 2020
+define("DB_VERSION", 39);
 
 class DB_model extends CI_Model {
 	private $settings = array();
 	private $meta_settings = array(
-			"database-version" => array("integer", 0)	// type, default_value
+			"database-version" => array("integer", 0),	// type, default_value
+			"current-period" => array("integer", 2)	// type, default_value
 		);
 
 	public function __construct() {

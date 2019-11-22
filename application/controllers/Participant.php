@@ -141,6 +141,7 @@ class Participant extends BF_Controller {
 	{
 		parent::__construct();
 		$this->load->database();
+		$this->load->model('db_model');
 	}
 
 	public function index()
@@ -161,6 +162,7 @@ class Participant extends BF_Controller {
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->persistent();
+		$prt_id_v = $prt_id->getValue();
 		$hst_page = in('hst_page', 1);
 		$hst_page->persistent();
 
@@ -170,7 +172,7 @@ class Participant extends BF_Controller {
 			redirect("participant");
 		}
 		
-		$participant_row = $this->get_participant_row($prt_id->getValue());
+		$participant_row = $this->get_participant_row($prt_id_v);
 
 		// Aufnehmen u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
@@ -184,6 +186,10 @@ class Participant extends BF_Controller {
 			$participant_row['prt_birthday'], array('placeholder'=>'DD.MM.JJJJ'));
 		$prt_birthday->setRule('is_valid_date');
 		$age_field = $update_participant->addSpace();
+
+		$group_list = new AsyncLoader('modify_group_list', 'participant/getgroups', [ ]);
+		$update_participant->addRow($group_list->html());
+
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', 'Begleitperson Nachname',
@@ -191,19 +197,6 @@ class Participant extends BF_Controller {
 		$prt_supervision_lastname->setFormat('nolabel');
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
-		/*
-		$groups = db_array_2('SELECT g.grp_id, CONCAT(g.grp_name, ", ", '.
-			'IF(g.grp_from_age IS NULL OR g.grp_from_age = 0, "", g.grp_from_age), "-",  '.
-			'IF(g.grp_to_age IS NULL OR g.grp_to_age = 0, "", g.grp_to_age), " (", COUNT(p.prt_id), ")") grp_name '.
-			'FROM bf_groups g '.
-			'LEFT JOIN bf_participants p ON p.prt_grp_id = g.grp_id AND prt_registered != '.REG_NO.' GROUP BY g.grp_id ORDER BY grp_from_age, grp_name');
-		$groups = array(0 => '') + $groups;
-		$group_locations = db_array_2('SELECT g.grp_id, l.loc_name FROM bf_groups g '.
-			'LEFT JOIN bf_locations l ON l.loc_id = g.grp_loc_id');
-		$prt_grp_id = $update_participant->addSelect('prt_grp_id', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
-		$update_participant->addText(div(array('id' => 'grp_loc_name1'), b(nbsp().$participant_row['loc_name'])));
-		*/
-
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
@@ -217,20 +210,19 @@ class Participant extends BF_Controller {
 		// An u. Abmeldung
 		$number2 = $update_participant->addField('Kinder-Nr');
 		$number2->setFormat('colspan=2');
-		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
+		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname']);
 		$f1->disable();
-		$f2 = $update_participant->addTextInput('prt_lastname', 'Nachname', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
+		$f2 = $update_participant->addTextInput('prt_lastname', 'Nachname', $participant_row['prt_lastname']);
 		$f2->disable();
 		$f2->setFormat('nolabel');
-		$update_participant->addField('Geburtsdatum', $participant_row['prt_birthday']);
+		$f3 = $update_participant->addTextInput('prt_birthday', 'Geburtsdatum', $participant_row['prt_birthday']);
+		$f3->disable();
 		$curr_age = get_age($prt_birthday->getDate());
 		$update_participant->addText(b(nbsp().$curr_age." Jahre alt"));
-		//$register_group = $update_participant->addSelect('register_group', 'Kleingruppe', $groups, $participant_row['prt_grp_id']);
-		
-		// $group_locations
-		//$update_participant->addText(div(array('id' => 'grp_loc_name2'), b(nbsp().$participant_row['loc_name'])));
-		
-		//$update_participant->addSpace();
+
+		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?', [ ]);
+		$update_participant->addRow($group_list->html());
+
 		$register_comment = $update_participant->addTextArea('register_comment', 'Kommentar');
 		$register_comment->setFormat('colspan=2');
 
@@ -282,7 +274,6 @@ class Participant extends BF_Controller {
 			$prt_birthday->setValue('');
 		}
 
-		$prt_id_v = $prt_id->getValue();
 		if ($new_participant->submitted() || $save_participant->submitted()) {
 			$this->error = $update_participant->validate('tab_modify');
 			if (is_empty($this->error)) {
@@ -597,7 +588,7 @@ class Participant extends BF_Controller {
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
-			tr(td($prt_filter, $clear_filter));
+			tr(td($prt_filter, ' ', $clear_filter));
 			tr(td($async_loader->html()));
 			_table(); // 
 			$display_participant->close();
@@ -672,7 +663,7 @@ class Participant extends BF_Controller {
 			$attr['class'] = 'participant-tabs active';
 		else
 			$attr['class'] = 'participant-tabs';
-		$attr['onclick'] = 'return showTab("'.$tab.'");';
+		$attr['onclick'] = $tab.'_group_list(); return showTab("'.$tab.'");';
 		$attr['style'] = $style;
 		return $attr;
 	}
@@ -737,6 +728,59 @@ class Participant extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse;'));
 		tr(td($participant_table->paginationHtml()));
 		tr(td($participant_table->html()));
+		_table();
+	}
+
+	public function getgroups() {
+		global $age_level_from;
+		global $age_level_to;
+
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
+		}
+
+		$prt_id = in('prt_id');
+		$prt_id->persistent();
+		$prt_id_v = $prt_id->getValue();
+
+bugout("=============", $prt_id_v);
+		$participant_row = $this->get_participant_row($prt_id_v);
+
+		$current_period = $this->db_model->get_setting('current-period');
+
+		$nr_of_groups = db_array_2('SELECT grp_age_level, grp_count
+			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $current_period ]);
+
+		$group_counts = db_array_2('SELECT CONCAT(prt_age_level, "_", prt_group_number),
+			COUNT(DISTINCT prt_id)
+			FROM bf_participants WHERE prt_group_number > 0 GROUP BY prt_age_level, prt_group_number');
+		foreach ($group_counts as $group=>$count) {
+			$age = str_left($group, '_');
+			$num = str_right($group, '_');
+			if ($nr_of_groups[$age] < $num)
+				$nr_of_groups[$age] = $num;
+		}
+
+		table([ 'id'=>'register_group_list', 'style'=>'border-spacing: 0;' ]);
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			tr();
+			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			for ($i=1; $i<=$group_nr; $i++) {
+				td( [ 'style'=>'padding: 4px;'] );
+				$style = 'height: 28px; font-size: 20px;';
+				if ($participant_row['prt_age_level'] != $a || $participant_row['prt_group_number'] != $i)
+					$style .= ' opacity: 0.3;';
+				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
+				span([ 'id'=>'my_group_'.$a.'_'.$i, 'class'=>'group g-'.$a, 'style'=>$style,
+					'onclick'=>'modify_group_list();' ],
+					span(['class'=>'group-number'], $i), span(
+						[ 'style'=>'display: inline-block; min-width: 40px; text-align: center;' ], $count));
+				_td();
+			}
+			_tr();
+		}
 		_table();
 	}
 }

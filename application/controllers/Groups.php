@@ -84,6 +84,7 @@ class Groups extends BF_Controller {
 	{
 		parent::__construct();
 		$this->load->database();
+		$this->load->model('db_model');
 	}
 
 	private function get_group_row($grp_id) {
@@ -110,13 +111,15 @@ class Groups extends BF_Controller {
 
 		$this->authorize();
 
+		$current_period = $this->db_model->get_setting('current-period');
+
 		$this->header('Kleingruppen');
 
 		table( [ 'style'=>'border-collapse: collapse; width: 100%;' ] );
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 			table( [ 'style'=>'width: 100%;' ] );
-			for ($p=0; $p<PERIOD_COUNT; $p++) {
+			for ($p=$current_period; $p<PERIOD_COUNT; $p++) {
 				if ($p > 0)
 					tr(td([ 'style'=>'height: 10px' ]));
 				tr();
@@ -138,7 +141,7 @@ class Groups extends BF_Controller {
 		$this->footer();
 	}
 
-	public function getGroupList()
+	public function getgrouplist()
 	{
 		global $age_level_from;
 		global $age_level_to;

@@ -597,6 +597,11 @@ table.scrollable-table tbody {
 	width: 112px;
 }
 
+/* Undo the above for the embedded group */
+#register_group_list tr th:first-child {
+	width: auto;
+}
+
 .button-white.wc {
 	background-color: white;
 	width: 60px;
@@ -641,6 +646,10 @@ table.scrollable-table tbody {
 }
 
 .history-table td:nth-child(2) {
+	white-space: nowrap;
+}
+
+.history-table td:nth-child(3) {
 	white-space: nowrap;
 }
 

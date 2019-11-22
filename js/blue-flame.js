@@ -86,7 +86,7 @@ function toggleStaffPage(period_count, current_period, role, group_leader)
 {
 	toggleRole(role, group_leader);
 	for (var i=0; i<5; i++)
-		toggleSchedule(i, false);
+		toggleSchedule(i, false, current_period);
 }
 
 function toggleRole(role, group_leader)
@@ -97,12 +97,13 @@ function toggleRole(role, group_leader)
 		$('[id="group-row"]').hide();
 }
 
-function toggleSchedule(i, my_leader_changed)
+function toggleSchedule(i, my_leader_changed, current_period)
 {
 	var present = $('#present_'+i).is(":checked");
 	var leader = $('#leader_'+i).is(":checked");
 	var obj;
-	if (present) {
+
+	if (present && i >= current_period) {
 		if (my_leader_changed) {
 			if ($('#my_leader_'+i).val() == 0) {
 				$('#leader_'+i).removeAttr('checked');
