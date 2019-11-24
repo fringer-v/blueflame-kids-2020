@@ -94,24 +94,6 @@ class Staff extends BF_Controller {
 		$this->load->model('db_model');
 	}
 
-	private function get_staff_row($stf_id) {
-		if (is_empty($stf_id))
-			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
-				'stf_role'=>ROLE_OTHER, 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>0);
-
-		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
-			s1.stf_role, s1.stf_registered, s1.stf_loginallowed, s1.stf_technician,
-			GROUP_CONCAT(DISTINCT s2.stf_id ORDER BY s2.stf_username SEPARATOR ",") team_ids,
-			GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ",") team_names
-			FROM bf_staff s1
-			LEFT OUTER JOIN bf_period ON s1.stf_id = per_my_leader_id
-			LEFT OUTER JOIN bf_staff s2 ON s2.stf_id = per_staff_id
-			WHERE s1.stf_id=?
-			GROUP BY s1.stf_id',
-			array($stf_id));
-		return $query->row_array();
-	}
-
 	private function period_val($periods, $p, $val_name)
 	{
 		if (isset($periods[$p])) {

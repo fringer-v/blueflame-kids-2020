@@ -390,17 +390,35 @@ class AsyncLoader {
 
 	function loadPageHtml() {
 		$out = script();
-		$out->add(out('function []() {', $this->id));
-		$out->add(out('loadPage("[]", "[]"', $this->id, $this->page));
-		foreach ($this->params as $param) {
-			$out->add(out(', "[]"', $param));
+		if (arr_is_assoc($this->params)) {
+			$out->add(out('function [](', $this->id));
+			$i=0;
+			foreach ($this->params as $param=>$def_value) {
+				if ($i>0)
+					$out->add(out(','));
+				$out->add(out('[]='.$def_value, $param));
+				$i++;
+			}
+			$out->add(out(') { var params = {};'));
+			foreach ($this->params as $param=>$def_value) {
+				$out->add(out('params["[]"] = [];', $param, $param));
+			}
+			$out->add(out('$("#[]").load("[]", params);}', $this->id, $this->page));
+			$out->add(out('[](); ', $this->id)); // Call the function for the first time!
 		}
-		$out->add(');} ');
-		$out->add(out('[](); ', $this->id)); // Call the function for the first time!
+		else {
+			$out->add(out('function []() {', $this->id));
+			$out->add(out('loadPage("[]", "[]"', $this->id, $this->page));
+			foreach ($this->params as $param) {
+				$out->add(out(', "[]"', $param));
+			}
+			$out->add(');} ');
+			$out->add(out('[](); ', $this->id)); // Call the function for the first time!
 
-		// Create triggers for parameters:
-		foreach ($this->params as $param) {
-			$out->add(out('$("#[]").keyup([]); ', $param, $this->id));
+			// Create triggers for parameters:
+			foreach ($this->params as $param) {
+				$out->add(out('$("#[]").keyup([]); ', $param, $this->id));
+			}
 		}
 
 		$out->add(_script());

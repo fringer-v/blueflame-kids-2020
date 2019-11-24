@@ -16,7 +16,7 @@ class Form {
 	private $groups = array();	
 	private $openned = false;
 
-	public function __construct($id, $action, $columns = 1, $attributes = array()) {
+	public function __construct($id, $action = '', $columns = 1, $attributes = array()) {
 		$this->id = $id;
 		$this->action = $action;
 		$this->columns = $columns;

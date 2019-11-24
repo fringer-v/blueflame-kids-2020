@@ -602,6 +602,10 @@ table.scrollable-table tbody {
 	width: auto;
 }
 
+#modify_group_list tr th:first-child {
+	width: auto;
+}
+
 .button-white.wc {
 	background-color: white;
 	width: 60px;

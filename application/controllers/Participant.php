@@ -187,9 +187,8 @@ class Participant extends BF_Controller {
 		$prt_birthday->setRule('is_valid_date');
 		$age_field = $update_participant->addSpace();
 
-		$group_list = new AsyncLoader('modify_group_list', 'participant/getgroups', [ ]);
+		$group_list = new AsyncLoader('modify_group_list', 'participant/getgroups?tab=modify', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
-
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', 'Begleitperson Nachname',
@@ -220,7 +219,7 @@ class Participant extends BF_Controller {
 		$curr_age = get_age($prt_birthday->getDate());
 		$update_participant->addText(b(nbsp().$curr_age." Jahre alt"));
 
-		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?', [ ]);
+		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
 
 		$register_comment = $update_participant->addTextArea('register_comment', 'Kommentar');
@@ -470,12 +469,6 @@ class Participant extends BF_Controller {
 			}
 		}
 
-		//if (!is_empty($this->success)) {
-		//	$participant_row = $this->get_participant_row($prt_id_v);
-		//	$update_participant->setValues($participant_row);
-		//}
-
-		//$prt_id_v = $prt_id->getValue();
 		if (is_empty($prt_id_v)) {
 			$clear_participant->setValue('Clear');
 			$clear_nr_name->hide();
@@ -663,7 +656,7 @@ class Participant extends BF_Controller {
 			$attr['class'] = 'participant-tabs active';
 		else
 			$attr['class'] = 'participant-tabs';
-		$attr['onclick'] = $tab.'_group_list(); return showTab("'.$tab.'");';
+		$attr['onclick'] = 'showTab("'.$tab.'"); '.$tab.'_group_list();';
 		$attr['style'] = $style;
 		return $attr;
 	}
@@ -731,6 +724,50 @@ class Participant extends BF_Controller {
 		_table();
 	}
 
+	private function reserve_group($age, $num)
+	{
+		$this->db->set('stf_reserved_count',
+			'IF(stf_reserved_age_level = '.$age.' AND stf_reserved_group_number = '.$num.', stf_reserved_count+1, 1)', false);
+		$this->db->set('stf_reserved_age_level', $age);
+		$this->db->set('stf_reserved_group_number', $num);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->update('bf_staff');
+	}
+
+	private function unreserve_group_1($age, $num)
+	{
+		$this->db->set('stf_reserved_age_level', 'IF (stf_reserved_count = 1, NULL, stf_reserved_age_level)', false);
+		$this->db->set('stf_reserved_group_number', 'IF (stf_reserved_count = 1, NULL, stf_reserved_group_number)', false);
+		$this->db->set('stf_reserved_count', 'stf_reserved_count-1', false);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->where('stf_reserved_age_level', $age);
+		$this->db->where('stf_reserved_group_number', $num);
+		$this->db->update('bf_staff');
+	}
+
+	private function unreserve_groups()
+	{
+		$this->db->set('stf_reserved_age_level', null);
+		$this->db->set('stf_reserved_group_number', null);
+		$this->db->set('stf_reserved_count', 0);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->update('bf_staff');
+	}
+
+	private function set_group($prt_id_v, $age, $grp)
+	{
+		unreserve_group_1($age, $grp);
+		$this->db->set('prt_age_level', $age);
+		$this->db->set('prt_group_number', $prt_group_number);
+		$this->db->set('prt_registered', 'IF(prt_registered = '.REG_NO.', '.REG_YES.', prt_registered)', false);
+		$this->db->where('prt_id', $prt_id_v);
+		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
+	}
+
+	private function unset_group($prt_id_v, $age, $grp)
+	{
+	}
+
 	public function getgroups() {
 		global $age_level_from;
 		global $age_level_to;
@@ -740,12 +777,23 @@ class Participant extends BF_Controller {
 			return;
 		}
 
+		$tab = in('tab');
+		$tab_v = $tab->getValue();
+
 		$prt_id = in('prt_id');
 		$prt_id->persistent();
 		$prt_id_v = $prt_id->getValue();
 
-bugout("=============", $prt_id_v);
+		$grp_arg = in('grp_arg');
+		$grp_arg_v = $grp_arg->getValue();
+		$prt_age_level = str_left($grp_arg_v, '_');
+		$prt_group_number = str_right($grp_arg_v, '_');
+	
+		$action = in('action');
+		$action_v = $action->getValue();
+
 		$participant_row = $this->get_participant_row($prt_id_v);
+		$staff_row = $this->get_staff_row($this->session->stf_login_id);
 
 		$current_period = $this->db_model->get_setting('current-period');
 
@@ -762,21 +810,61 @@ bugout("=============", $prt_id_v);
 				$nr_of_groups[$age] = $num;
 		}
 
-		table([ 'id'=>'register_group_list', 'style'=>'border-spacing: 0;' ]);
+		if (!empty($action_v)) {
+			if (empty($prt_id_v))
+				$action = 'reserve';
+			else {
+				if (empty($participant_row['prt_group_number']))
+					$action = 'set-group';
+				else
+					$action = 'reserve';
+			}
+
+			switch ($action) {
+				case 'reserve':
+					$this->reserve_group($prt_age_level, $prt_group_number);
+					break;
+				case 'set-group':
+					$this->set_group($prt_id_v, $prt_age_level, $prt_group_number);
+			}
+
+			$participant_row = $this->get_participant_row($prt_id_v);
+			$staff_row = $this->get_staff_row($this->session->stf_login_id);
+		}
+
+		table([ 'style'=>'border-spacing: 0;' ]);
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
 			tr();
 			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
 			$group_nr = arr_nvl($nr_of_groups, $a, 0);
 			for ($i=1; $i<=$group_nr; $i++) {
 				td( [ 'style'=>'padding: 4px;'] );
-				$style = 'height: 28px; font-size: 20px;';
-				if ($participant_row['prt_age_level'] != $a || $participant_row['prt_group_number'] != $i)
-					$style .= ' opacity: 0.3;';
+
+				$vis = '';
+				if ($staff_row['stf_reserved_age_level'] != $a ||
+					$staff_row['stf_reserved_group_number'] != $i ||
+					empty($staff_row['stf_reserved_count'])) {
+					$vis = ' visibility: hidden;';
+				}
+				else {
+					bugout("==", $a, $i);
+				}
+				$reserve_box = span([ 'class'=>'group-number',
+					'style'=>'background-color: white; border-radius: 0px;'.$vis,
+					'onclick'=>'$(\'#grp_arg\').val(\''.$a.'_'.$i.'\'); $(\'#action\').val(\'reserve\'); '.$tab_v.'_group_list();' ],
+					$staff_row['stf_reserved_count']);
+
+				$opa = '';
+				if (!empty($vis) &&
+					($participant_row['prt_age_level'] != $a || $participant_row['prt_group_number'] != $i))
+					$opa = ' opacity: 0.3;';
+
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
-				span([ 'id'=>'my_group_'.$a.'_'.$i, 'class'=>'group g-'.$a, 'style'=>$style,
-					'onclick'=>'modify_group_list();' ],
-					span(['class'=>'group-number'], $i), span(
-						[ 'style'=>'display: inline-block; min-width: 40px; text-align: center;' ], $count));
+				span([ 'id'=>'my_group_'.$a.'_'.$i, 'class'=>'group g-'.$a, 'style'=>'height: 28px; font-size: 20px;'.$opa,
+					'onclick'=>$tab_v.'_group_list("'.$a.'_'.$i.'", "set-group");' ],
+					span([ 'class'=>'group-number' ], $i),
+					span([ 'style'=>'display: inline-block; min-width: 32px; text-align: center;' ], $count),
+					$reserve_box);
 				_td();
 			}
 			_tr();

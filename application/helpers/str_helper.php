@@ -72,6 +72,10 @@ function arr_nvl($array, $index, $default = null) {
 	return $default;
 }
 
+function arr_is_assoc($array) {
+	return array_keys($array) !== range(0, count($array) - 1);
+}
+
 function get_age($dob) {
 	if (empty($dob))
 		return null;

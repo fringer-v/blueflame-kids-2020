@@ -5,8 +5,8 @@
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
 // 27 - Changed prt_registered field to status
-// 39 - Changes for Blueflame 2020
-define("DB_VERSION", 39);
+// 40 - Changes for Blueflame 2020
+define("DB_VERSION", 40);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -93,6 +93,7 @@ class DB_model extends CI_Model {
 			'stf_loginallowed'=>array('type'=>'BOOLEAN', 'default'=>true),
 			'stf_technician'=>array('type'=>'BOOLEAN', 'default'=>false),
 			'stf_reserved_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'stf_reserved_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'stf_reserved_count'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'INDEX stf_reserved (stf_reserved_age_level, stf_reserved_count)'
 		);
