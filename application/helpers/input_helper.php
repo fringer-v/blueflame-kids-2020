@@ -359,7 +359,7 @@ class InputField extends BaseOutput {
 	}
 
 	public function __destruct() {
-		// If this instance has not been shownm then show it new.
+		// If this instance has not been shown then show it new.
 		// This is so you can print with out('text');
 		// rather than typing out('text')->show();
 		if ($this->autoEcho() && !$this->isHidden())
@@ -465,19 +465,6 @@ class InputField extends BaseOutput {
 	public function disable() {
 		$this->disabled = true;
 	}
-
-/*
-	public function show() {
-		$this->html()->show();
-	}
-
-	public function html() {
-	}
-
-	public function __toString() {
-		return $this->html()->html();
-	}
-*/
 
 	public function setRule($rules) {
 		$this->rules = $rules;
@@ -650,55 +637,55 @@ function in($name, $default_value = '')
 function submit($name, $label, $attributes = [])
 {
 	$field = new Submit($name, $label, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function button($name, $label, $attributes = [])
 {
 	$field = new Button($name, $label, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function hidden($name, $default_value = '')
 {
 	$field = new Hidden($name, $default_value);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function textinput($name, $default_value = '', $attributes = [])
 {
 	$field = new TextInput($name, $default_value, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function password($name, $default_value = '', $attributes = [])
 {
 	$field = new Password($name, $default_value, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function textarea($name, $default_value = '', $attributes = [])
 {
 	$field = new TextArea($name, $default_value, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function select($name, $values, $default_value = '', $attributes = [])
 {
 	$field = new Select($name, $values, $default_value, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }
 
 function checkbox($name, $default_value = '', $attributes = [])
 {
 	$field = new Checkbox($name, $default_value, $attributes);
-	$field->autoEchoOff();
+	$field->autoEchoOn();
 	return $field;
 }

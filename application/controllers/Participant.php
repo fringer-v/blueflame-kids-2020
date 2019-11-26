@@ -189,6 +189,7 @@ class Participant extends BF_Controller {
 
 		$group_list = new AsyncLoader('modify_group_list', 'participant/getgroups?tab=modify', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
+
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', 'Begleitperson Nachname',
@@ -646,7 +647,8 @@ class Participant extends BF_Controller {
 			$("#prt_birthday").keyup(birthday_changed);
 		');
 		_script();
-
+		script('participant/pollgroups?tab=modify');
+		_script();
 		$this->footer();
 	}
 
@@ -724,7 +726,7 @@ class Participant extends BF_Controller {
 		_table();
 	}
 
-	private function reserve_group($age, $num)
+	private function reserveGroup($age, $num)
 	{
 		$this->db->set('stf_reserved_count',
 			'IF(stf_reserved_age_level = '.$age.' AND stf_reserved_group_number = '.$num.', stf_reserved_count+1, 1)', false);
@@ -734,6 +736,18 @@ class Participant extends BF_Controller {
 		$this->db->update('bf_staff');
 	}
 
+	private function unreserveGroups($age, $num)
+	{
+		$this->db->set('stf_reserved_age_level', null);
+		$this->db->set('stf_reserved_group_number', null);
+		$this->db->set('stf_reserved_count', 0);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->where('stf_reserved_age_level', $age);
+		$this->db->where('stf_reserved_group_number', $num);
+		$this->db->update('bf_staff');
+	}
+
+/*
 	private function unreserve_group_1($age, $num)
 	{
 		$this->db->set('stf_reserved_age_level', 'IF (stf_reserved_count = 1, NULL, stf_reserved_age_level)', false);
@@ -742,15 +756,6 @@ class Participant extends BF_Controller {
 		$this->db->where('stf_id', $this->session->stf_login_id);
 		$this->db->where('stf_reserved_age_level', $age);
 		$this->db->where('stf_reserved_group_number', $num);
-		$this->db->update('bf_staff');
-	}
-
-	private function unreserve_groups()
-	{
-		$this->db->set('stf_reserved_age_level', null);
-		$this->db->set('stf_reserved_group_number', null);
-		$this->db->set('stf_reserved_count', 0);
-		$this->db->where('stf_id', $this->session->stf_login_id);
 		$this->db->update('bf_staff');
 	}
 
@@ -763,35 +768,10 @@ class Participant extends BF_Controller {
 		$this->db->where('prt_id', $prt_id_v);
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
 	}
+*/
 
-	private function unset_group($prt_id_v, $age, $grp)
+	private function getGroupData($prt_id_v)
 	{
-	}
-
-	public function getgroups() {
-		global $age_level_from;
-		global $age_level_to;
-
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
-			return;
-		}
-
-		$tab = in('tab');
-		$tab_v = $tab->getValue();
-
-		$prt_id = in('prt_id');
-		$prt_id->persistent();
-		$prt_id_v = $prt_id->getValue();
-
-		$grp_arg = in('grp_arg');
-		$grp_arg_v = $grp_arg->getValue();
-		$prt_age_level = str_left($grp_arg_v, '_');
-		$prt_group_number = str_right($grp_arg_v, '_');
-	
-		$action = in('action');
-		$action_v = $action->getValue();
-
 		$participant_row = $this->get_participant_row($prt_id_v);
 		$staff_row = $this->get_staff_row($this->session->stf_login_id);
 
@@ -806,69 +786,158 @@ class Participant extends BF_Controller {
 		foreach ($group_counts as $group=>$count) {
 			$age = str_left($group, '_');
 			$num = str_right($group, '_');
-			if ($nr_of_groups[$age] < $num)
+			if (arr_nvl($nr_of_groups, $age, 0) < $num)
 				$nr_of_groups[$age] = $num;
 		}
 
-		if (!empty($action_v)) {
-			if (empty($prt_id_v))
-				$action = 'reserve';
-			else {
-				if (empty($participant_row['prt_group_number']))
-					$action = 'set-group';
-				else
-					$action = 'reserve';
-			}
+		$reserve_counts = db_array_2('SELECT CONCAT(stf_reserved_age_level, "_", stf_reserved_group_number),
+			SUM(stf_reserved_count)
+			FROM bf_staff WHERE stf_reserved_count > 0 AND stf_reserved_group_number > 0
+			GROUP BY stf_reserved_age_level, stf_reserved_group_number');
+		foreach ($reserve_counts as $group=>$count) {
+			$age = str_left($group, '_');
+			$num = str_right($group, '_');
+			if (arr_nvl($nr_of_groups, $age, 0) < $num)
+				$nr_of_groups[$age] = $num;
+		}
+		
+		return [ $participant_row, $staff_row, $current_period, $nr_of_groups, $group_counts, $reserve_counts ];
+	}
 
-			switch ($action) {
-				case 'reserve':
-					$this->reserve_group($prt_age_level, $prt_group_number);
-					break;
-				case 'set-group':
-					$this->set_group($prt_id_v, $prt_age_level, $prt_group_number);
-			}
+	public function getgroups() {
+		global $age_level_from;
+		global $age_level_to;
 
-			$participant_row = $this->get_participant_row($prt_id_v);
-			$staff_row = $this->get_staff_row($this->session->stf_login_id);
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
 		}
 
+		$grp_arg = in('grp_arg');
+		$grp_arg_v = $grp_arg->getValue();
+		$prt_age_level = str_left($grp_arg_v, '_');
+		$prt_group_number = str_right($grp_arg_v, '_');
+	
+		$action = in('action');
+		$action_v = $action->getValue();
+
+		if (!empty($action_v)) {
+			switch ($action_v) {
+				case 'reserve':
+					$this->reserveGroup($prt_age_level, $prt_group_number);
+					break;
+				case 'unreserve':
+					$this->unreserveGroups($prt_age_level, $prt_group_number);
+					break;
+			}
+
+		}
+
+		$prt_id = in('prt_id');
+		$prt_id->persistent();
+		$prt_id_v = $prt_id->getValue();
+
+		$tab = in('tab');
+		$tab_v = $tab->getValue();
+
+		list($participant_row,
+			$staff_row,
+			$current_period,
+			$nr_of_groups,
+			$group_counts,
+			$reserve_counts) = $this->getGroupData($prt_id_v);
+
 		table([ 'style'=>'border-spacing: 0;' ]);
+		$groups_per_age = ''; 
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			$groups_per_age .= $a.'_'.$group_nr.':';
+			if (empty($group_nr))
+				continue;
 			tr();
 			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
-			$group_nr = arr_nvl($nr_of_groups, $a, 0);
 			for ($i=1; $i<=$group_nr; $i++) {
 				td( [ 'style'=>'padding: 4px;'] );
 
-				$vis = '';
-				if ($staff_row['stf_reserved_age_level'] != $a ||
-					$staff_row['stf_reserved_group_number'] != $i ||
-					empty($staff_row['stf_reserved_count'])) {
-					$vis = ' visibility: hidden;';
+				$reserve_onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "reserve");';
+				if ($staff_row['stf_reserved_age_level'] == $a &&
+					$staff_row['stf_reserved_group_number'] == $i &&
+					!empty($staff_row['stf_reserved_count'])) {
+					$table_onclick = '';
+					$onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "unreserve");';
+					$vis = '';
 				}
 				else {
-					bugout("==", $a, $i);
+					$table_onclick = $reserve_onclick;
+					$onclick = '';
+					$reserve_onclick = '';
+					$vis = ' visibility: hidden;';
 				}
 				$reserve_box = span([ 'class'=>'group-number',
-					'style'=>'background-color: white; border-radius: 0px;'.$vis,
-					'onclick'=>'$(\'#grp_arg\').val(\''.$a.'_'.$i.'\'); $(\'#action\').val(\'reserve\'); '.$tab_v.'_group_list();' ],
+					'style'=>'background-color: white; border-radius: 0px; width: 18px;'.$vis ],
 					$staff_row['stf_reserved_count']);
 
 				$opa = '';
 				if (!empty($vis) &&
 					($participant_row['prt_age_level'] != $a || $participant_row['prt_group_number'] != $i))
-					$opa = ' opacity: 0.3;';
+					$opa = 'opacity: 0.3;';
 
-				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
-				span([ 'id'=>'my_group_'.$a.'_'.$i, 'class'=>'group g-'.$a, 'style'=>'height: 28px; font-size: 20px;'.$opa,
-					'onclick'=>$tab_v.'_group_list("'.$a.'_'.$i.'", "set-group");' ],
-					span([ 'class'=>'group-number' ], $i),
-					span([ 'style'=>'display: inline-block; min-width: 32px; text-align: center;' ], $count),
-					$reserve_box);
+				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
+				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
+				if ($r_count != 0) {
+					$count = $count.'/'.$r_count;
+				}
+				table([ 'class'=>'participant-group g-'.$a, 'onclick'=>$table_onclick, 'style'=>$opa ]);
+				tr();
+				td([ 'onclick'=>$onclick ], span([ 'class'=>'group-number' ], $i));
+				td([ 'onclick'=>$onclick, 'style'=>'min-width: 28px; text-align: center;' ], span([ 'id'=>$tab_v.'_group_'.$a.'_'.$i ], $count));
+				td([ 'onclick'=>$reserve_onclick ], $reserve_box);
+				_tr();
+				_table();
 				_td();
 			}
 			_tr();
 		}
 		_table();
+		hidden($tab_v.'_groups_per_age', $groups_per_age);
+	}
+
+	public function pollgroups() {
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
+		}
+
+		$prt_id = in('prt_id');
+		$prt_id->persistent();
+		$prt_id_v = $prt_id->getValue();
+
+		$tab = in('tab');
+		$tab_v = $tab->getValue();
+
+		$gpa = in('gpa');
+		$gpa_v = $gpa->getValue();
+
+		list($participant_row,
+			$staff_row,
+			$current_period,
+			$nr_of_groups,
+			$group_counts,
+			$reserve_counts) = $this->getGroupData($prt_id_v);
+
+		$groups_per_age = ''; 
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			$groups_per_age .= $a.'_'.$group_nr.':';
+			if (empty($group_nr))
+				continue;
+			for ($i=1; $i<=$group_nr; $i++) {
+				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
+				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
+				if ($r_count != 0)
+					$count = $count.'/'.$r_count;
+				out('$("#'.$tab_v.'_group_'.$a.'_'.$i.'").val("'.$count.'");');
+			}
+		}
 	}
 }

@@ -406,18 +406,26 @@ table.scrollable-table tbody {
 	/*height: 28px;*/
 	padding: 4px 4px 0px 4px;
 	color: white;
-	/*font-size: 20px;*/
 }
 
-.group.g-0 {
+.participant-group {
+	display: inline-block;
+	border: 1px solid black;
+	padding: 0px;
+	color: white;
+	font-size: 20px;
+	padding: 0px 2px;
+}
+
+.g-0 {
 	background-color: var(--g-0);
 }
 
-.group.g-1 {
+.g-1 {
 	background-color: var(--g-1);
 }
 
-.group.g-2 {
+.g-2 {
 	background-color: var(--g-2);
 }
 

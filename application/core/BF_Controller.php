@@ -195,10 +195,13 @@ class BF_Controller extends CI_Controller {
 		div(array('class'=>'topnav'));
 		table();
 		tr(array('style'=>'height: 12px;'));
+		if ($title != 'Login') {
+			td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'padding: 0px 3px 2px 10px; border-bottom: 1px solid black;'));
+			tag('img', array('src'=>base_url('/img/bf-kids-logo2.png'), 'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;'));
+			_td();
+		}
 		td(array('colspan'=>'8'));
 		td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'width: 100%; border-bottom: 1px solid black;'));
-		if ($title != 'Login')
-			tag('img', array('src'=>base_url('/img/bf-kids-logo2.png'), 'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;'));
 		_td();
 		td(array('colspan'=>'2'));
 		_tr();
