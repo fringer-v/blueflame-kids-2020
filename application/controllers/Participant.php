@@ -277,16 +277,29 @@ class Participant extends BF_Controller {
 		if ($new_participant->submitted() || $save_participant->submitted()) {
 			$this->error = $update_participant->validate('tab_modify');
 			if (is_empty($this->error)) {
-				$data = array(
+				$data = [
 					'prt_firstname' => $prt_firstname->getValue(),
 					'prt_lastname' => $prt_lastname->getValue(),
 					'prt_birthday' => $prt_birthday->getDate('Y-m-d'),
 					'prt_supervision_firstname' => $prt_supervision_firstname->getValue(),
 					'prt_supervision_lastname' => $prt_supervision_lastname->getValue(),
 					'prt_supervision_cellphone' => $prt_supervision_cellphone->getValue(),
-					//'prt_grp_id' => $prt_grp_id->getValue(),
 					'prt_notes' => $prt_notes->getValue()
-				);
+				];
+
+				$history = [ 'hst_prt_id'=>$prt_id_v, 'hst_stf_id'=> $this->session->stf_login_id ];
+
+				$staff_row = $this->get_staff_row($this->session->stf_login_id);
+				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
+
+				if ($group_reserved) {
+					$data['prt_age_level'] = $staff_row['stf_reserved_age_level'];
+					$data['prt_group_number'] = $staff_row['stf_reserved_group_number'];
+					$data['prt_registered'] = REG_YES;
+					$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
+					$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
+				}
+
 				if (is_empty($prt_id_v)) {
 					$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_firstname = ? '.
 						'AND prt_lastname = ?',
@@ -302,10 +315,10 @@ class Participant extends BF_Controller {
 						$this->db->insert('bf_participants', $data);
 						$prt_id_v = $this->db->insert_id();
 
-						$this->db->insert('bf_history', array(
-							'hst_prt_id'=>$prt_id_v,
-							'hst_stf_id'=>$this->session->stf_login_id,
-							'hst_action'=>CREATED));
+						$history['hst_action'] = CREATED;
+						$this->db->insert('bf_history', $history);
+						if ($group_reserved)
+							$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
 
 						$prt_filter->setValue('');
 						$prt_page->setValue(1);
@@ -318,10 +331,18 @@ class Participant extends BF_Controller {
 				}
 				else {
 					$data['prt_modify_stf_id'] = $this->session->stf_login_id;
+					if ($group_reserved && $participant_row['prt_registered'] == REG_NO)
+						$data['prt_registered'] = REG_YES;
 					$this->db->set('prt_modifytime', 'NOW()', FALSE);
-
 					$this->db->where('prt_id', $prt_id_v);
 					$this->db->update('bf_participants', $data);
+					if ($group_reserved) {
+						$history['hst_action'] = REGISTER;
+						$this->db->insert('bf_history', $history);
+						if ($group_reserved)
+							$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
+					}
+
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert');
 					redirect("participant");
 				}
@@ -329,61 +350,83 @@ class Participant extends BF_Controller {
 		}
 
 		if (!is_empty($prt_id_v)) {
-			$reg_toggled = $unregister->submitted() || $register->submitted();
-			$fetch_toggled = $being_fetched->submitted() || $cancel_fetch->submitted();
-			if ($reg_toggled || $fetch_toggled) {
-				if ($reg_toggled) {
-					if ($participant_row['prt_registered'] == REG_NO) {
-						$registered = REG_YES;
-						$action = REGISTER;
+			if ($register->submitted() || $unregister->submitted() ||
+				$being_fetched->submitted() || $cancel_fetch->submitted()) {
+				
+				$data = [ ];
+				$history = [
+					'hst_prt_id'=>$prt_id_v,
+					'hst_stf_id'=> $this->session->stf_login_id,
+					'hst_notes'=>$register_comment->getValue() ];
+
+				$staff_row = $this->get_staff_row($this->session->stf_login_id);
+				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
+				
+				if ($register->submitted()) {
+					if ($participant_row['prt_registered'] == REG_NO && $group_reserved) {
+						$data['prt_age_level'] = $staff_row['stf_reserved_age_level'];
+						$data['prt_group_number'] = $staff_row['stf_reserved_group_number'];
+						$data['prt_registered'] = REG_YES;
+						$history['hst_action'] = REGISTER;
+						$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
+						$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
 						$comment = 'angemeldet';
 					}
-					else {
-						$registered = REG_NO;
-						$action = UNREGISTER;
+				}
+				else if ($unregister->submitted()) {
+					if ($participant_row['prt_registered'] == REG_YES ||
+						$participant_row['prt_registered'] == REG_BEING_FETCHED) {
+						$data['prt_age_level'] = null;
+						$data['prt_group_number'] = null;
+						$data['prt_registered'] = REG_NO;
+						$history['hst_action'] = UNREGISTER;
+						$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
+						$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
 						$comment = 'abgemeldet';
 					}
 				}
-				else { // fetch_toggled
-					if ($participant_row['prt_registered'] == REG_BEING_FETCHED) {
-						$registered = REG_YES;
-						$action = REGISTER;
-						$comment = 'erneut angemeldet';
-					}
-					else {
-						$registered = REG_BEING_FETCHED;
-						$action = BEING_FETCHED;
+				else if ($being_fetched->submitted()) {
+					if ($participant_row['prt_registered'] == REG_YES) {
+						$data['prt_registered'] = REG_BEING_FETCHED;
+						$history['hst_action'] = BEING_FETCHED;
 						$comment = 'wird abgeholt';
 					}
 				}
-
-				$sql = 'UPDATE bf_participants SET prt_registered = ?, prt_modifytime = NOW()';
-				if (!is_empty($participant_row['prt_call_status'])) {
-					$sql .= ', prt_call_status = '.CALL_NOCALL;
-					$sql .= ', prt_call_escalation = 0';
-					$sql .= ', prt_call_start_time = NOW()';
-
-					$this->db->insert('bf_history', array(
-						'hst_prt_id'=>$prt_id_v,
-						'hst_stf_id'=>$this->session->stf_login_id,
-						'hst_action'=>CANCELLED,
-						'hst_escalation'=>0));
+				else if ($cancel_fetch->submitted()) {
+					if ($participant_row['prt_registered'] == REG_BEING_FETCHED) {
+						$data['prt_registered'] = REG_YES;
+						$history['hst_action'] = REGISTER;
+						$comment = 'erneut angemeldet';
+					}
 				}
-				if (!is_empty($participant_row['prt_wc_time'])) {
-					$sql .= ', prt_wc_time = NULL';
+
+				if (!empty($data)) {					
+					if (!is_empty($participant_row['prt_call_status'])) {
+						// Cancel the call!
+						$this->db->insert('bf_history', array(
+							'hst_prt_id'=>$prt_id_v,
+							'hst_stf_id'=>$this->session->stf_login_id,
+							'hst_action'=>CANCELLED,
+							'hst_escalation'=>0));
+
+						$this->db->set('prt_call_status', CALL_NOCALL);
+						$this->db->set('prt_call_escalation', 0);
+						$this->db->set('prt_call_start_time', 'NOW()', false);
+					}
+					if (!is_empty($participant_row['prt_wc_time']))
+						$this->db->set('prt_wc_time', null);
+
+					$this->db->set('prt_modifytime', 'NOW()', false);
+					$this->db->where('prt_id', $prt_id_v);
+					$this->db->update('bf_participants', $data);
+
+					$this->db->insert('bf_history', $history);
+					if ($group_reserved && $history['hst_action'] == REGISTER)
+						$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
+
+					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.$comment);
+					redirect("participant");
 				}
-				//$sql .= ', prt_grp_id = '.$register_group->getValue();
-				$sql .= ' WHERE prt_id = ?';
-				$this->db->query($sql, array($registered, $prt_id_v));
-
-				$this->db->insert('bf_history', array(
-					'hst_prt_id'=>$prt_id_v,
-					'hst_stf_id'=>$this->session->stf_login_id,
-					'hst_action'=>$action,
-					'hst_notes'=>$register_comment->getValue()));
-
-				$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.$comment);
-				redirect("participant");
 			}
 
 			$call_status = $participant_row['prt_call_status'];
@@ -574,12 +617,12 @@ class Participant extends BF_Controller {
 		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
-		$this->header('Kinder');
+		$this->header('Kinder', false);
 
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 
-		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>3));
+		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>4));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
 			tr(td($prt_filter, ' ', $clear_filter));
@@ -624,6 +667,11 @@ class Participant extends BF_Controller {
 			_table();
 		_td();
 		_tr();
+		tr();
+		td();
+		$this->printResult();
+		_td();
+		_tr();
 		if (isset($history_table)) {
 			tr(td(array('align'=>'left', 'valign'=>'top'), $history_table->paginationHtml()));
 			tr(td(array('align'=>'left', 'valign'=>'top'), $history_table->html()));
@@ -635,6 +683,11 @@ class Participant extends BF_Controller {
 		_table();
 
 		script();
+		// Dummy function, because this tab does not have a load function:
+		out('
+			function supervisor_group_list() {
+			}
+		');
 		out('
 			function birthday_changed() {
 				var value = $("#prt_birthday").val();
@@ -646,8 +699,20 @@ class Participant extends BF_Controller {
 			}
 			$("#prt_birthday").keyup(birthday_changed);
 		');
-		_script();
-		script('participant/pollgroups?tab=modify');
+		out('
+			function poll_groups() {
+				console.log("Polling...");
+				var tab = "";
+				if ($("#tab_content_modify").css("display") == "block")
+					tab = "modify";
+				else if ($("#tab_content_register").css("display") == "block")
+					tab = "register";
+				else
+					return;
+				$.getScript("participant/pollgroups?tab="+tab+"&gpa="+$("#"+tab+"_groups_per_age").val());
+			}
+		');
+		out('window.setInterval(poll_groups, 5000);');
 		_script();
 		$this->footer();
 	}
@@ -747,8 +812,7 @@ class Participant extends BF_Controller {
 		$this->db->update('bf_staff');
 	}
 
-/*
-	private function unreserve_group_1($age, $num)
+	private function unreserveGroup($age, $num)
 	{
 		$this->db->set('stf_reserved_age_level', 'IF (stf_reserved_count = 1, NULL, stf_reserved_age_level)', false);
 		$this->db->set('stf_reserved_group_number', 'IF (stf_reserved_count = 1, NULL, stf_reserved_group_number)', false);
@@ -759,9 +823,10 @@ class Participant extends BF_Controller {
 		$this->db->update('bf_staff');
 	}
 
+/*
 	private function set_group($prt_id_v, $age, $grp)
 	{
-		unreserve_group_1($age, $grp);
+		unreserveGroup($age, $grp);
 		$this->db->set('prt_age_level', $age);
 		$this->db->set('prt_group_number', $prt_group_number);
 		$this->db->set('prt_registered', 'IF(prt_registered = '.REG_NO.', '.REG_YES.', prt_registered)', false);
@@ -772,23 +837,7 @@ class Participant extends BF_Controller {
 
 	private function getGroupData($prt_id_v)
 	{
-		$participant_row = $this->get_participant_row($prt_id_v);
-		$staff_row = $this->get_staff_row($this->session->stf_login_id);
-
-		$current_period = $this->db_model->get_setting('current-period');
-
-		$nr_of_groups = db_array_2('SELECT grp_age_level, grp_count
-			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $current_period ]);
-
-		$group_counts = db_array_2('SELECT CONCAT(prt_age_level, "_", prt_group_number),
-			COUNT(DISTINCT prt_id)
-			FROM bf_participants WHERE prt_group_number > 0 GROUP BY prt_age_level, prt_group_number');
-		foreach ($group_counts as $group=>$count) {
-			$age = str_left($group, '_');
-			$num = str_right($group, '_');
-			if (arr_nvl($nr_of_groups, $age, 0) < $num)
-				$nr_of_groups[$age] = $num;
-		}
+		list($current_period, $nr_of_groups, $group_counts) = $this->getPeriodData();
 
 		$reserve_counts = db_array_2('SELECT CONCAT(stf_reserved_age_level, "_", stf_reserved_group_number),
 			SUM(stf_reserved_count)
@@ -801,7 +850,11 @@ class Participant extends BF_Controller {
 				$nr_of_groups[$age] = $num;
 		}
 		
-		return [ $participant_row, $staff_row, $current_period, $nr_of_groups, $group_counts, $reserve_counts ];
+		$participant_row = $this->get_participant_row($prt_id_v);
+
+		$staff_row = $this->get_staff_row($this->session->stf_login_id);
+
+		return [ $current_period, $nr_of_groups, $group_counts, $reserve_counts, $participant_row, $staff_row ];
 	}
 
 	public function getgroups() {
@@ -830,7 +883,6 @@ class Participant extends BF_Controller {
 					$this->unreserveGroups($prt_age_level, $prt_group_number);
 					break;
 			}
-
 		}
 
 		$prt_id = in('prt_id');
@@ -840,12 +892,12 @@ class Participant extends BF_Controller {
 		$tab = in('tab');
 		$tab_v = $tab->getValue();
 
-		list($participant_row,
-			$staff_row,
-			$current_period,
+		list($current_period,
 			$nr_of_groups,
 			$group_counts,
-			$reserve_counts) = $this->getGroupData($prt_id_v);
+			$reserve_counts,
+			$participant_row,
+			$staff_row) = $this->getGroupData($prt_id_v);
 
 		table([ 'style'=>'border-spacing: 0;' ]);
 		$groups_per_age = ''; 
@@ -860,9 +912,10 @@ class Participant extends BF_Controller {
 				td( [ 'style'=>'padding: 4px;'] );
 
 				$reserve_onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "reserve");';
+				$std_r_count = if_empty($staff_row['stf_reserved_count'], 0);
 				if ($staff_row['stf_reserved_age_level'] == $a &&
 					$staff_row['stf_reserved_group_number'] == $i &&
-					!empty($staff_row['stf_reserved_count'])) {
+					$std_r_count > 0) {
 					$table_onclick = '';
 					$onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "unreserve");';
 					$vis = '';
@@ -884,9 +937,10 @@ class Participant extends BF_Controller {
 
 				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
-				if ($r_count != 0) {
+				$r_count -= $std_r_count;
+				if ($r_count > 0)
 					$count = $count.'/'.$r_count;
-				}
+
 				table([ 'class'=>'participant-group g-'.$a, 'onclick'=>$table_onclick, 'style'=>$opa ]);
 				tr();
 				td([ 'onclick'=>$onclick ], span([ 'class'=>'group-number' ], $i));
@@ -918,12 +972,12 @@ class Participant extends BF_Controller {
 		$gpa = in('gpa');
 		$gpa_v = $gpa->getValue();
 
-		list($participant_row,
-			$staff_row,
-			$current_period,
+		list($current_period,
 			$nr_of_groups,
 			$group_counts,
-			$reserve_counts) = $this->getGroupData($prt_id_v);
+			$reserve_counts,
+			$participant_row,
+			$staff_row) = $this->getGroupData($prt_id_v);
 
 		$groups_per_age = ''; 
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
@@ -932,11 +986,13 @@ class Participant extends BF_Controller {
 			if (empty($group_nr))
 				continue;
 			for ($i=1; $i<=$group_nr; $i++) {
+				$std_r_count = if_empty($staff_row['stf_reserved_count'], 0);
 				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
-				if ($r_count != 0)
+				$r_count -= $std_r_count;
+				if ($r_count > 0)
 					$count = $count.'/'.$r_count;
-				out('$("#'.$tab_v.'_group_'.$a.'_'.$i.'").val("'.$count.'");');
+				out('$("#'.$tab_v.'_group_'.$a.'_'.$i.'").html("'.$count.'");');
 			}
 		}
 	}

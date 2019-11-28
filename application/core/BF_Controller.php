@@ -150,6 +150,32 @@ class BF_Controller extends CI_Controller {
 		return $query->row_array();
 	}
 
+	public function getPeriodData($p = 0)
+	{
+		$current_period = $this->db_model->get_setting('current-period');
+		if ($p == 0)
+			$p = $current_period;
+
+		$nr_of_groups = db_array_2('SELECT grp_age_level, grp_count
+			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $p ]);
+
+		if ($p == $current_period) {
+			$group_counts = db_array_2('SELECT CONCAT(prt_age_level, "_", prt_group_number),
+				COUNT(DISTINCT prt_id)
+				FROM bf_participants WHERE prt_group_number > 0 GROUP BY prt_age_level, prt_group_number');
+			foreach ($group_counts as $group=>$count) {
+				$age = str_left($group, '_');
+				$num = str_right($group, '_');
+				if (arr_nvl($nr_of_groups, $age, 0) < $num)
+					$nr_of_groups[$age] = $num;
+			}
+		}
+		else
+			$group_counts = [];
+
+		return [ $current_period, $nr_of_groups, $group_counts ];
+	}
+
 	public function authorize($redirect = true) {
 		$this->load->library('session');
 		if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {

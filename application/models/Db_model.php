@@ -5,8 +5,8 @@
 // 25 - Added bf_locations table
 // 26 - Added leader and coleader to groups
 // 27 - Changed prt_registered field to status
-// 40 - Changes for Blueflame 2020
-define("DB_VERSION", 40);
+// 41 - Changes for Blueflame 2020
+define("DB_VERSION", 41);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -158,7 +158,8 @@ class DB_model extends CI_Model {
 			'hst_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
 			'hst_action'=>array('type'=>'SMALLINT', 'unsigned'=>true),
 			'hst_escalation'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
-			'hst_grp_id'=>array('type'=>'INTEGER', 'unsigned'=>true, 'null'=>true),
+			'hst_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
+			'hst_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'hst_notes'=>array('type'=>'TEXT'),
 			'INDEX hst_prt_id_timestamp_index (hst_prt_id, hst_timestamp)'
 		);
