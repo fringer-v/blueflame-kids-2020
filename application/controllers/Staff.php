@@ -254,8 +254,8 @@ class Staff extends BF_Controller {
 				$group_box = div([ 'id'=>'my_group_'.$p, 'style'=>'height: 32px; font-size: 20px' ], nbsp());
 			else {
 				$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
-				$group_box = span([ 'id'=>'my_group_'.$p, 'class'=>'group g-'.$age_level, 'style'=>'height: 27px; font-size: 20px' ],
-					span(['class'=>'group-number'], $group_nr), " ".$ages);
+				$group_box = span([ 'id'=>'my_group_'.$p, 'class'=>'group-s g-'.$age_level ],
+					span(['class'=>'group-number-s'], $group_nr), " ".$ages);
 			}
 			$schedule->add(td($group_box));
 		}

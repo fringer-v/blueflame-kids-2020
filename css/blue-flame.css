@@ -408,6 +408,16 @@ table.scrollable-table tbody {
 	color: white;
 }
 
+.group-s {
+	display: inline-block;
+	border: 1px solid black;
+	height: 22px;
+	min-width: 64px;
+	font-size: 16px;
+	padding: 2px 2px 0px 2px;
+	color: white;
+}
+
 .participant-group {
 	display: inline-block;
 	border: 1px solid black;
@@ -440,6 +450,17 @@ table.scrollable-table tbody {
 	font-size: 20px;
 }
 
+.group-number-s {
+	display: inline-block;
+	width: 18px;
+	height: 18px;
+    border-radius: 9px;
+	text-align: center;
+	border: 1px solid black;
+	color: black;
+	font-size: 16px;
+}
+
 .g-0 .group-number {
 	background-color: var(--g--0);
 }
@@ -449,6 +470,18 @@ table.scrollable-table tbody {
 }
 
 .g-2 .group-number {
+	background-color: var(--g--2);
+}
+
+.g-0 .group-number-s {
+	background-color: var(--g--0);
+}
+
+.g-1 .group-number-s {
+	background-color: var(--g--1);
+}
+
+.g-2 .group-number-s {
 	background-color: var(--g--2);
 }
 
@@ -522,8 +555,8 @@ table.scrollable-table tbody {
 	min-width: 120px;
 }
 
-.participant-table td:nth-child(3) {
-	min-width: 120px;
+.participant-table td:nth-child(4) {
+	padding: 2px 2px;
 }
 
 .participant-tabs {

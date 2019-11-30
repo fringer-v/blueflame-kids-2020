@@ -16,7 +16,8 @@ class DB_model extends CI_Model {
 		);
 
 	public function __construct() {
-		$this->load->database();
+		parent::__construct();
+		$this->db->query("SET LOCAL time_zone='SYSTEM'");
 	}
 
 	public function get_setting($name) {

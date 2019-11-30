@@ -18,6 +18,7 @@ define('ENDED', 7);
 define('GO_TO_WC', 8);
 define('BACK_FROM_WC', 9);
 define('BEING_FETCHED', 10);
+define('CHANGED_GROUP', 11);
 
 // hst_action && prt_call_status 
 define('CALL_NOCALL', 0);

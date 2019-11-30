@@ -96,6 +96,13 @@ function get_age($dob) {
     return $year_diff;
 }
 
+function str_get_age($dob) {
+	$age = get_age($dob);
+	if (empty($age))
+		return '';
+	return $age.' Jahre alt';
+}
+
 function format_seconds($totalseconds) {
 	$hours = 0;
 	$minutes = 0;

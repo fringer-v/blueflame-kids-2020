@@ -46,8 +46,6 @@ class MemberTable extends Table {
 				return 'Name';
 			case 'prt_supervision_name':
 				return 'Begleitperson';
-			//case 'prt_call_status';
-			//	return 'Ruf';
 			case 'prt_notes':
 				return 'Notizen';
 		}
@@ -61,16 +59,6 @@ class MemberTable extends Table {
 			case 'prt_supervision_name':
 				$value = $row[$field];
 				return $value;
-			/*
-			case 'prt_call_status': {
-				$call_status = $row['prt_call_status'];
-				if (is_empty($call_status))
-					return nbsp();					
-				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
-					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
-				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
-			}
-			*/
 			case 'prt_notes':
 				$value = $row[$field];
 				return $value;
@@ -367,8 +355,6 @@ class Groups extends BF_Controller {
 		list($group_leaders, $group_helpers) = $this->leadersAndHelpers($p, true);
 		$group_leader = arr_nvl($group_leaders, $age.'_'.$num, []);
 		$helpers = arr_nvl($group_helpers, $age.'_'.$num, []);
-bugout("========>", $group_leader);
-bugout("========>", $helpers);
 
 		$print_group = new Form('print_group', 'groups', 1, array('class'=>'output-table'));
 

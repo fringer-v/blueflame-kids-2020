@@ -57,7 +57,7 @@ class Form {
 		$field->setForm($this);
 		$this->fields['$'.count($this->fields)] = array('', $field);
 		$field->setValue($value);
-		$field->setFormat('colspan=*');
+		$field->setFormat('nolabel,colspan=*');
 		return $field;
 	}
 
@@ -231,6 +231,7 @@ class Form {
 				foreach ($fields as $name => $field_info) {
 					$label = $field_info[0];
 					$field = $field_info[1];
+bugout("===", $name, $label, get_class($field));
 
 					if ($field->isHidden())
 						continue;
@@ -245,7 +246,7 @@ class Form {
 
 					$colspan = 1;
 					$haslabel = true;
-					$formats = explode(';', $field->format);
+					$formats = explode(',', $field->format);
 					foreach ($formats as $format) {
 						if ($format == "nolabel")
 							$haslabel = false;
@@ -258,19 +259,20 @@ class Form {
 						}
 					}
 
-					if (!$haslabel || is_empty($label)) {
-						td(array('colspan'=>$colspan*2));
-						$field->show();
-						_td();
-					}
-					else if ($field instanceof Checkbox) {
+					if ($field instanceof Checkbox) {
+bugout("-------", $colspan, $name, $label);
 						td(array('colspan'=>$colspan*2));
 						$field->show();
 						label(array('for'=>$name), ' '.$label);
 						_td();
 					}
+					else if (!$haslabel) {
+						td(array('colspan'=>$colspan*2));
+						$field->show();
+						_td();
+					}
 					else {
-						th(label(array('for'=>$name), $label.':'));
+						th(label(array('for'=>$name), is_empty($label) ? '' : $label.':'));
 						if ($colspan*2-1 != 1)
 							td(array('colspan'=>$colspan*2-1));
 						else
