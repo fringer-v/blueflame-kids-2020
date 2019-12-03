@@ -367,20 +367,20 @@ class Staff extends BF_Controller {
 		$where = '';
 		if ($std_select_period->getValue() == -1) {
 			// No period
-			$sql = 'SELECT SQL_CALC_FOUND_ROWS TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+			$select_list = 'SELECT TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
 				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
 				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
 				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
 			$on = '';
 		}
 		else {
-			$sql = 'SELECT SQL_CALC_FOUND_ROWS FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+			$select_list = 'SELECT FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
 				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
 				s2.stf_fullname my_leaders,
 				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
 			$on = ' AND per_period = '.$std_select_period->getValue().' ';
 		}
-		$sql .= 'FROM bf_staff s1
+		$sql = 'FROM bf_staff s1
 				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
 		$sql .= 'LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
 		switch ($stf_select_role->getValue()) {
@@ -400,10 +400,11 @@ class Staff extends BF_Controller {
 		}
 		if (!empty($where))
 			$sql .= 'WHERE '.$where;
-		$sql .= 'GROUP BY stf_id';
+		$sql .= 'GROUP BY s1.stf_id';
 		if (!empty($having))
 			$sql .= ' HAVING '.$having;
-		$staff_list = new StaffTable($sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
+		$staff_list = new StaffTable($select_list.$sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
+		$staff_list->setPageQuery('SELECT s1.stf_username, SUM(per_is_leader) is_leader, GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders '.$sql);
 		$staff_list->setPagination('staff?stf_page=', 16, $stf_page_v);
 		$staff_list->setOrderBy('stf_username');
 

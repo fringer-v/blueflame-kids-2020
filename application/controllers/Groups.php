@@ -372,19 +372,20 @@ class Groups extends BF_Controller {
 		$group_name .= $num.' ('.$age_level_from[$age].' - '.$age_level_to[$age].')';
 
 		$print_group->addField('Gruppe', b($group_name));
-		$print_group->addField('Leiter', a([ 'href'=>'../staff?set_stf_id='.$group_leader['per_staff_id'] ], $group_leader['stf_fullname']));
+		$print_group->addField('Leiter', a([ 'href'=>'../staff?set_stf_id='.arr_nvl($group_leader, 'per_staff_id') ],
+			arr_nvl($group_leader, 'stf_fullname')));
 		$print_group->addField('Co-Leiter', $this->linkList('../staff?set_stf_id=',
-						explode(',', $helpers['helper_ids']), explode(',', $helpers['helper_names'])));
-		/*
+						explode(',', arr_nvl($helpers, 'helper_ids', '')), explode(',', arr_nvl($helpers, 'helper_names', ''))));
 
+		$current_period = $this->db_model->get_setting('current-period');
 		$member_table = new MemberTable('SELECT prt_id, prt_number, 
 				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
 				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name,
 			 	prt_notes
 			FROM bf_participants
-			WHERE prt_grp_id = ? AND prt_registered != '.REG_NO.' ORDER BY prt_id',
-			array($grp_id_v), array('class'=>'printable-table'));
-		*/
+			WHERE prt_age_level = ? AND prt_group_number = ? AND '.$p.' = '.$current_period.'
+			ORDER BY prt_id',
+			[ $age, $num ], array('class'=>'printable-table'));
 
 		out('<!DOCTYPE html>');
 		tag('html');
@@ -400,7 +401,7 @@ class Groups extends BF_Controller {
 		$print_group->show();
 		_td();
 		_tr();
-		//tr(td($member_table->html()));
+		tr(td($member_table->html()));
 		_table();
 		_tag('body');
 		_tag('html');

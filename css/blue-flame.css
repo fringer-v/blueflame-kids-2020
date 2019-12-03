@@ -240,7 +240,7 @@ button:active, input[type=submit]:active {
 }
 
 .details-table td {
-	padding: 5px 5px; 
+	padding: 4px 5px; 
 }
 
 .details-table tr:nth-child(even) {
@@ -412,7 +412,7 @@ table.scrollable-table tbody {
 	display: inline-block;
 	border: 1px solid black;
 	height: 22px;
-	min-width: 64px;
+	min-width: 66px;
 	font-size: 16px;
 	padding: 2px 2px 0px 2px;
 	color: white;
@@ -632,6 +632,13 @@ table.scrollable-table tbody {
 	line-height: 24px;
 	text-align: center;
 	color: black;
+}
+
+.in-col {
+	min-width: 60px;
+	white-space: nowrap;
+	width: auto;
+	padding: 0px 3px;
 }
 
 #update_participant tr th:first-child {

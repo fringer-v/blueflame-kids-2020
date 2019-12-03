@@ -196,6 +196,7 @@ class Table {
 	private $query = null;
 	protected $order_by = null;
 	private $page_sql = null;
+	private $row_count = null;
 
 	public function __construct($sql = '', $sqlargs = array(), $attributes = array()) {
 		$this->sql = $sql;
@@ -342,10 +343,12 @@ class Table {
 			$fields = $query->list_fields();
 			$out = div(array('class'=>'pagination-div'));
 			
+			$max_rows = 0;
 			$page = 1;
 			$i = 0;
 			$from = '';
 			while ($row = $query->unbuffered_row('array')) {
+				$max_rows++;
 				$i++;
 				$to = substr($row[$fields[0]], 0, 3);
 				if ($i == 1)
@@ -366,7 +369,12 @@ class Table {
 			}
 			$out->add(_div());
 		}
+		$this->row_count = $max_rows;
 		return $out;
+	}
+	
+	public function getRowCount() {
+		return $this->row_count;
 	}
 }
 

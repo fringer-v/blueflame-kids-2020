@@ -19,6 +19,7 @@ define('GO_TO_WC', 8);
 define('BACK_FROM_WC', 9);
 define('BEING_FETCHED', 10);
 define('CHANGED_GROUP', 11);
+define('FETCH_CANCELLED', 12);
 
 // hst_action && prt_call_status 
 define('CALL_NOCALL', 0);
@@ -35,10 +36,10 @@ define('TEXT_CANCELLED', 'Cancelled');
 */
 
 define('TEXT_CALLED', 'Gerufen');
-define('TEXT_COMPLETED', 'Ruf Beendet');
-define('TEXT_PENDING', 'Ruf Bevorstehend');
-define('TEXT_CANCELLED', 'Ruf Aufgehoben');
-define('TEXT_ESCALATED', 'Ruf Eskaliert');
+define('TEXT_COMPLETED', 'Ruf beendet');
+define('TEXT_PENDING', 'Ruf bevorstehend');
+define('TEXT_CANCELLED', 'Ruf aufgehoben');
+define('TEXT_ESCALATED', 'Ruf eskaliert');
 
 define('CALL_ENDED_DISPLAY_TIME', '00:00:30'); // Call cancel/end state shown for 30 seconds
 

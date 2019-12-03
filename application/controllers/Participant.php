@@ -6,7 +6,7 @@ include_once(APPPATH.'helpers/output_helper.php');
 
 class ParticipantTable extends Table {
 	private function getOrder($col) {
-		if ($col == str_left($this->order_by, ' ')) {
+		if (str_contains($this->order_by, $col)) {
 			if (str_endswith($this->order_by, ' DESC'))
 				return '&uarr;';
 			return '&darr;';
@@ -19,15 +19,17 @@ class ParticipantTable extends Table {
 			case 'prt_number':
 				return $this->getOrder('prt_number').'Nr.';
 			case 'prt_name':
-				return $this->getOrder('prt_name').'Name';
+				return $this->getOrder('prt_firstname').'Name';
 			case 'prt_birthday':
+				return 'Gebuhrt.';
+			case 'age':
 				return 'Alter';
 			case 'prt_group_number':
 				return 'Gruppe';
 			case 'prt_call_status':
-				return $this->getOrder('calling,prt_call_start_time').'Ruf';
-			case 'prt_registered';
-				return 'Angem.';
+				return $this->getOrder('prt_registered').'Status';
+//			case 'prt_registered';
+//				return 'Angem.';
 			case 'button_column':
 				return '&nbsp;';
 		}
@@ -37,6 +39,8 @@ class ParticipantTable extends Table {
 	public function columnAttributes($field) {
 		switch ($field) {
 			case 'prt_birthday':
+			case 'age':
+			case 'prt_call_status':
 				return [ 'style'=>'text-align: center;' ];
 		}
 		return [];
@@ -52,7 +56,12 @@ class ParticipantTable extends Table {
 				$value = $row[$field];
 				return $value;
 			case 'prt_birthday':
-				return get_age($row[$field]);
+				if (empty($row['prt_birthday']))
+					return '';
+				$ts = DateTime::createFromFormat('Y-m-d', $row['prt_birthday']);
+				return $ts->format('d.m.Y');
+			case 'age':
+				return get_age($row['prt_birthday']);
 			case 'prt_group_number':
 				$age_level = $row['prt_age_level'];
 				$group_nr = $row[$field];
@@ -65,13 +74,20 @@ class ParticipantTable extends Table {
 				}
 				return $group_box;
 			case 'prt_call_status': {
+				if ($row['prt_registered'] == REG_BEING_FETCHED)
+					return div(array('class'=>'yellow-box in-col'), 'Wird Abg.');
+				if (!is_empty($row['prt_wc_time'])) {
+					$out = div(array('class'=>'white-box in-col'), 'WC '.how_long_ago($row['prt_wc_time']));
+					return $out;
+				}
 				$call_status = $row['prt_call_status'];
 				if (is_empty($call_status))
-					return nbsp();					
+					return nbsp();
 				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
-					return div(array('class'=>'red-box', 'style'=>'width: 62px; height: 22px;'), '- Ruf');
-				return div(array('class'=>'blue-box', 'style'=>'width: 62px; height: 22px;'), how_long_ago($row['prt_call_start_time']));
+					return div(array('class'=>'red-box in-col'), 'Ruf Aufh.');
+				return div(array('class'=>'blue-box in-col'), 'Ruf '.how_long_ago($row['prt_call_start_time']));
 			}
+/*
 			case 'prt_registered':
 				if ($row[$field] == REG_YES) {
 					if (is_empty($row['prt_wc_time']))
@@ -85,6 +101,7 @@ class ParticipantTable extends Table {
 					return div(array('class'=>'yellow-box', 'style'=>'width: 56px; height: 22px;'), 'Abg.');
 				}
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
+*/
 			case 'button_column':
 				return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');'))->html();
 		}
@@ -137,9 +154,11 @@ class HistoryTable extends Table {
 					case BACK_FROM_WC:
 						return 'Von WC zurück';
 					case BEING_FETCHED:
-						return 'Wird Abgeholt';
+						return 'Wird abgeholt';
 					case CHANGED_GROUP:
-						return 'Gruppe Geändert';
+						return 'Gruppe geändert';
+					case FETCH_CANCELLED:
+						return 'Abholen abgebrochen';
 				}
 				return '';
 			case 'hst_timestamp':
@@ -222,10 +241,11 @@ class Participant extends BF_Controller {
 		// Aufnehmen u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat('colspan=2');
-		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
+		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name',
+			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname' ]);
 		$prt_firstname->setRule('required');
-		$prt_lastname = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
-		//$prt_lastname->setFormat('nolabel');
+		$prt_lastname = $update_participant->addTextInput('prt_lastname', '',
+			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname' ]);
 		$prt_lastname->setRule('required');
 		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtsdatum',
 			$participant_row['prt_birthday'], array('placeholder'=>'DD.MM.JJJJ'));
@@ -444,7 +464,7 @@ class Participant extends BF_Controller {
 				else if ($cancel_fetch->submitted()) {
 					if ($participant_row['prt_registered'] == REG_BEING_FETCHED) {
 						$data['prt_registered'] = REG_YES;
-						$history['hst_action'] = REGISTER;
+						$history['hst_action'] = FETCH_CANCELLED;
 						$comment = 'erneut angemeldet';
 					}
 				}
@@ -642,12 +662,7 @@ class Participant extends BF_Controller {
 				$call_super->hide();
 			}
 
-			$history_table = new HistoryTable('SELECT SQL_CALC_FOUND_ROWS hst_action, hst_timestamp,
-				stf_username, hst_escalation, hst_age_level, hst_group_number, hst_notes
-				FROM bf_history LEFT JOIN bf_staff ON stf_id = hst_stf_id
-				WHERE hst_prt_id = ? ORDER BY hst_timestamp DESC',
-				array($prt_id_v), array('class'=>'details-table history-table'));
-			$history_table->setPagination('participant?hst_page=', 10, $hst_page->getValue());
+			$history_list_loader = new AsyncLoader('history_list', 'participant/gethistory');
 
 			$curr_age = get_age($prt_birthday->getDate());
 			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre alt")));
@@ -660,7 +675,8 @@ class Participant extends BF_Controller {
 		$number2->setValue($status_line);
 		$number3->setValue($status_line);
 
-		$async_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
+		$participants_list_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
+
 
 		$prt_tab = in('prt_tab', 'modify');
 		$prt_tab->persistent();
@@ -668,20 +684,20 @@ class Participant extends BF_Controller {
 		// Generate page ------------------------------------------
 		$this->header('Kinder', false);
 
-		table(array('style'=>'border-collapse: collapse;'));
+		table([ 'style'=>'border-collapse: collapse;' ]);
 		tr();
 
-		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>4));
+		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>2));
 			$display_participant->open();
 			table(array('style'=>'border-collapse: collapse;'));
 			tr(td($prt_filter, ' ', $clear_filter));
-			tr(td($async_loader->html()));
+			tr(td($participants_list_loader->html()));
 			_table(); // 
 			$display_participant->close();
 		_td();
 
-		td(array('align'=>'left', 'valign'=>'top'));
-			table(array('style'=>'border-collapse: collapse; margin-right: 5px;'));
+		td([ 'align'=>'left', 'valign'=>'top', 'style'=>'height: 100px;' ]);
+			table([ 'style'=>'border-collapse: collapse; margin-right: 5px;' ]);
 			tbody();
 			tr();
 
@@ -712,21 +728,19 @@ class Participant extends BF_Controller {
 				$update_participant->close();
 			_td();
 			_tr();
+			tr();
+			td([ 'colspan'=>3 ]);
+			$this->printResult();
+			_td();
+			_tr();
 			_tbody();
 			_table();
 		_td();
 		_tr();
-		tr();
-		td();
-		$this->printResult();
-		_td();
-		_tr();
-		if (isset($history_table)) {
-			tr(td([ 'align'=>'left', 'valign'=>'top' ], $history_table->paginationHtml()));
-			tr(td([ 'align'=>'left', 'valign'=>'top', 'style'=>'padding: 0px 20px 20px 0px;' ], $history_table->html()));
+		if (isset($history_list_loader)) {
+			tr(td([ 'align'=>'left', 'valign'=>'top' ], $history_list_loader->html()));
 		}
 		else {
-			tr(td(nbsp()));
 			tr(td(nbsp()));
 		}
 		_table();
@@ -758,7 +772,8 @@ class Participant extends BF_Controller {
 					tab = "register";
 				else
 					return;
-				$.getScript("participant/pollgroups?tab="+tab+"&gpa="+$("#"+tab+"_groups_per_age").val());
+				var args = "tab="+tab+"&gpa="+$("#"+tab+"_groups_per_age").val()+"&cnt="+$("#history_count").val();
+				$.getScript("participant/pollgroups?"+args);
 			}
 		');
 		out('window.setInterval(poll_groups, 5000);');
@@ -805,17 +820,34 @@ class Participant extends BF_Controller {
 		$prt_tab->persistent();
 		
 		$prt_filter_v = $prt_filter->getValue();
-
+		$qtype = 0;
 		if (is_empty($prt_filter_v)) {
 			$prt_filter_v = '%';
-			$order_by = 'prt_number DESC';
+			$order_by = 'prt_modifytime DESC';
 		}
 		else {
-			$prt_filter_v = '%'.$prt_filter_v.'%';
-			$order_by = 'prt_name';
+			$order_by = 'prt_firstname,prt_lastname';
+			if (preg_match('/^[0-9]{1,2}\.([0-9]{1,2}(\.[0-9]{0,4})?)?$/', $prt_filter_v)) {
+				$qtype = 1;
+				$args = explode('.', $prt_filter_v);
+				for ($i=sizeof($args)-1; $i>=0; $i--) {
+					if (empty($args[$i]))
+						array_pop($args);
+					else
+						$args[$i] = (integer) $args[$i];
+				}
+			}
+			else if (preg_match('/^[A-Za-z]+ [A-Za-z]+$/', $prt_filter_v)) {
+				$qtype = 2;
+				$args = explode(' ', $prt_filter_v);
+				$args[0] .= '%';
+				$args[1] .= '%';
+			}
+			else
+				$prt_filter_v = '%'.$prt_filter_v.'%';
 		}
 		if ($prt_tab->getValue() == 'supervisor')
-			$order_by = 'calling,prt_call_start_time DESC';
+			$order_by = 'prt_registered DESC,calling,prt_call_start_time DESC';
 
 		$prt_page_v = $prt_page->getValue();
 		if ($prt_filter_v.'|'.$order_by != $prt_last_filter->getValue()) {
@@ -826,12 +858,32 @@ class Participant extends BF_Controller {
 		$prt_last_filter->setValue($prt_filter_v.'|'.$order_by);
 
 		$sql = 'SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
-			prt_birthday, prt_age_level, prt_group_number, prt_call_status, prt_registered, prt_wc_time, "button_column",
+			prt_birthday, "age", prt_age_level, prt_group_number, prt_call_status, prt_registered, prt_wc_time, "button_column",
 			IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling, prt_call_start_time
-			FROM bf_participants
-			WHERE CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
-				prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
-		$participant_table = new ParticipantTable($sql, array($prt_filter_v),
+			FROM bf_participants WHERE ';
+		if ($qtype == 1) {
+			// Date
+			$sql .= 'DAY(prt_birthday) = ? ';
+			if (count($args) > 1)
+				$sql .= 'AND MONTH(prt_birthday) = ? ';
+			if (count($args) > 2) {
+				if ((integer) $args[2])
+					$args[2] = 2000 + (integer) $args[2];
+				$sql .= 'AND YEAR(prt_birthday) = ? ';
+			}
+		}
+		else if ($qtype == 2) {
+			// First_Last
+			$sql .= 'prt_firstname LIKE ? AND prt_lastname LIKE ?';
+		}
+		else {
+			$sql .= 'CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
+					prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
+			$args = [ $prt_filter_v ];
+		}
+//bugout($sql);
+//bugout($args);
+		$participant_table = new ParticipantTable($sql, $args,
 			array('class'=>'details-table participant-table', 'style'=>'width: 600px;'));
 		$participant_table->setPagination('participant?prt_page=', 18, $prt_page_v);
 		$participant_table->setOrderBy($order_by);
@@ -872,18 +924,6 @@ class Participant extends BF_Controller {
 		$this->db->where('stf_reserved_group_number', $num);
 		$this->db->update('bf_staff');
 	}
-
-/*
-	private function set_group($prt_id_v, $age, $grp)
-	{
-		unreserveGroup($age, $grp);
-		$this->db->set('prt_age_level', $age);
-		$this->db->set('prt_group_number', $prt_group_number);
-		$this->db->set('prt_registered', 'IF(prt_registered = '.REG_NO.', '.REG_YES.', prt_registered)', false);
-		$this->db->where('prt_id', $prt_id_v);
-		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
-	}
-*/
 
 	private function getGroupData($prt_id_v)
 	{
@@ -1003,7 +1043,35 @@ class Participant extends BF_Controller {
 			_tr();
 		}
 		_table();
+		if ($participant_row['prt_group_number'] > 0)
+			$groups_per_age .= $participant_row['prt_age_level'].'_'.$participant_row['prt_group_number'];
 		hidden($tab_v.'_groups_per_age', $groups_per_age);
+	}
+
+	public function gethistory() {
+		if (!$this->authorize(false)) {
+			echo 'Authorization failed';
+			return;
+		}
+
+		$prt_id = in('prt_id');
+		$prt_id->persistent();
+		$prt_id_v = $prt_id->getValue();
+		$hst_page = in('hst_page', 1);
+		$hst_page->persistent();
+
+		$history_table = new HistoryTable('SELECT SQL_CALC_FOUND_ROWS hst_action, hst_timestamp,
+			stf_username, hst_escalation, hst_age_level, hst_group_number, hst_notes
+			FROM bf_history LEFT JOIN bf_staff ON stf_id = hst_stf_id
+			WHERE hst_prt_id = ? ORDER BY hst_timestamp DESC',
+			[ $prt_id_v ], [ 'class'=>'details-table history-table' ]);
+		$history_table->setPagination('participant?hst_page=', 10, $hst_page->getValue());
+
+		table(array('style'=>'border-collapse: collapse;'));
+		tr(td([ 'align'=>'left', 'valign'=>'top' ], $history_table->paginationHtml()));
+		tr(td([ 'align'=>'left', 'valign'=>'top', 'style'=>'padding: 0px 20px 20px 0px;' ], $history_table->html()));
+		_table();
+		hidden('history_count', $history_table->getRowCount());
 	}
 
 	public function pollgroups() {
@@ -1021,6 +1089,9 @@ class Participant extends BF_Controller {
 
 		$gpa = in('gpa');
 		$gpa_v = $gpa->getValue();
+
+		$cnt = in('cnt');
+		$cnt_v = $cnt->getValue();
 
 		list($current_period,
 			$nr_of_groups,
@@ -1044,6 +1115,17 @@ class Participant extends BF_Controller {
 					$count = $count.'/'.$r_count;
 				out('$("#'.$tab_v.'_group_'.$a.'_'.$i.'").html("'.$count.'");');
 			}
+		}
+		if ($participant_row['prt_group_number'] > 0)
+			$groups_per_age .= $participant_row['prt_age_level'].'_'.$participant_row['prt_group_number'];
+		if ($gpa_v != $groups_per_age) {
+			out($tab_v.'_group_list();');
+			out('history_list();');
+		}
+		else {
+			$history_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_history WHERE hst_prt_id = ?', [ $prt_id_v ]);
+			if ($cnt_v != $history_count)
+				out('history_list();');
 		}
 	}
 }

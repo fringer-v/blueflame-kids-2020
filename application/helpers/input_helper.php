@@ -231,7 +231,6 @@ class Form {
 				foreach ($fields as $name => $field_info) {
 					$label = $field_info[0];
 					$field = $field_info[1];
-bugout("===", $name, $label, get_class($field));
 
 					if ($field->isHidden())
 						continue;
@@ -260,7 +259,6 @@ bugout("===", $name, $label, get_class($field));
 					}
 
 					if ($field instanceof Checkbox) {
-bugout("-------", $colspan, $name, $label);
 						td(array('colspan'=>$colspan*2));
 						$field->show();
 						label(array('for'=>$name), ' '.$label);
