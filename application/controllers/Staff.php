@@ -80,7 +80,10 @@ class StaffTable extends Table {
 					return div(array('class'=>'green-box', 'style'=>'width: 56px; height: 22px;'), 'Ja');
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 			case 'button_column':
-				return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].');'))->html();
+				return a([ 'class'=>'button-black',
+					'style'=>'display: block; color: white; height: 24px; width: 32px; text-align: center; line-height: 26px; border-radius: 6px;',
+					'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].'); $("#display_staff").submit();' ], out('&rarr;'))->html();
+				//return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_stf_id").val('.$row['stf_id'].');'))->html();
 		}
 		return nix();
 	}

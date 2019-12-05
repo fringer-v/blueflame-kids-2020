@@ -14,12 +14,17 @@ define('CALL', 3);
 define('CANCELLED', 4);
 define('ESCALATE', 5);
 define('CALLED', 6);
-define('ENDED', 7);
+define('CALL_ENDED', 7);
 define('GO_TO_WC', 8);
 define('BACK_FROM_WC', 9);
 define('BEING_FETCHED', 10);
 define('CHANGED_GROUP', 11);
 define('FETCH_CANCELLED', 12);
+define('NAME_CHANGED', 13);
+define('BIRTHDAY_CHANGED', 14);
+define('SUPERVISOR_CHANGED', 15);
+define('CELLPHONE_CHANGED', 16);
+define('NOTES_CHANGED', 17);
 
 // hst_action && prt_call_status 
 define('CALL_NOCALL', 0);
@@ -27,13 +32,6 @@ define('CALL_CALLED', 100);		// Operator has executed call
 define('CALL_COMPLETED', 200);	// Call completed (if cancelled after called)
 define('CALL_PENDING', 300);	// Call request pending
 define('CALL_CANCELLED', 400);	// Call withdrawen (no longer required)
-
-/*
-define('TEXT_CALLED', 'Called');
-define('TEXT_COMPLETED', 'Completed');
-define('TEXT_PENDING', 'Pending');
-define('TEXT_CANCELLED', 'Cancelled');
-*/
 
 define('TEXT_CALLED', 'Gerufen');
 define('TEXT_COMPLETED', 'Ruf beendet');

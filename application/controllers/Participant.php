@@ -21,7 +21,7 @@ class ParticipantTable extends Table {
 			case 'prt_name':
 				return $this->getOrder('prt_firstname').'Name';
 			case 'prt_birthday':
-				return 'Gebuhrt.';
+				return 'Geburtstag';
 			case 'age':
 				return 'Alter';
 			case 'prt_group_number':
@@ -103,7 +103,10 @@ class ParticipantTable extends Table {
 				return div(array('class'=>'red-box', 'style'=>'width: 56px; height: 22px;'), 'Nein');
 */
 			case 'button_column':
-				return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');'))->html();
+				return a([ 'class'=>'button-black',
+					'style'=>'display: block; color: white; height: 26px; width: 32px; text-align: center; line-height: 26px; border-radius: 6px;',
+					'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].'); $("#display_participant").submit();' ], out('&rarr;'))->html();
+				//return submit('select', 'Bearbeiten', array('class'=>'button-black', 'onclick'=>'$("#set_prt_id").val('.$row['prt_id'].');'))->html();
 		}
 		return nix();
 	}
@@ -118,10 +121,8 @@ class HistoryTable extends Table {
 				return 'Zeit';
 			case 'stf_username':
 				return 'Mitarb.';
-			case 'hst_group_number':
-				return 'Gruppe';
 			case 'hst_notes':
-				return 'Kommentar';
+				return 'Einzelheiten';
 		}
 		return nix();
 	}
@@ -147,7 +148,7 @@ class HistoryTable extends Table {
 						return TEXT_ESCALATED.' ('.$row['hst_escalation'].')';
 					case CALLED:
 						return TEXT_CALLED;
-					case ENDED:
+					case CALL_ENDED:
 						return TEXT_COMPLETED;
 					case GO_TO_WC:
 						return 'Zum WC gegangen';
@@ -159,6 +160,16 @@ class HistoryTable extends Table {
 						return 'Gruppe geändert';
 					case FETCH_CANCELLED:
 						return 'Abholen abgebrochen';
+					case NAME_CHANGED:
+						return 'Name geändert';
+					case BIRTHDAY_CHANGED:
+						return 'Geburtstag geändert';
+					case SUPERVISOR_CHANGED:
+						return 'Begleiter gewechselt';
+					case CELLPHONE_CHANGED:
+						return 'Handy geändert';
+					case NOTES_CHANGED:
+						return 'Hinweise geändert';
 				}
 				return '';
 			case 'hst_timestamp':
@@ -180,21 +191,29 @@ class HistoryTable extends Table {
 				}
 				return $date->format('d.m.Y H:i');
 			case 'stf_username':
-				return $row[$field];
-			case 'hst_group_number':
-				$age_level = $row['hst_age_level'];
-				$group_nr = $row[$field];
-				if (empty($group_nr))
-					$group_box = div([ 'style'=>'height: 22px; font-size: 16px' ], nbsp());
-				else {
-					$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
-					$group_box = span([ 'class'=>'group-s g-'.$age_level ],
-						span(['class'=>'group-number-s'], $group_nr), " ".$ages);
+				return htmlentities($row[$field]);
+			case 'hst_notes':
+				$group_nr = $row['hst_group_number'];
+				if ($group_nr > 0) {
+					$age_level = $row['hst_age_level'];
+					if (empty($group_nr))
+						$group_box = div([ 'style'=>'height: 22px; font-size: 16px' ], nbsp());
+					else {
+						$ages = $age_level_from[$age_level].' - '.$age_level_to[$age_level];
+						$group_box = span([ 'class'=>'group-s g-'.$age_level ],
+							span(['class'=>'group-number-s'], $group_nr), " ".$ages);
+					}
+					$note = $group_box;
 				}
-				return $group_box;
-			case 'hst_notes';
-				$val = $row[$field];
-				return is_empty($val) ? '' : $val;
+				else
+					$note = '';
+				$val = $row['hst_notes'];
+				if (!empty($val)) {
+					if (!empty($note))
+						$note .= ' ';
+					$note .= str_replace(' -&gt; ', ' &rarr; ', htmlentities($val));
+				}
+				return trim($note);
 		}
 		return nix();
 	}
@@ -247,7 +266,7 @@ class Participant extends BF_Controller {
 		$prt_lastname = $update_participant->addTextInput('prt_lastname', '',
 			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname' ]);
 		$prt_lastname->setRule('required');
-		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtsdatum',
+		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtstag',
 			$participant_row['prt_birthday'], array('placeholder'=>'DD.MM.JJJJ'));
 		$prt_birthday->setRule('is_valid_date');
 		$age_field = $update_participant->addSpace();
@@ -262,7 +281,7 @@ class Participant extends BF_Controller {
 		//$prt_supervision_lastname->setFormat('nolabel');
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
-		$prt_notes = $update_participant->addTextArea('prt_notes', 'Notizen', $participant_row['prt_notes']);
+		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes']);
 		$prt_notes->setFormat('colspan=2');
 
 		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-green'));
@@ -280,7 +299,7 @@ class Participant extends BF_Controller {
 		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname']);
 		$f2->disable();
 		//$f2->setFormat('nolabel');
-		$f3 = $update_participant->addTextInput('prt_birthday', 'Geburtsdatum', $participant_row['prt_birthday']);
+		$f3 = $update_participant->addTextInput('prt_birthday', 'Geburtstag', $participant_row['prt_birthday']);
 		$f3->disable();
 		$curr_age_str = str_get_age($prt_birthday->getDate());
 		$update_participant->addText(b(nbsp().$curr_age_str));
@@ -343,6 +362,11 @@ class Participant extends BF_Controller {
 		if ($new_participant->submitted() || $save_participant->submitted()) {
 			$this->error = $update_participant->validate('tab_modify');
 			if (is_empty($this->error)) {
+
+
+				$staff_row = $this->get_staff_row($this->session->stf_login_id);
+				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
+
 				$data = [
 					'prt_firstname' => $prt_firstname->getValue(),
 					'prt_lastname' => $prt_lastname->getValue(),
@@ -352,19 +376,13 @@ class Participant extends BF_Controller {
 					'prt_supervision_cellphone' => $prt_supervision_cellphone->getValue(),
 					'prt_notes' => $prt_notes->getValue()
 				];
-
-				$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
-
-				$staff_row = $this->get_staff_row($this->session->stf_login_id);
-				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
-
 				if ($group_reserved) {
 					$data['prt_age_level'] = $staff_row['stf_reserved_age_level'];
 					$data['prt_group_number'] = $staff_row['stf_reserved_group_number'];
 					$data['prt_registered'] = REG_YES;
-					$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
-					$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
 				}
+
+				$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
 
 				if (is_empty($prt_id_v)) {
 					$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_firstname = ? '.
@@ -382,10 +400,17 @@ class Participant extends BF_Controller {
 						$prt_id_v = $this->db->insert_id();
 
 						$history['hst_prt_id'] = $prt_id_v;
-						$history['hst_action'] = $group_reserved ? REGISTER : CREATED;
-						$this->db->insert('bf_history', $history);
-						if ($group_reserved)
+						if ($group_reserved) {
+							$history['hst_action'] = REGISTER;
+							$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
+							$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
+							$this->db->insert('bf_history', $history);
 							$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
+						}
+						else {
+							$history['hst_action'] = CREATED;
+							$this->db->insert('bf_history', $history);
+						}
 
 						$prt_filter->setValue('');
 						$prt_page->setValue(1);
@@ -403,9 +428,55 @@ class Participant extends BF_Controller {
 					$this->db->set('prt_modifytime', 'NOW()', false);
 					$this->db->where('prt_id', $prt_id_v);
 					$this->db->update('bf_participants', $data);
+
+					$history['hst_prt_id'] = $prt_id_v;
+
+					if ($participant_row['prt_firstname'] != $prt_firstname->getValue() ||
+						$participant_row['prt_lastname'] != $prt_lastname->getValue()) {
+						$history['hst_action'] = NAME_CHANGED;
+						$history['hst_notes'] = $participant_row['prt_firstname'].' '.$participant_row['prt_lastname'].
+							' -> '.$prt_firstname->getValue().' '.$prt_lastname->getValue();
+						$this->db->insert('bf_history', $history);
+					}
+
+					if ($participant_row['prt_birthday'] != $prt_birthday->getValue()) {
+						$history['hst_action'] = BIRTHDAY_CHANGED;
+						$history['hst_notes'] = $participant_row['prt_birthday'].' -> '.$prt_birthday->getValue();
+						$this->db->insert('bf_history', $history);
+					}
+
+					if ($participant_row['prt_supervision_firstname'] != $prt_supervision_firstname->getValue() ||
+						$participant_row['prt_supervision_lastname'] != $prt_supervision_lastname->getValue()) {
+						$history['hst_action'] = SUPERVISOR_CHANGED;
+						$history['hst_notes'] = $participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'].
+							' -> '.$prt_supervision_firstname->getValue().' '.$prt_supervision_lastname->getValue();
+						$this->db->insert('bf_history', $history);
+					}
+
+					if ($participant_row['prt_supervision_cellphone'] != $prt_supervision_cellphone->getValue()) {
+						$history['hst_action'] = CELLPHONE_CHANGED;
+						$history['hst_notes'] = $participant_row['prt_supervision_cellphone'].' -> '.$prt_supervision_cellphone->getValue();
+						$this->db->insert('bf_history', $history);
+					}
+
+					if ($participant_row['prt_notes'] != $prt_notes->getValue()) {
+						$history['hst_action'] = NOTES_CHANGED;
+						if (empty($participant_row['prt_notes']))
+							$history['hst_notes'] = ' -> "'.$prt_notes->getValue().'"';
+						else {
+							if (empty(trim($prt_notes->getValue())))
+								$history['hst_notes'] = '"'.$participant_row['prt_notes'].'" -> ""';
+							else
+								$history['hst_notes'] = '"'.$participant_row['prt_notes'].'" -> "..."';
+						}
+						$this->db->insert('bf_history', $history);
+					}
+
 					if ($group_reserved) {
-						$history['hst_prt_id'] = $prt_id_v;
 						$history['hst_action'] = CHANGED_GROUP;
+						$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
+						$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
+						unset($history['hst_notes']);
 						$this->db->insert('bf_history', $history);
 						$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
 					}
@@ -514,7 +585,7 @@ class Participant extends BF_Controller {
 						$sql .= 'prt_call_status = '.CALL_CANCELLED.', ';
 					}
 					else { // CALL_CALLED
-						$action = ENDED;
+						$action = CALL_ENDED;
 						$sql .= 'prt_call_status = '.CALL_COMPLETED.', ';
 					}
 					$sql .= 'prt_call_change_time = NOW() ';

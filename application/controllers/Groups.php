@@ -47,7 +47,7 @@ class MemberTable extends Table {
 			case 'prt_supervision_name':
 				return 'Begleitperson';
 			case 'prt_notes':
-				return 'Notizen';
+				return 'Hinweise';
 		}
 		return nix();
 	}
