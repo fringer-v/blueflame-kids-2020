@@ -77,6 +77,10 @@ function _a() {
 	return _tag('a');
 }
 
+function img() {
+	return tag('img', func_get_args());
+}
+
 function b() {
 	return tag('b', func_get_args());
 }

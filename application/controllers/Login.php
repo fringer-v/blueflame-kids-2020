@@ -77,7 +77,7 @@ class Login extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse; width: 100%'));
 		tr();
 		td(array('align'=>'center'));
-		tag('img', array('src'=>base_url('/img/bf-kids-logo.png'), 'style'=>'width: 200px; height: auto'));
+		img([ 'src'=>base_url('/img/bf-kids-logo.png'), 'style'=>'width: 200px; height: auto' ]);
 		_td();
 		tr(td(array('height'=>'5'), ''));
 		_tr();

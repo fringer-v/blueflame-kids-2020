@@ -259,10 +259,11 @@ class Groups extends BF_Controller {
 			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
 			$max_group_nr = arr_nvl($nr_of_groups, $a, 0);
 			for ($i=1; $i<=$max_group_nr; $i++) {
+				$print_group = 'window.location = "groups/printable?group='.$p.'_'.$a.'_'.$i.'";';
 				td();
-				table([ 'class'=>'group g-'.$a, 'onclick'=>'window.location = "groups/printable?group='.$p.'_'.$a.'_'.$i.'";' ]);
+				table([ 'class'=>'group g-'.$a ]);
 				tr();
-				td(span(['class'=>'group-number'], $i));
+				td([ 'onclick'=>$print_group ], span(['class'=>'group-number'], $i));
 				$rows = db_array_n("SELECT stf_id, per_group_number, stf_username
 					FROM bf_staff, bf_period
 					WHERE stf_id = per_staff_id AND per_is_leader = TRUE AND
@@ -280,7 +281,7 @@ class Groups extends BF_Controller {
 						
 					$leaders[$id] = $pre.$row['stf_username'];
 				}
-				td(select('select_leader', $leaders, $group_leader,
+				td([ 'class'=>'input-table' ], select('select_leader', $leaders, $group_leader,
 					[ 'onchange'=>'$("#age_level").val('.$a.');
 						$("#args").val("'.$i.'_" + $(this).val());
 						$("#action").val("set-leader");
@@ -288,7 +289,7 @@ class Groups extends BF_Controller {
 				_tr();
 				tr();
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
-				td([ 'style'=>'text-align: center; font-size: 18px; font-weight: bold;' ], $count > 0 ? $count : nbsp());
+				td([ 'style'=>'text-align: center; font-size: 18px; font-weight: bold;', 'onclick'=>$print_group ], $count > 0 ? $count : nbsp());
 				$helpers = arr_nvl($group_helpers, $a.'_'.$i, []);
 				if (empty($helpers))
 					td(nbsp());
@@ -341,10 +342,7 @@ class Groups extends BF_Controller {
 		global $all_roles;
 		global $extended_roles;
 
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
-			return;
-		}
+		$this->authorize();
 
 		$group = in('group');
 		$group_v = explode('_', $group->getValue());
@@ -387,14 +385,8 @@ class Groups extends BF_Controller {
 			ORDER BY prt_id',
 			[ $age, $num ], array('class'=>'printable-table'));
 
-		out('<!DOCTYPE html>');
-		tag('html');
-		tag('head');
-		tag('meta', array('http-equiv'=>'Content-Type', 'content'=>'text/html; charset=utf-8'));
-		tag('link', array('href'=>base_url('/css/blue-flame.css'), 'rel'=>'stylesheet', 'type'=>'text/css'));
-		tag('title', '');
-		_tag('head');
-		tag('body', array('style'=>'background: white;'));
+		$this->header($group_name, false);
+
 		table(array('style' => 'width: 720px; padding: 5px;'));
 		tr();
 		td();
@@ -403,7 +395,7 @@ class Groups extends BF_Controller {
 		_tr();
 		tr(td($member_table->html()));
 		_table();
-		_tag('body');
-		_tag('html');
+
+		$this->footer();
 	}
 }

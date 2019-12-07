@@ -70,6 +70,79 @@ function getAge(value) {
 	return -1;
 }
 
+function checkDate(old_date, delete_key) {
+	var birth = old_date.split(".");
+	var new_date = "";
+
+	if (birth.length > 0) {
+		birth[0] = birth[0].substring(0, 2);
+		var val = parseInt(birth[0]);
+		if (val.toString() == "NaN")
+			return new_date;
+		if (val < 0)
+			return new_date;
+		if (val > 31) {
+			if (val >= 40)
+				return birth[0][0] + ".";
+			return birth[0][0];
+		}
+		if (val == 0)
+			return "0";
+		if (val > 3 || birth[0].length == 2)
+			new_date = birth[0] + ".";
+		else
+			new_date = birth[0];
+	}
+
+	if (birth.length > 1) {
+		if (!new_date.endsWith("."))
+			new_date +=  ".";
+		birth[1] = birth[1].substring(0, 2);
+		var val = parseInt(birth[1]);
+		if (val.toString() == "NaN")
+			return new_date;
+		if (val < 0)
+			return new_date;
+		if (val > 12)
+			return new_date + birth[1][0];
+		if (val == 0)
+			return new_date + "0";
+		if (val > 1 || birth[0].length == 2)
+			new_date += birth[1] + ".";
+		else
+			new_date += birth[1];
+	}
+
+	if (birth.length > 2) {
+		birth[2] = birth[2].substring(0, 4);
+		if (!new_date.endsWith("."))
+			new_date +=  ".";
+		var val = parseInt(birth[2]);
+		if (val.toString() == "NaN")
+			return new_date;
+		if (val < 0)
+			return new_date;
+		if (val > 201 && val < 1900)
+			return new_date + "20";
+		if (val > 20 && val < 200)
+			return new_date + "2";
+		if ((val > 2 && val < 19) ||
+			(val <= 2 && birth[2].length == 2)) {
+			new_date += "20";
+			if (val < 10)
+				new_date += "0";
+			new_date += val.toString();
+		}
+		else
+			new_date += birth[2];
+	}
+
+	if (delete_key && new_date == old_date + ".")
+		new_date = old_date.substring(0, old_date.length-1);
+
+	return new_date;
+}
+
 function mouseOverLogout(object) {
 	var $this = $(object);
 	var w = $this.css("width");

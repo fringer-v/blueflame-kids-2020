@@ -196,71 +196,89 @@ class BF_Controller extends CI_Controller {
 		return $attr;
 	}
 
-	public function header($title, $print_result = true) {
-		if ($title == 'Database update') {
-			$prt_count = '-';
-			$stf_count = '-';
-		}
-		else {
-			$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered != '.REG_NO);
-			$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
-		}
-
+	public function header($title, $menu = true) {
 		out('<!DOCTYPE html>');
 		tag('html');
 		tag('head');
-		tag('meta', array('http-equiv'=>'Content-Type', 'content'=>'text/html; charset=utf-8'));
+		tag('meta', [ 'http-equiv'=>'Content-Type', 'content'=>'text/html; charset=utf-8' ]);
+		tag('meta', [ 'name'=>'apple-mobile-web-app-capable', 'content'=>'yes' ]);
+		tag('meta', [ 'name'=>'apple-mobile-web-app-status-bar-style', 'content'=>'black' ]);
 		tag('link', array('href'=>base_url('/css/blue-flame.css'), 'rel'=>'stylesheet', 'type'=>'text/css'));
 		tag('title', "BlueFlame Kids: ".$title);
-		//script('https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js');
 		script(base_url('/js/jquery.js'));
 		script(base_url('/js/blue-flame.js'));
 		_tag('head');
-		tag('body'/*, array('onload'=>'setHeaderSizesOfScrollableTables();')*/);
+		tag('body');
 
-		div(array('class'=>'topnav'));
-		table();
-		tr(array('style'=>'height: 12px;'));
-		if ($title != 'Login') {
-			td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'padding: 0px 3px 2px 10px; border-bottom: 1px solid black;'));
-			tag('img', array('src'=>base_url('/img/bf-kids-logo2.png'), 'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;'));
+		table([ 'style'=>'width: 100%; border-collapse: collapse; border: 0px;' ]);
+		tr();
+		td([ 'style'=>'padding: 0px;' ]);
+
+		if ($menu) {
+			if ($title == 'Database update') {
+				$prt_count = '-';
+				$stf_count = '-';
+			}
+			else {
+				$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered != '.REG_NO);
+				$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
+			}
+	
+			div(array('class'=>'topnav'));
+			table();
+			tr(array('style'=>'height: 12px;'));
+			if ($title != 'Login') {
+				td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'padding: 0px 3px 2px 10px; border-bottom: 1px solid black;'));
+				img([ 'src'=>base_url('/img/bf-kids-logo2.png'), 'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;']);
+				_td();
+			}
+			td(array('colspan'=>'10'));
+			td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'width: 100%; border-bottom: 1px solid black;'));
 			_td();
-		}
-		td(array('colspan'=>'8'));
-		td(array('rowspan'=>'2', 'valign'=>'bottom', 'style'=>'width: 100%; border-bottom: 1px solid black;'));
-		_td();
-		td(array('colspan'=>'2'));
-		_tr();
-		tr(array('style'=>'border-bottom: 1px solid black; padding: 8px 16px;'));
-		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
-		td($this->link('participant', $title == 'Kinder'), 'Kinder ('.$prt_count.')');
-		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
-		td($this->link('groups', $title == 'Kleingruppen'), 'Kleingruppen');
-		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
-		td($this->link('staff', $title == 'Mitarbeiter'), 'Mitarbeiter ('.$stf_count.')');
-		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
-		td($this->link('calllist', $title == 'Rufliste'), 'Rufliste');
-		hidden('login_full_name', $this->stf_login_name);
-		if ($title != 'Login') {
-			$attr = $this->link('login?action=logout', false);
-			$attr['id'] = 'logout_menu_item';
-			$attr['onmouseover'] = 'mouseOverLogout(this);';
-			$attr['onmouseout'] = 'mouseOutLogout(this, $(\'#login_full_name\'));';
-			td($attr, $this->stf_login_name);
-		}
-		else
-			td();
-		td(array('style'=>'width: 3px; padding: 0;'), nbsp());
-		_tr();
-		_table();
-		_div();
+			td(array('colspan'=>'2'));
+			_tr();
+			tr(array('style'=>'border-bottom: 1px solid black; padding: 8px 16px;'));
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			td($this->link('participant', $title == 'Kinder'), 'Kinder ('.$prt_count.')');
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			td($this->link('groups', $title == 'Kleingruppen'), 'Kleingruppen');
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			td($this->link('staff', $title == 'Mitarbeiter'), 'Mitarbeiter ('.$stf_count.')');
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			td($this->link('calllist', $title == 'Rufliste'), 'Rufliste');
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			td($this->link('registration', $title == 'iPad Registrierung'), 'iPad Registrierung');
+			hidden('login_full_name', $this->stf_login_name);
+			if ($title != 'Login') {
+				$attr = $this->link('login?action=logout', false);
+				$attr['id'] = 'logout_menu_item';
+				$attr['onmouseover'] = 'mouseOverLogout(this);';
+				$attr['onmouseout'] = 'mouseOutLogout(this, $(\'#login_full_name\'));';
+				td($attr, $this->stf_login_name);
+			}
+			else
+				td();
+			td(array('style'=>'width: 3px; padding: 0;'), nbsp());
+			_tr();
+			_table();
+			_div();
 
-		div(array('class'=>'breadcrumb'));
-		if ($print_result)
-			$this->printResult();
-		_div();
+			div(array('class'=>'breadcrumb'));
+			_div();
+		}
 	}
 
+	public function footer($js_src = "") {
+		_td();
+		_tr();
+		_table();
+
+		_tag('body');
+		if (!empty($js_src))
+			script($js_src);
+		_tag('html');
+	}
+	
 	public function printResult() {
 		if (!empty($this->error))
 			print_error($this->error);
@@ -273,13 +291,6 @@ class BF_Controller extends CI_Controller {
 		}
 	}
 
-	public function footer($js_src = "") {
-		_tag('body');
-		if (!empty($js_src))
-			script($js_src);
-		_tag('html');
-	}
-	
 	public function setSuccess($message) {
 		$this->session->set_userdata('bf_success', $message);
 	}

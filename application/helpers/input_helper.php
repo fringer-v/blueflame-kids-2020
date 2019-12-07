@@ -579,6 +579,12 @@ class TextInput extends InputField {
 	}
 }
 
+class NumericField extends InputField {
+	public function output() {
+		return tag('input', $this->getAttributes('tel'))->html();
+	}
+}
+
 class Password extends InputField {
 	public function output() {
 		return tag('input', $this->getAttributes('password'))->html();

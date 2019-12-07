@@ -37,17 +37,48 @@ a:hover {
 	cursor: grab;
 }
 
-input, select, option {
-    font-size: 14px;
+/* --------------------------- */
+/* Input Table: */
+
+.input-table {
+	border-collapse: collapse;
+}
+
+.input-table th {
+	text-align: right;
+	font-weight: bold;
+}
+
+.input-table th {
+	padding: 4px 3px; 
+}
+
+.input-table td {
+	padding: 4px 0px; 
+}
+
+.input-table .button-row {
+	text-align:right;
+}
+
+.no-wrap-table td {
+	white-space: nowrap;
+}
+
+.input-table select, option {
+	height: 26px;
+    font-size: 16px;
 	padding: 0px 4px;
 }
 
-input[type=text], input[type=password] {
-	border: 1px solid lightgrey;
+.input-table input[type=text], input[type=password] {
 	height: 26px;
+    font-size: 16px;
+	padding: 0px 4px;
+	border: 1px solid lightgrey;
 }
 
-button, input[type=submit], input[type=button] {
+.input-table button, input[type=submit], input[type=button] {
 	height: 24px;
     font-size: 14px;
 	border: 1px solid black;
@@ -57,15 +88,15 @@ button, input[type=submit], input[type=button] {
 	-webkit-border-radius: 6px;
 }
 
-button:disabled, input[type=submit]:disabled, input[type=button]:disabled {
+.input-table button:disabled, input[type=submit]:disabled, input[type=button]:disabled {
 	background: darkgrey;
 }
 
-input[type=text] {
+.input-table input[type=text] {
     width: 240px;
 }
 
-textarea {
+.input-table textarea {
 	border: 1px solid lightgrey;
 	padding: 2px 4px;
     height: 48px;
@@ -129,6 +160,7 @@ button:active, input[type=submit]:active {
     overflow: hidden;
     background-color: #009DDE;
     font-size: 18px;
+	width: 100%;
 }
 
 .topnav table {
@@ -279,34 +311,6 @@ button:active, input[type=submit]:active {
 }
 
 /* --------------------------- */
-/* Input Table: */
-
-.input-table {
-	border-collapse:collapse;
-}
-
-.input-table th {
-	text-align: right;
-	font-weight: bold;
-}
-
-.input-table th {
-	padding: 4px 3px; 
-}
-
-.input-table td {
-	padding: 4px 0px; 
-}
-
-.input-table .button-row {
-	text-align:right;
-}
-
-.no-wrap-table td {
-	white-space: nowrap;
-}
-
-/* --------------------------- */
 /* Scrollable Table: */
 
 table.scrollable-table thead {
@@ -327,7 +331,7 @@ table.scrollable-table tbody {
     position: relative;
     display: block;
     /* This adjustment centers the checkbox around the original box! */
-    left: -4px;
+    left: -6px;
     top: -4px;
     width: 20px;
     height: 20px;
@@ -349,7 +353,7 @@ table.scrollable-table tbody {
     position: relative;
     display: block;
     /* This adjustment centers check mark in the box above */
-    left: 3px;
+    left: 1px;
     top: -22px;
 
     width: 5px;
@@ -701,8 +705,14 @@ table.scrollable-table tbody {
 	white-space: nowrap;
 }
 
+.history-table th:nth-child(3) {
+	white-space: nowrap;
+	text-align: center;
+}
+
 .history-table td:nth-child(3) {
 	white-space: nowrap;
+	text-align: center;
 }
 
 .history-table th:last-child {
@@ -753,5 +763,21 @@ table.scrollable-table tbody {
 .printable-table tr:nth-child(odd) {
 	background: lightgrey;
 }
+
+.ipad-table {
+    font-size: 18px;
+}
+
+.ipad-input {
+	height: 32px;
+	padding: 0px 4px;
+	border: 1px solid lightgrey;
+    font-size: 18px;
+}
+
+.ipad-table td {
+	padding: 4px; 
+}
+
 
 

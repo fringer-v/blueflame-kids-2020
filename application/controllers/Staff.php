@@ -412,12 +412,12 @@ class Staff extends BF_Controller {
 		$staff_list->setOrderBy('stf_username');
 
 		// Generate page ------------------------------------------
-		$this->header('Mitarbeiter', false);
+		$this->header('Mitarbeiter');
 
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
-			table(array('style'=>'border-collapse: collapse;'));
+			table([ 'class'=>'input-table' ]);
 			$filter_staff->open();
 			tr(td(b('Suchauswahl: '), $stf_select_role->html(), " ", $std_select_period->html()));
 			$filter_staff->close();

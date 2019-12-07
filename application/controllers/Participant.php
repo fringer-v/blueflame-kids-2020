@@ -753,14 +753,14 @@ class Participant extends BF_Controller {
 		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
-		$this->header('Kinder', false);
+		$this->header('Kinder');
 
 		table([ 'style'=>'border-collapse: collapse;' ]);
 		tr();
 
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>2));
 			$display_participant->open();
-			table(array('style'=>'border-collapse: collapse;'));
+			table([ 'class'=>'input-table' ]);
 			tr(td($prt_filter, ' ', $clear_filter));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
@@ -825,7 +825,11 @@ class Participant extends BF_Controller {
 		out('
 			function birthday_changed() {
 				var value = $("#prt_birthday").val();
-				var age = getAge(value);
+				const key = event.key;
+				var new_value = checkDate(value, key === "Backspace" || key === "Delete");
+				if (value != new_value)
+					$("#prt_birthday").val(new_value);
+				var age = getAge(new_value);
 				if (age < 0)
 					$("#prt_age").html("&nbsp;-");
 				else
