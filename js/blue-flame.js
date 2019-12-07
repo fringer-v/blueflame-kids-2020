@@ -71,70 +71,91 @@ function getAge(value) {
 }
 
 function checkDate(old_date, delete_key) {
-	var birth = old_date.split(".");
-	var new_date = "";
-
-	if (birth.length > 0) {
-		birth[0] = birth[0].substring(0, 2);
-		var val = parseInt(birth[0]);
-		if (val.toString() == "NaN")
-			return new_date;
-		if (val < 0)
-			return new_date;
-		if (val > 31) {
-			if (val >= 40)
-				return birth[0][0] + ".";
-			return birth[0][0];
+	var date_parts;
+	var clean_date = "";
+	
+	var dot_cnt = 0;
+	for (var i=0; i<old_date.length; i++) {
+		if (old_date[i] >= '0' && old_date[i] <= '9')
+			clean_date += old_date[i];
+		else if (old_date[i] == ".") {
+			if (dot_cnt == 2)
+				break;
+			dot_cnt++;
+			clean_date += ".";
 		}
-		if (val == 0)
-			return "0";
-		if (val > 3 || birth[0].length == 2)
-			new_date = birth[0] + ".";
-		else
-			new_date = birth[0];
 	}
+	if (clean_date == "." || clean_date == "..")
+		return "";
 
-	if (birth.length > 1) {
+	if (dot_cnt == 0) {
+		if (clean_date.length > 2) {
+			var d = clean_date;
+			clean_date = clean_date.substr(0, 2) + "." + clean_date.substr(2, 2);
+			if (d.length > 4)
+				clean_date += "." + d.substr(4);
+		}
+	}
+	
+	date_parts = clean_date.split(".");
+
+	if (date_parts.length > 0) {
+		date_parts[0] = date_parts[0].substring(0, 2);
+		var val = parseInt(date_parts[0]);
+		if (date_parts[0] == "")
+			new_date = "";
+		else if (val > 31) {
+			if (val >= 40)
+				new_date = date_parts[0][0] + ".";
+			else
+				new_date = date_parts[0][0];
+		}
+		else if (val == 0)
+			new_date = "0";
+		else if (val > 3 || date_parts[0].length == 2)
+			new_date = date_parts[0] + ".";
+		else
+			new_date = date_parts[0];
+	}
+	if (date_parts.length > 1) {
 		if (!new_date.endsWith("."))
 			new_date +=  ".";
-		birth[1] = birth[1].substring(0, 2);
-		var val = parseInt(birth[1]);
-		if (val.toString() == "NaN")
-			return new_date;
-		if (val < 0)
-			return new_date;
-		if (val > 12)
-			return new_date + birth[1][0];
-		if (val == 0)
-			return new_date + "0";
-		if (val > 1 || birth[0].length == 2)
-			new_date += birth[1] + ".";
+		date_parts[1] = date_parts[1].substring(0, 2);
+		var val = parseInt(date_parts[1]);
+		if (date_parts[1] == "") {
+			if (date_parts.length > 2 && date_parts[2].length > 0)
+				new_date +=  ".";
+		}
+		else if (val > 12)
+			new_date += date_parts[1][0];
+		else if (val == 0)
+			new_date += "0";
+		else if (val > 1 || date_parts[1].length == 2)
+			new_date += date_parts[1] + ".";
 		else
-			new_date += birth[1];
+			new_date += date_parts[1];
 	}
 
-	if (birth.length > 2) {
-		birth[2] = birth[2].substring(0, 4);
+	if (date_parts.length > 2) {
+		date_parts[2] = date_parts[2].substring(0, 4);
 		if (!new_date.endsWith("."))
 			new_date +=  ".";
-		var val = parseInt(birth[2]);
-		if (val.toString() == "NaN")
-			return new_date;
-		if (val < 0)
+		var val = parseInt(date_parts[2]);
+		if (date_parts[2] == "")
 			return new_date;
 		if (val > 201 && val < 1900)
 			return new_date + "20";
 		if (val > 20 && val < 200)
 			return new_date + "2";
 		if ((val > 2 && val < 19) ||
-			(val <= 2 && birth[2].length == 2)) {
+			(val <= 2 && date_parts[2].length == 2)) {
 			new_date += "20";
 			if (val < 10)
 				new_date += "0";
 			new_date += val.toString();
 		}
 		else
-			new_date += birth[2];
+			new_date += date_parts[2];
 	}
 
 	if (delete_key && new_date == old_date + ".")
