@@ -44,6 +44,12 @@ function str_left($str, $value, $search_backwards = false) {
 function str_contains($haystack, $needle) {
 	return stripos($haystack, $needle) !== false;
 }
+
+function str_listappend($list, $value, $sep) {
+	if (empty($list))
+		return '';
+	return $list.$sep.$value;
+}
 	
 // This function fixes a bug that empty() has with the results of function calls
 function is_empty($val) {

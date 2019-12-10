@@ -268,10 +268,10 @@ class Staff extends BF_Controller {
 
 		$stf_loginallowed = $update_staff->addCheckbox('stf_loginallowed',
 			'Die Mitarbeiter darf sich bei dieser Anwendung anmelden', $staff_row['stf_loginallowed']);
-		$stf_loginallowed->setFormat('colspan=*');
+		$stf_loginallowed->setFormat([ 'colspan'=>'*' ]);
 		$stf_technician = $update_staff->addCheckbox('stf_technician',
 			'Die Mitarbeiter darf nur auf die Rufliste zugreifen', $staff_row['stf_technician']);
-		$stf_technician->setFormat('colspan=*');
+		$stf_technician->setFormat([ 'colspan'=>'*' ]);
 
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]|maxlength[9]');

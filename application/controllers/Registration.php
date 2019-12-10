@@ -37,22 +37,27 @@ class Registration extends BF_Controller {
 		$prt_id->persistent();
 	
 		$prt_firstname = textinput('prt_firstname', $participant_row['prt_firstname'],
-			[ 'class'=>'ipad-input', 'placeholder'=>'Vorname', 'style'=>'width: 175px;' ]);
+			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;' ]);
+		$prt_firstname->setFormat([ 'clear-box'=>true ]);
 		$prt_firstname->setRule('required');
 		$prt_lastname = textinput('prt_lastname', $participant_row['prt_lastname'],
-			[ 'class'=>'ipad-input', 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+			[ 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+		$prt_lastname->setFormat([ 'clear-box'=>true ]);
 		$prt_lastname->setRule('required');
 		$prt_birthday = new NumericField('prt_birthday', $participant_row['prt_birthday'],
-			[ 'class'=>'ipad-input', 'placeholder'=>'DD.MM.JJJJ', 'style'=>'width: 160px; font-family: Monospace;' ]);
+			[ 'placeholder'=>'DD.MM.JJJJ', 'style'=>'font-family: Monospace; width: 120px;' ]);
+		$prt_birthday->setFormat([ 'clear-box'=>true ]);
 		$prt_birthday->setRule('is_valid_date');
 
 		$prt_supervision_firstname = textinput('prt_supervision_firstname', $participant_row['prt_supervision_firstname'],
-			[ 'class'=>'ipad-input', 'placeholder'=>'Vorname', 'style'=>'width: 175px;' ]);
+			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;' ]);
+		$prt_supervision_firstname->setFormat([ 'clear-box'=>true ]);
 		$prt_supervision_lastname = textinput('prt_supervision_lastname', $participant_row['prt_supervision_lastname'],
-			[ 'class'=>'ipad-input', 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+			[ 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+		$prt_supervision_lastname->setFormat([ 'clear-box'=>true ]);
 		$prt_supervision_cellphone = new NumericField('prt_supervision_cellphone', $participant_row['prt_supervision_cellphone'],
-			[ 'class'=>'ipad-input', 'style'=>'width: 260px; font-family: Monospace;' ]);
-		$register_participant->addSpace();
+			[ 'style'=>'width: 260px; font-family: Monospace;' ]);
+		$prt_supervision_cellphone->setFormat([ 'clear-box'=>true ]);
 
 		div(array('class'=>'topnav'));
 		table();
@@ -83,12 +88,12 @@ class Registration extends BF_Controller {
 
 		table([ 'class'=>'ipad-table', 'style'=>'padding-top: 2px;' ]);
 		tr();
-		td(b('Kind:'));
-		td(b('Begleitperson:'));
+		td(nbsp().b('Kind '.$reg_tab_v.':'));
+		td(nbsp().b('Begleitperson:'));
 		_tr();
 		tr();
 		td();
-			table([ 'style'=>'border: 1px solid black;' ]);
+			table([ 'style'=>'border: 1px solid black; padding: 4px;' ]);
 			tr();
 			td($prt_firstname->html());
 			td($prt_lastname->html());
@@ -100,7 +105,7 @@ class Registration extends BF_Controller {
 			_table();
 		_td();
 		td();
-			table([ 'style'=>'border: 1px solid black;' ]);
+			table([ 'style'=>'border: 1px solid black; padding: 4px;' ]);
 			tr();
 			td($prt_supervision_firstname->html());
 			td($prt_supervision_lastname->html());

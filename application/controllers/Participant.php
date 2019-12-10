@@ -259,7 +259,7 @@ class Participant extends BF_Controller {
 
 		// Aufnehmen u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
-		$number1->setFormat('colspan=2');
+		$number1->setFormat([ 'colspan'=>'2' ]);
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name',
 			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname' ]);
 		$prt_firstname->setRule('required');
@@ -278,11 +278,11 @@ class Participant extends BF_Controller {
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', '',
 			$participant_row['prt_supervision_lastname'], array('placeholder'=>'Nachname'));
-		//$prt_supervision_lastname->setFormat('nolabel');
+		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes']);
-		$prt_notes->setFormat('colspan=2');
+		$prt_notes->setFormat([ 'colspan'=>'2' ]);
 
 		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-green'));
 		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-green'));
@@ -293,12 +293,12 @@ class Participant extends BF_Controller {
 
 		// An u. Abmeldung
 		$number2 = $update_participant->addField('Kinder-Nr');
-		$number2->setFormat('colspan=2');
+		$number2->setFormat([ 'colspan'=>'2' ]);
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname']);
 		$f1->disable();
 		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname']);
 		$f2->disable();
-		//$f2->setFormat('nolabel');
+		//$f2->setFormat([ 'nolabel'=>true ]);
 		$f3 = $update_participant->addTextInput('prt_birthday', 'Geburtstag', $participant_row['prt_birthday']);
 		$f3->disable();
 		$curr_age_str = str_get_age($prt_birthday->getDate());
@@ -308,7 +308,7 @@ class Participant extends BF_Controller {
 		$update_participant->addRow($group_list->html());
 
 		$register_comment = $update_participant->addTextInput('register_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
-		$register_comment->setFormat('colspan=2');
+		$register_comment->setFormat([ 'colspan'=>'2' ]);
 
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', array('class'=>'button-white wc'));
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', array('class'=>'button-white wc strike-thru'));
@@ -321,21 +321,21 @@ class Participant extends BF_Controller {
 
 		// Eltern Ruf
 		$number3 = $update_participant->addField('Kinder-Nr');
-		$number3->setFormat('colspan=2');
+		$number3->setFormat([ 'colspan'=>'2' ]);
 		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
 		$f1->disable();
 		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
 		$f2->disable();
-		//$f2->setFormat('nolabel');
+		//$f2->setFormat([ 'nolabel'=>true ]);
 		$f3 = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
 			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
 		$f3->disable();
 		$f4 = $update_participant->addTextInput('prt_supervision_lastname', '',
 			$participant_row['prt_supervision_lastname'], array('placeholder'=>'Nachname'));
 		$f4->disable();
-		//$f4->setFormat('nolabel');
+		//$f4->setFormat([ 'nolabel'=>true ]);
 		$supervisor_comment = $update_participant->addTextInput('supervisor_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
-		$supervisor_comment->setFormat('colspan=2');
+		$supervisor_comment->setFormat([ 'colspan'=>'2' ]);
 
 		$escallate = $update_participant->addSubmit('escallate', 'Eskalieren', array('class'=>'button-blue'));
 		$call_super = $update_participant->addSubmit('call_super', 'Ruf Eltern', array('class'=>'button-blue'));
@@ -761,7 +761,7 @@ class Participant extends BF_Controller {
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>2));
 			$display_participant->open();
 			table([ 'class'=>'input-table' ]);
-			tr(td($prt_filter, ' ', $clear_filter));
+			tr(td(table(tr(td($prt_filter), td(nbsp()), td($clear_filter)))));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
 			$display_participant->close();

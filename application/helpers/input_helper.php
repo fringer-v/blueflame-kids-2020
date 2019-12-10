@@ -57,7 +57,7 @@ class Form {
 		$field->setForm($this);
 		$this->fields['$'.count($this->fields)] = array('', $field);
 		$field->setValue($value);
-		$field->setFormat('nolabel,colspan=*');
+		$field->setFormat([ 'nolabel'=>true, 'colspan'=>'*' ]);
 		return $field;
 	}
 
@@ -245,16 +245,16 @@ class Form {
 
 					$colspan = 1;
 					$haslabel = true;
-					$formats = explode(',', $field->format);
-					foreach ($formats as $format) {
-						if ($format == "nolabel")
-							$haslabel = false;
-						else if (str_startswith($format, 'colspan=')) {
-							$colspan = (integer) str_right($format, 'colspan=');
-							if ($colspan == '*')
-								$colspan = $this->columns;
-							else if ($colspan <= 0)
-								$colspan = 1;
+					if (!empty($field->format)) {
+						foreach ($field->format as $format=>$value) {
+							if ($format == "nolabel")
+								$haslabel = false;
+							else if (isset($field->format['colspan'])) {
+								if ($field->format['colspan'] == '*')
+									$colspan = $this->columns;
+								else
+									$colspan = (integer) $field->format['colspan'];
+							}
 						}
 					}
 
@@ -385,17 +385,19 @@ class InputField extends BaseOutput {
 		$this->attributes[$name] = $value;
 	}
 	
-	public function getAttributes($type, $include_value = true) {
+	public function getAttributes($type, $include_value = true, $class = '') {
 		if (is_empty($this->name))
-			$attr = array();
+			$attr = [ ];
 		else
-			$attr = array('name'=>$this->name, 'id'=>$this->name);
+			$attr = [ 'name'=>$this->name, 'id'=>$this->name ];
 		if (!is_empty($type))
 			$attr['type'] = $type;
 		if ($include_value)
 			$attr['value'] = $this->getValue();
 		if ($this->disabled)
 			$attr['disabled'] = null;
+		if (!empty($class) && !isset($this->attributes['class']))
+			$attr['class'] = $class;
 		$attr = array_merge($attr, $this->attributes);
 		return $attr;
 	}
@@ -573,21 +575,70 @@ class OutputField extends InputField {
 	}
 }
 
-class TextInput extends InputField {
-	public function output() {
-		return tag('input', $this->getAttributes('text'))->html();
+
+class TextField extends InputField {
+	public function clearBox() {
+	}
+
+	public function getTextField($type) {
+		$field = table([ 'id'=>$this->name.'_border', 'class'=>'input-field-border', 'style'=>'border-collapse: collapse;' ]);
+		$field->add(tr());
+		$field->add(td([ 'style'=>'border: 0px; padding: 0px;' ]));
+		$field->add(tag('input', $this->getAttributes($type, true, 'input-field')));
+		$field->add(_td());
+		if (isset($this->format['clear-box'])) {
+			$attr = [ 'id'=>$this->name.'_clear', 'class'=>'input-field-clear' ];
+			$attr['onclick'] = '$("#'.$this->name.'").val("").focus();';
+			$field->add(td($attr, '&#x2297;'));
+		}
+		$field->add(_tr());
+		$field->add(_table());
+		$field->add(script('', '
+			$("#'.$this->name.'" ).focus(function() { $("#'.$this->name.'_border" ).addClass("has-focus"); });
+			$("#'.$this->name.'" ).focusout(function() { $("#'.$this->name.'_border" ).removeClass("has-focus"); });
+		'));
+		return $field->html();
 	}
 }
 
-class NumericField extends InputField {
+class TextInput extends TextField {
 	public function output() {
-		return tag('input', $this->getAttributes('tel'))->html();
+		return $this->getTextField('text');
+		/*
+		$field = tag('input', $this->getAttributes('text'));
+		$formats = explode(',', $this->format);
+		if (in_array('clear-box', $formats))
+			$field->add($this->clearBox());
+		return $field->html();
+		*/
 	}
 }
 
-class Password extends InputField {
+class NumericField extends TextField {
 	public function output() {
-		return tag('input', $this->getAttributes('password'))->html();
+		return $this->getTextField('tel');
+	/*
+		$div_style = 'position: relative; border: 1px solid red;';
+		$inp_attr = $this->getAttributes('text');
+		if (isset($this->format['width'])) {
+			$div_style .= ' width: '.$this->format['width'].'px;';
+			$inp_attr['style'] = str_listappend(arr_nvl($inp_attr, 'style', ''), 'width: 100%;', ' ');
+		}
+		*/
+		/*
+		$field = tag('input', $this->getAttributes('tel'));
+		$formats = explode(',', $this->format);
+		if (in_array('clear-box', $formats))
+			$field->add($this->clearBox());
+		return $field->html();
+		*/
+	}
+}
+
+class Password extends TextField {
+	public function output() {
+		return $this->getTextField('password');
+		//return tag('input', $this->getAttributes('password'))->html();
 	}
 }
 

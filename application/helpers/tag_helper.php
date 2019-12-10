@@ -43,12 +43,14 @@ function _tag($name) {
 	return out("</[]>\n", $name);
 }
 
-function script($src = "") {
+function script($src = '', $text='') {
 	$args = array('type'=>'text/javascript');
-	if (!is_empty($src))
-		$args["src"] = $src;
+	if (!empty($src))
+		$args['src'] = $src;
 	$tag = tag('script', $args);
-	if (!is_empty($src))
+	if (!empty($text))
+		$tag->add($text);
+	if (!empty($src) || !empty($text))
 		$tag->add(_script());
 	return $tag;
 }

@@ -37,6 +37,20 @@ a:hover {
 	cursor: grab;
 }
 
+/* Cut all the "fluff" from tables so that they can be used for layout! */
+table {
+	border-collapse: collapse;
+	-webkit-border-horizontal-spacing: 0px;
+	-webkit-border-vertical-spacing: 0px;
+	border: 0px;
+	margin: 0px;
+}
+
+td {
+	border: 0px;
+	margin: 0px;
+}
+
 /* --------------------------- */
 /* Input Table: */
 
@@ -71,13 +85,6 @@ a:hover {
 	padding: 0px 4px;
 }
 
-.input-table input[type=text], input[type=password] {
-	height: 26px;
-    font-size: 16px;
-	padding: 0px 4px;
-	border: 1px solid lightgrey;
-}
-
 .input-table button, input[type=submit], input[type=button] {
 	height: 24px;
     font-size: 14px;
@@ -90,10 +97,6 @@ a:hover {
 
 .input-table button:disabled, input[type=submit]:disabled, input[type=button]:disabled {
 	background: darkgrey;
-}
-
-.input-table input[type=text] {
-    width: 240px;
 }
 
 .input-table textarea {
@@ -128,6 +131,89 @@ a:hover {
 button:active, input[type=submit]:active {
 	background-color: #009DDE;
 }
+
+/* --------------------------- */
+/* Text fields: */
+
+.input-field-border {
+	border: 1px solid lightgrey;
+	background-color: blue;
+}
+
+.input-field-border.has-focus {
+	border: 1px solid #009DDe;
+}
+
+.input-field {
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+	border-radius: 0px;
+	height: 26px;
+	padding: 0px 4px;
+    font-size: 16px;
+	background-color: white;
+	border: 0px;
+	margin: 0px;
+}
+
+.input-field:focus {
+	outline: none;
+}
+
+.input-field-clear {
+	width: 28px;
+    font-size: 20px;
+	text-align: center;
+	color: lightgrey;
+	background-color: white;
+	border: 0px;
+	padding: 0px;
+	font-family: Ariel;
+}
+
+.input-table input[type=text] {
+    width: 240px;
+}
+
+/*
+.input-table input[type=text], input[type=password], input[type=tel] {
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+	border-radius: 0px;
+	height: 26px;
+	padding: 0px 4px;
+    font-size: 16px;
+	background-color: white;
+	border: 1px solid lightgrey;
+}
+
+.input-table:focus {
+	outline: none;
+	border: 1px solid #009DDe;
+}
+
+.clear-box {
+	display: inline-block;
+	height: 26px;
+	width: 28px;
+    font-size: 20px;
+	text-align: center;
+	line-height: 26px;
+	color: lightgrey;
+	background-color: white;
+	border: 1px solid lightgrey;
+	border-left: 0px;
+	padding: 0px;
+	font-family: Ariel;
+}
+
+.clear-box-focus {
+	border: 1px solid #009DDe;
+	border-left: 0px;
+}
+*/
 
 /* --------------------------- */
 /* Layout Items: */
@@ -768,16 +854,7 @@ table.scrollable-table tbody {
     font-size: 18px;
 }
 
-.ipad-input {
-	height: 32px;
-	padding: 0px 4px;
-	border: 1px solid lightgrey;
+.ipad-table input {
     font-size: 18px;
+    height: 32px;
 }
-
-.ipad-table td {
-	padding: 4px; 
-}
-
-
-
