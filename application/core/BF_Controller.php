@@ -130,6 +130,20 @@ class BF_Controller extends CI_Controller {
 		return $participant_row;
 	}
 
+	public function get_participant_row_by_name($prt_firstname, $prt_lastname) {
+		$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
+			DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
+			prt_registered, prt_supervision_firstname, prt_supervision_lastname,
+			prt_supervision_cellphone, prt_notes,
+			prt_age_level, prt_group_number,
+			prt_call_status, prt_call_escalation, prt_call_start_time, prt_call_change_time,
+			prt_wc_time, prt_age_level, prt_group_number
+			FROM bf_participants
+			WHERE prt_firstname=? AND prt_lastname=?', [ $prt_firstname, $prt_lastname ]);
+		$participant_row = $query->row_array();
+		return $participant_row;
+	}
+
 	public function get_staff_row($stf_id) {
 		if (is_empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
@@ -148,6 +162,93 @@ class BF_Controller extends CI_Controller {
 			GROUP BY s1.stf_id',
 			array($stf_id));
 		return $query->row_array();
+	}
+
+	public function insert_participant($after_row, $group_reserved) {
+		$data['prt_create_stf_id'] = $this->session->stf_login_id;
+
+		do {
+			$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
+			$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
+			$data['prt_number'] = $prt_number;
+			$prt_id_v = db_insert('bf_participants', $data, 'prt_modifytime');
+		}
+		while (empty($prt_id_v));
+
+		$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
+		$history['hst_prt_id'] = $prt_id_v;
+		if ($group_reserved) {
+			$history['hst_action'] = REGISTER;
+			$history['hst_age_level'] = $after_row['prt_age_level'];
+			$history['hst_group_number'] = $after_row['prt_group_number'];
+			$this->db->insert('bf_history', $history);
+			$this->unreserveGroup($after_row['prt_age_level'], $after_row['prt_group_number']);
+		}
+		else {
+			$history['hst_action'] = CREATED;
+			$this->db->insert('bf_history', $history);
+		}
+		return $prt_id_v;
+	}
+
+	public function modify_participant($prt_id_v, $before_row, $after_row, $group_reserved) {
+		$after_row['prt_modify_stf_id'] = $this->session->stf_login_id;
+		$this->db->set('prt_modifytime', 'NOW()', false);
+		$this->db->where('prt_id', $prt_id_v);
+		$this->db->update('bf_participants', $after_row);
+
+		$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
+		$history['hst_prt_id'] = $prt_id_v;
+
+		if ($before_row['prt_firstname'] != $after_row['prt_firstname'] ||
+			$before_row['prt_lastname'] != $after_row['prt_lastname']) {
+			$history['hst_action'] = NAME_CHANGED;
+			$history['hst_notes'] = $before_row['prt_firstname'].' '.$before_row['prt_lastname'].
+				' -> '.$after_row['prt_firstname'].' '.$after_row['prt_lastname'];
+			$this->db->insert('bf_history', $history);
+		}
+
+		if ($before_row['prt_birthday'] != $after_row['prt_birthday']) {
+			$history['hst_action'] = BIRTHDAY_CHANGED;
+			$history['hst_notes'] = $before_row['prt_birthday'].' -> '.$after_row['prt_birthday'];
+			$this->db->insert('bf_history', $history);
+		}
+
+		if ($before_row['prt_supervision_firstname'] != $after_row['prt_supervision_firstname'] ||
+			$before_row['prt_supervision_lastname'] != $after_row['prt_supervision_lastname']) {
+			$history['hst_action'] = SUPERVISOR_CHANGED;
+			$history['hst_notes'] = $before_row['prt_supervision_firstname'].' '.$before_row['prt_supervision_lastname'].
+				' -> '.$after_row['prt_supervision_firstname'].' '.$after_row['prt_supervision_lastname'];
+			$this->db->insert('bf_history', $history);
+		}
+
+		if ($before_row['prt_supervision_cellphone'] != $after_row['prt_supervision_cellphone']) {
+			$history['hst_action'] = CELLPHONE_CHANGED;
+			$history['hst_notes'] = $before_row['prt_supervision_cellphone'].' -> '.$after_row['prt_supervision_cellphone'];
+			$this->db->insert('bf_history', $history);
+		}
+
+		if ($before_row['prt_notes'] != $after_row['prt_notes']) {
+			$history['hst_action'] = NOTES_CHANGED;
+			if (empty($before_row['prt_notes']))
+				$history['hst_notes'] = ' -> "'.$after_row['prt_notes'].'"';
+			else {
+				if (empty(trim($after_row['prt_notes'])))
+					$history['hst_notes'] = '"'.$before_row['prt_notes'].'" -> ""';
+				else
+					$history['hst_notes'] = '"'.$before_row['prt_notes'].'" -> "..."';
+			}
+			$this->db->insert('bf_history', $history);
+		}
+
+		if ($group_reserved) {
+			$history['hst_action'] = CHANGED_GROUP;
+			$history['hst_age_level'] = $after_row['prt_age_level'];
+			$history['hst_group_number'] = $after_row['prt_group_number'];
+			unset($history['hst_notes']);
+			$this->db->insert('bf_history', $history);
+			$this->unreserveGroup($after_row['prt_age_level'], $after_row['prt_group_number']);
+		}
 	}
 
 	public function getPeriodData($p = 0)

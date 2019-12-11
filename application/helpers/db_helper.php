@@ -54,3 +54,22 @@ function db_row_array($sql, $sqlargs = array()) {
 	return $result;
 }
 
+function db_insert($table, $data, $modify_time = '') {
+	$cii =& get_instance();
+	$cii->load->database();
+
+	// Turn database debug off:
+	$orig_db_debug = $cii->db->db_debug;
+	$cii->db->db_debug = false;
+
+	if (!empty($modify_time))
+		$cii->db->set($modify_time, 'NOW()', false);
+	$cii->db->insert($table, $data);
+	if ($cii->db->error()['code'] == 1062)
+		return 0;
+	$id_v = $cii->db->insert_id();
+
+	$cii->db->db_debug = $orig_db_debug;
+	return $id_v;
+}
+

@@ -192,7 +192,7 @@ function listAppend(list, value, sep) {
 	return list + value;
 }
 
-function capatalize(field) {
+function capitalize(field) {
 	var start = field.get(0).selectionStart;
 	var end = field.get(0).selectionEnd;
 	var value = field.val();

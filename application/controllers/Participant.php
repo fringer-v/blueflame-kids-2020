@@ -261,10 +261,10 @@ class Participant extends BF_Controller {
 		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat([ 'colspan'=>'2' ]);
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name',
-			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capatalize($(this));' ]);
+			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_firstname->setRule('required');
 		$prt_lastname = $update_participant->addTextInput('prt_lastname', '',
-			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capatalize($(this));' ]);
+			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_lastname->setRule('required');
 		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtstag',
 			$participant_row['prt_birthday'], [ 'placeholder'=>'DD.MM.JJJJ' ]);
@@ -275,9 +275,9 @@ class Participant extends BF_Controller {
 		$update_participant->addRow($group_list->html());
 
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
-			$participant_row['prt_supervision_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capatalize($(this));' ]);
+			$participant_row['prt_supervision_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', '',
-			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capatalize($(this));' ]);
+			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capitalize($(this));' ]);
 		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
@@ -362,8 +362,6 @@ class Participant extends BF_Controller {
 		if ($new_participant->submitted() || $save_participant->submitted()) {
 			$this->error = $update_participant->validate('tab_modify');
 			if (is_empty($this->error)) {
-
-
 				$staff_row = $this->get_staff_row($this->session->stf_login_id);
 				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
 
@@ -379,108 +377,29 @@ class Participant extends BF_Controller {
 				if ($group_reserved) {
 					$data['prt_age_level'] = $staff_row['stf_reserved_age_level'];
 					$data['prt_group_number'] = $staff_row['stf_reserved_group_number'];
-					$data['prt_registered'] = REG_YES;
+					if ((integer) $participant_row['prt_registered'] != REG_BEING_FETCHED)
+						$data['prt_registered'] = REG_YES;
 				}
-
-				$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
 
 				if (is_empty($prt_id_v)) {
 					$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_firstname = ? '.
 						'AND prt_lastname = ?',
 						array($prt_firstname->getValue(), $prt_lastname->getValue()));
 					if ($count == 0) {
-						$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
-						$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
-
-						$data['prt_number'] = $prt_number;
-						$data['prt_create_stf_id'] = $this->session->stf_login_id;
-						$this->db->set('prt_modifytime', 'NOW()', FALSE);
-
-						$this->db->insert('bf_participants', $data);
-						$prt_id_v = $this->db->insert_id();
-
-						$history['hst_prt_id'] = $prt_id_v;
-						if ($group_reserved) {
-							$history['hst_action'] = REGISTER;
-							$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
-							$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
-							$this->db->insert('bf_history', $history);
-							$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
+						$prt_id_v = $this->insert_participant($data, $group_reserved);
+						if (!empty($prt_id_v)) {
+							$prt_filter->setValue('');
+							$prt_page->setValue(1);
+							$prt_id->setValue($prt_id_v);
+							$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
+							redirect("participant");
 						}
-						else {
-							$history['hst_action'] = CREATED;
-							$this->db->insert('bf_history', $history);
-						}
-
-						$prt_filter->setValue('');
-						$prt_page->setValue(1);
-						$prt_id->setValue($prt_id_v);
-						$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
-						redirect("participant");
 					}
 					else
-						$this->error = $prt_firstname->getValue()." ".$prt_lastname->getValue().' ist bereits registriert';
+						$this->error = $prt_firstname->getValue()." ".$prt_lastname->getValue().' ist bereits aufgenommen';
 				}
 				else {
-					$data['prt_modify_stf_id'] = $this->session->stf_login_id;
-					if ($group_reserved && $participant_row['prt_registered'] == REG_NO)
-						$data['prt_registered'] = REG_YES;
-					$this->db->set('prt_modifytime', 'NOW()', false);
-					$this->db->where('prt_id', $prt_id_v);
-					$this->db->update('bf_participants', $data);
-
-					$history['hst_prt_id'] = $prt_id_v;
-
-					if ($participant_row['prt_firstname'] != $prt_firstname->getValue() ||
-						$participant_row['prt_lastname'] != $prt_lastname->getValue()) {
-						$history['hst_action'] = NAME_CHANGED;
-						$history['hst_notes'] = $participant_row['prt_firstname'].' '.$participant_row['prt_lastname'].
-							' -> '.$prt_firstname->getValue().' '.$prt_lastname->getValue();
-						$this->db->insert('bf_history', $history);
-					}
-
-					if ($participant_row['prt_birthday'] != $prt_birthday->getValue()) {
-						$history['hst_action'] = BIRTHDAY_CHANGED;
-						$history['hst_notes'] = $participant_row['prt_birthday'].' -> '.$prt_birthday->getValue();
-						$this->db->insert('bf_history', $history);
-					}
-
-					if ($participant_row['prt_supervision_firstname'] != $prt_supervision_firstname->getValue() ||
-						$participant_row['prt_supervision_lastname'] != $prt_supervision_lastname->getValue()) {
-						$history['hst_action'] = SUPERVISOR_CHANGED;
-						$history['hst_notes'] = $participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'].
-							' -> '.$prt_supervision_firstname->getValue().' '.$prt_supervision_lastname->getValue();
-						$this->db->insert('bf_history', $history);
-					}
-
-					if ($participant_row['prt_supervision_cellphone'] != $prt_supervision_cellphone->getValue()) {
-						$history['hst_action'] = CELLPHONE_CHANGED;
-						$history['hst_notes'] = $participant_row['prt_supervision_cellphone'].' -> '.$prt_supervision_cellphone->getValue();
-						$this->db->insert('bf_history', $history);
-					}
-
-					if ($participant_row['prt_notes'] != $prt_notes->getValue()) {
-						$history['hst_action'] = NOTES_CHANGED;
-						if (empty($participant_row['prt_notes']))
-							$history['hst_notes'] = ' -> "'.$prt_notes->getValue().'"';
-						else {
-							if (empty(trim($prt_notes->getValue())))
-								$history['hst_notes'] = '"'.$participant_row['prt_notes'].'" -> ""';
-							else
-								$history['hst_notes'] = '"'.$participant_row['prt_notes'].'" -> "..."';
-						}
-						$this->db->insert('bf_history', $history);
-					}
-
-					if ($group_reserved) {
-						$history['hst_action'] = CHANGED_GROUP;
-						$history['hst_age_level'] = $staff_row['stf_reserved_age_level'];
-						$history['hst_group_number'] = $staff_row['stf_reserved_group_number'];
-						unset($history['hst_notes']);
-						$this->db->insert('bf_history', $history);
-						$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
-					}
-
+					$this->modify_participant($prt_id_v, $participant_row, $data, $group_reserved);
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert');
 					redirect("participant");
 				}

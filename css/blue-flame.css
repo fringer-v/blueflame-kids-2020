@@ -644,6 +644,17 @@ table.scrollable-table tbody {
 	color: black;
 }
 
+.grey-box {
+	display: inline-block;
+	background-color: lightgrey;
+	border: 1px solid grey;
+	height: 24px;
+	width: 120px;
+	line-height: 24px;
+	text-align: center;
+	color: black;
+}
+
 .green-box {
 	display: inline-block;
 	background-color: #ADFFA1;
