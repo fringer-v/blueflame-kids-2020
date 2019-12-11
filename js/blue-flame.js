@@ -70,7 +70,7 @@ function getAge(value) {
 	return -1;
 }
 
-function checkDate(old_date, delete_key) {
+function correctDate(old_date, delete_key) {
 	var date_parts;
 	var clean_date = "";
 	
@@ -145,6 +145,8 @@ function checkDate(old_date, delete_key) {
 			return new_date;
 		if (val > 201 && val < 1900)
 			return new_date + "20";
+		if (val > 2020)
+			return new_date + "20";
 		if (val > 20 && val < 200)
 			return new_date + "2";
 		if ((val > 2 && val < 19) ||
@@ -162,6 +164,56 @@ function checkDate(old_date, delete_key) {
 		new_date = old_date.substring(0, old_date.length-1);
 
 	return new_date;
+}
+
+function dateChanged(field) {
+	var start = field.get(0).selectionStart;
+	var end = field.get(0).selectionEnd;
+	var value = field.val();
+	const key = event.key;
+	var new_value = correctDate(value, key === "Backspace" || key === "Delete");
+	if (value != new_value) {
+		field.val(new_value);
+		// Check if the character was just removed:
+		if (value.substr(0, start-1) + value.substr(start) == new_value) {
+			// If so the cursor position must be set back!
+			start--;
+			end--;
+		}
+		if (start+1 < value.length)
+			field.get(0).setSelectionRange(start, end);
+	}
+	return new_value;
+}
+
+function listAppend(list, value, sep) {
+	if (list.length != 0)
+		list += sep;
+	return list + value;
+}
+
+function capatalize(field) {
+	var start = field.get(0).selectionStart;
+	var end = field.get(0).selectionEnd;
+	var value = field.val();
+	var trailing_space = value.endsWith(" ");
+	var words = value.trim().split(" ");
+	var new_value = "";
+	for (var i=0; i<words.length; i++) {
+		var word = words[i].trim();
+		if (word.length > 0) {
+			if (word != "v" && word != "vo" && word != "von")
+				word = word.charAt(0).toUpperCase() + word.slice(1);
+			new_value = listAppend(new_value, word, " ");
+		}
+	}
+	if (trailing_space)
+		new_value += " ";
+
+	if (value != new_value) {
+		field.val(new_value);
+		field.get(0).setSelectionRange(start, end);
+	}
 }
 
 function mouseOverLogout(object) {

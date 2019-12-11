@@ -51,6 +51,53 @@ td {
 	margin: 0px;
 }
 
+textarea {
+	resize: vertical;
+}
+
+/* --------------------------- */
+/* Text fields: */
+
+.input-field-border {
+	border: 1px solid lightgrey;
+}
+
+.input-field-border.has-focus {
+	border: 1px solid #009DDe;
+}
+
+.input-field {
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+	border-radius: 0px;
+	height: 26px;
+	padding: 0px 4px;
+    font-size: 16px;
+	background-color: white;
+	border: 0px;
+	margin: 0px;
+}
+
+.input-field:focus {
+	outline: none;
+}
+
+.input-field-clear {
+	width: 28px;
+    font-size: 20px;
+	text-align: center;
+	color: lightgrey;
+	background-color: white;
+	border: 0px;
+	padding: 0px;
+	font-family: Ariel;
+}
+
+.input-table input[type=text] {
+    width: 240px;
+}
+
 /* --------------------------- */
 /* Input Table: */
 
@@ -131,89 +178,6 @@ td {
 button:active, input[type=submit]:active {
 	background-color: #009DDE;
 }
-
-/* --------------------------- */
-/* Text fields: */
-
-.input-field-border {
-	border: 1px solid lightgrey;
-	background-color: blue;
-}
-
-.input-field-border.has-focus {
-	border: 1px solid #009DDe;
-}
-
-.input-field {
-	-webkit-appearance: none !important;
-	-moz-appearance: none !important;
-	appearance: none !important;
-	border-radius: 0px;
-	height: 26px;
-	padding: 0px 4px;
-    font-size: 16px;
-	background-color: white;
-	border: 0px;
-	margin: 0px;
-}
-
-.input-field:focus {
-	outline: none;
-}
-
-.input-field-clear {
-	width: 28px;
-    font-size: 20px;
-	text-align: center;
-	color: lightgrey;
-	background-color: white;
-	border: 0px;
-	padding: 0px;
-	font-family: Ariel;
-}
-
-.input-table input[type=text] {
-    width: 240px;
-}
-
-/*
-.input-table input[type=text], input[type=password], input[type=tel] {
-	-webkit-appearance: none !important;
-	-moz-appearance: none !important;
-	appearance: none !important;
-	border-radius: 0px;
-	height: 26px;
-	padding: 0px 4px;
-    font-size: 16px;
-	background-color: white;
-	border: 1px solid lightgrey;
-}
-
-.input-table:focus {
-	outline: none;
-	border: 1px solid #009DDe;
-}
-
-.clear-box {
-	display: inline-block;
-	height: 26px;
-	width: 28px;
-    font-size: 20px;
-	text-align: center;
-	line-height: 26px;
-	color: lightgrey;
-	background-color: white;
-	border: 1px solid lightgrey;
-	border-left: 0px;
-	padding: 0px;
-	font-family: Ariel;
-}
-
-.clear-box-focus {
-	border: 1px solid #009DDe;
-	border-left: 0px;
-}
-*/
 
 /* --------------------------- */
 /* Layout Items: */
@@ -852,9 +816,22 @@ table.scrollable-table tbody {
 
 .ipad-table {
     font-size: 18px;
+	margin: 3px;
+	border-collapse: separate;
+	border-spacing: 5px;
 }
 
 .ipad-table input {
     font-size: 18px;
     height: 32px;
+}
+
+.ipad-table textarea {
+    font-size: 18px;
+    height: 42px;
+}
+
+textarea:focus {
+	outline: none;
+	border: 1px solid #009DDe;
 }

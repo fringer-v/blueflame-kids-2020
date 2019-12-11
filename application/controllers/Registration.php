@@ -37,27 +37,31 @@ class Registration extends BF_Controller {
 		$prt_id->persistent();
 	
 		$prt_firstname = textinput('prt_firstname', $participant_row['prt_firstname'],
-			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;' ]);
+			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;', 'autocapitalize'=>null ]);
 		$prt_firstname->setFormat([ 'clear-box'=>true ]);
 		$prt_firstname->setRule('required');
 		$prt_lastname = textinput('prt_lastname', $participant_row['prt_lastname'],
-			[ 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+			[ 'placeholder'=>'Nachname', 'style'=>'width: 220px;', 'autocapitalize'=>null ]);
 		$prt_lastname->setFormat([ 'clear-box'=>true ]);
 		$prt_lastname->setRule('required');
 		$prt_birthday = new NumericField('prt_birthday', $participant_row['prt_birthday'],
-			[ 'placeholder'=>'DD.MM.JJJJ', 'style'=>'font-family: Monospace; width: 120px;' ]);
+			[ 'placeholder'=>'DD.MM.JJJJ', 'style'=>'font-family: Monospace; width: 120px;', 'onkeyup'=>'dateChanged($(this));' ]);
 		$prt_birthday->setFormat([ 'clear-box'=>true ]);
 		$prt_birthday->setRule('is_valid_date');
 
 		$prt_supervision_firstname = textinput('prt_supervision_firstname', $participant_row['prt_supervision_firstname'],
-			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;' ]);
+			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;', 'autocapitalize'=>null ]);
 		$prt_supervision_firstname->setFormat([ 'clear-box'=>true ]);
 		$prt_supervision_lastname = textinput('prt_supervision_lastname', $participant_row['prt_supervision_lastname'],
-			[ 'placeholder'=>'Nachname', 'style'=>'width: 260px;' ]);
+			[ 'placeholder'=>'Nachname', 'style'=>'width: 220px;', 'autocapitalize'=>null ]);
 		$prt_supervision_lastname->setFormat([ 'clear-box'=>true ]);
 		$prt_supervision_cellphone = new NumericField('prt_supervision_cellphone', $participant_row['prt_supervision_cellphone'],
-			[ 'style'=>'width: 260px; font-family: Monospace;' ]);
+			[ 'style'=>'width: 220px; font-family: Monospace;' ]);
 		$prt_supervision_cellphone->setFormat([ 'clear-box'=>true ]);
+
+		$prt_notes = textarea('prt_notes', $participant_row['prt_notes'], [ 'style'=>'width: 98%;' ]);
+
+		$register = submit('register', 'Aufnehmen', [ 'class'=>'button-green', 'style'=>'width: 100%; height: 48px; font-size: 24px;' ]);
 
 		div(array('class'=>'topnav'));
 		table();
@@ -93,26 +97,37 @@ class Registration extends BF_Controller {
 		_tr();
 		tr();
 		td();
-			table([ 'style'=>'border: 1px solid black; padding: 4px;' ]);
+			table([ 'style'=>'border: 1px solid black; border-collapse: separate; border-spacing: 5px;' ]);
 			tr();
-			td($prt_firstname->html());
-			td($prt_lastname->html());
+			td($prt_firstname);
+			td($prt_lastname);
 			_tr();
 			tr();
 			td([ 'style'=>'text-align: right;' ], 'Geburtstag:');
-			td($prt_birthday->html());
+			td($prt_birthday);
 			_tr();
 			_table();
 		_td();
 		td();
-			table([ 'style'=>'border: 1px solid black; padding: 4px;' ]);
+			table([ 'style'=>'border: 1px solid black; border-collapse: separate; border-spacing: 5px;' ]);
 			tr();
-			td($prt_supervision_firstname->html());
-			td($prt_supervision_lastname->html());
+			td($prt_supervision_firstname);
+			td($prt_supervision_lastname);
 			_tr();
 			tr();
 			td([ 'style'=>'text-align: right;' ], 'Handy-Nr:');
-			td($prt_supervision_cellphone->html());
+			td($prt_supervision_cellphone);
+			_tr();
+			_table();
+		_td();
+		_tr();
+		tr(td(nbsp().b('Hinweise (Allergien, etc.)')));
+		tr();
+		td([ 'colspan'=>2 ]);
+			table([ 'style'=>'width: 100%;' ]);
+			tr();
+			td([ 'style'=>'width: 75%;' ], $prt_notes);
+			td([ 'valign'=>'top', 'style'=>'width: 25%;' ], $register);
 			_tr();
 			_table();
 		_td();
@@ -122,17 +137,6 @@ class Registration extends BF_Controller {
 		$register_participant->close();
 
 		script();
-		out('
-			function birthday_changed() {
-				var value = $("#prt_birthday").val();
-				const key = event.key;
-				var new_value = checkDate(value, key === "Backspace" || key === "Delete");
-				if (value != new_value)
-					$("#prt_birthday").val(new_value);
-			}
-			$("#prt_birthday").keyup(birthday_changed);
-		');
-		_script();
 		$this->footer();
 	}
 }

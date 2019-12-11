@@ -261,13 +261,13 @@ class Participant extends BF_Controller {
 		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat([ 'colspan'=>'2' ]);
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name',
-			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname' ]);
+			$participant_row['prt_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capatalize($(this));' ]);
 		$prt_firstname->setRule('required');
 		$prt_lastname = $update_participant->addTextInput('prt_lastname', '',
-			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname' ]);
+			$participant_row['prt_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capatalize($(this));' ]);
 		$prt_lastname->setRule('required');
 		$prt_birthday = $update_participant->addTextInput('prt_birthday', 'Geburtstag',
-			$participant_row['prt_birthday'], array('placeholder'=>'DD.MM.JJJJ'));
+			$participant_row['prt_birthday'], [ 'placeholder'=>'DD.MM.JJJJ' ]);
 		$prt_birthday->setRule('is_valid_date');
 		$age_field = $update_participant->addSpace();
 
@@ -275,9 +275,9 @@ class Participant extends BF_Controller {
 		$update_participant->addRow($group_list->html());
 
 		$prt_supervision_firstname = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
-			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
+			$participant_row['prt_supervision_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capatalize($(this));' ]);
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', '',
-			$participant_row['prt_supervision_lastname'], array('placeholder'=>'Nachname'));
+			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capatalize($(this));' ]);
 		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
@@ -824,11 +824,7 @@ class Participant extends BF_Controller {
 		');
 		out('
 			function birthday_changed() {
-				var value = $("#prt_birthday").val();
-				const key = event.key;
-				var new_value = checkDate(value, key === "Backspace" || key === "Delete");
-				if (value != new_value)
-					$("#prt_birthday").val(new_value);
+				var new_value = dateChanged($("#prt_birthday"));
 				var age = getAge(new_value);
 				if (age < 0)
 					$("#prt_age").html("&nbsp;-");
