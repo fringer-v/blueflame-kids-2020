@@ -199,16 +199,16 @@ class Form {
 		$attr['action'] = $this->action;
 		$attr['method'] = 'POST';
 		form($attr); 
-
-		foreach ($this->hiddens as $hidden) {
-			if (!$hidden->isHidden())
-				$hidden->show();
-		}
 		
 		$this->openned = true;
 	}
 
 	public function close() {
+		foreach ($this->hiddens as $hidden) {
+			if (!$hidden->isHidden())
+				$hidden->show();
+		}
+
 		_form();
 	}
 
@@ -337,6 +337,7 @@ class Form {
 
 class InputField extends BaseOutput {
 	public $name; // Name and ID of the field
+	public $label;
 	public $default_value;
 	protected $attributes; // Assoc. array of attributes
 	protected $disabled = false;
@@ -367,6 +368,10 @@ class InputField extends BaseOutput {
 		parent::__destruct();
 	}
 
+	public function setLabel($label) {
+		$this->label = $label;
+	}
+
 	public function setForm($form) {
 		$this->form = $form;
 	}
@@ -377,7 +382,7 @@ class InputField extends BaseOutput {
 
 	public function getLabel($quote = false) {
 		if (is_null($this->form))
-			return '';
+			return $this->label;
 		return $this->form->getLabel($this->name, $quote, $this->group);
 	}
 
@@ -446,19 +451,7 @@ class InputField extends BaseOutput {
 
 	public function getDate($fmt = '') {
 		$val = $this->getValue();
-		if (is_empty($val))
-			return null;
-		if (str_contains($val, '.'))
-			$ts = DateTime::createFromFormat('d.m.Y', $val);
-		else
-			$ts = DateTime::createFromFormat('d-m-Y', $val);
-		if ($ts === false)
-			return null;
-		$year = (integer) $ts->format('Y');
-		$month = (integer) $ts->format('m');
-		$day = (integer) $ts->format('d');
-		if ($year < 100)
-			$ts->setDate($year+2000, $month, $day);
+		$ts = str_to_date($val);
 		if (!is_empty($fmt))
 			return $ts->format($fmt);
 		return $ts;
@@ -468,8 +461,10 @@ class InputField extends BaseOutput {
 		$this->disabled = true;
 	}
 
-	public function setRule($rules) {
+	public function setRule($rules, $label = null) {
 		$this->rules = $rules;
+		if ($label != null)
+			$this->label = $label;
 	}
 
 	public function setFormat($format) {
@@ -483,7 +478,7 @@ class InputField extends BaseOutput {
 		}
 	}
 
-	public function validate($form) {
+	public function validate($form = null) {
 		$rules = explode('|', $this->rules);
 		$value = $this->getValue();
 		$error = '';
@@ -496,28 +491,6 @@ class InputField extends BaseOutput {
 				if (!is_numeric($value) || ((integer) $value) <= 0)
 					$error = $this->getLabel(true).' muss eine Zahl sein';
 			}
-			else if (str_startswith($rule, 'is_unique')) {
-				$cii =& get_instance();
-				$cii->load->database();
-
-				$arg = str_left(str_right($rule, '['), ']');
-				$dots = explode('.', $arg);
-				$table = $dots[0];
-				$column = $dots[1];
-				$id = $dots[2];
-				$sql = 'SELECT COUNT(*) AS count FROM '.$table.' WHERE '.$column.' = ?';
-				if (!is_empty($id))
-					$sql .= ' AND '.$id.' != ?';
-				$query = $cii->db->query($sql, array($value, $form->getField($id)->getValue()));
-				$row = $query->row_array()['count'];
-				if ($row != 0)
-					$error = $this->getLabel(true).' muss eindeutig sein';
-			}
-			else if (str_startswith($rule, 'matches')) {
-				$arg = str_left(str_right($rule, '['), ']');
-				if ($value != $form->getField($arg)->getValue())
-					$error = $this->getLabel(true).' ist nicht gleich '.$form->getLabel($arg, true);
-			}
 			else if (str_startswith($rule, 'is_valid_date')) {
 				if (!is_empty($value)) {
 					if (date_create_from_format('d.m.Y', $value) === false)
@@ -529,6 +502,34 @@ class InputField extends BaseOutput {
 				if (strlen($value) > $arg)
 					$error = $this->getLabel(true)." darf nicht länger als $arg Zeichen sein";
 			}
+			else if (empty($form)) {
+				$error = 'Rule: "'.$rule.'" requires this field be attached to a form';
+			}
+			else {
+				if (str_startswith($rule, 'is_unique')) {
+					$cii =& get_instance();
+					$cii->load->database();
+
+					$arg = str_left(str_right($rule, '['), ']');
+					$dots = explode('.', $arg);
+					$table = $dots[0];
+					$column = $dots[1];
+					$id = $dots[2];
+					$sql = 'SELECT COUNT(*) AS count FROM '.$table.' WHERE '.$column.' = ?';
+					if (!is_empty($id))
+						$sql .= ' AND '.$id.' != ?';
+					$query = $cii->db->query($sql, array($value, $form->getField($id)->getValue()));
+					$row = $query->row_array()['count'];
+					if ($row != 0)
+						$error = $this->getLabel(true).' muss eindeutig sein';
+				}
+				else if (str_startswith($rule, 'matches')) {
+					$arg = str_left(str_right($rule, '['), ']');
+					if ($value != $form->getField($arg)->getValue())
+						$error = $this->getLabel(true).' ist nicht gleich '.$form->getLabel($arg, true);
+				}
+			}
+
 			if (!is_empty($error))
 				break;		
 		}
@@ -588,7 +589,7 @@ class TextField extends InputField {
 		$field->add(_td());
 		if (isset($this->format['clear-box'])) {
 			$attr = [ 'id'=>$this->name.'_clear', 'class'=>'input-field-clear' ];
-			$attr['onclick'] = '$("#'.$this->name.'").val("").focus();';
+			$attr['onclick'] = '$("#'.$this->name.'").val("").focus().keyup();';
 			$field->add(td($attr, '&#x2297;'));
 		}
 		$field->add(_tr());

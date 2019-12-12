@@ -282,3 +282,65 @@ function toggleSchedule(i, my_leader_changed, current_period)
 	}
 }
 
+function iPadRegistrationChanged(tab, curr_stat, status, reg_tab, first_name, last_name, birth_date, sup_first_name, sup_last_name, cel_phone, reg_button)
+{
+	var fname = first_name.val().trim();
+	var lname = last_name.val().trim();
+	var tab_title;
+	if (fname.length == 0) {
+		fname = lname;
+		lname = "";
+	}
+	if (fname.length > 0) {
+		if (fname.length + lname.length > 14) {
+			if (lname.length == 0)
+				tab_title = fname.substr(0, 12)+'...';
+			else {
+				if (fname.length <= 12)
+					tab_title = fname+" "+lname.substr(0, 1)+".";
+				else
+					tab_title = fname.substr(0, 9)+"... "+lname.substr(0, 1)+".";
+			}
+		}
+		else
+			tab_title = fname+" "+lname;
+	}
+	else
+		tab_title = "Kind "+tab.toString();
+	reg_tab.html(tab_title);
+
+	var list = curr_stat.split("|");
+	stat = parseInt(list[0]);
+	fname = list[1];
+	lname = list[2];
+	if (fname != first_name.val().trim() ||
+		lname != last_name.val().trim()) {
+		var part_filled = first_name.val().trim().length > 0 ||
+			last_name.val().trim().length > 0 ||
+			birth_date.val().trim().length > 0;
+		if (part_filled)
+			stat = 2;
+		else
+			stat = 1;
+	}
+	status.removeClass();
+	switch (stat) {
+		case 1: status.addClass("grey-box"); status.html("&nbsp;"); break;
+		case 2: status.addClass("yellow-box"); status.html("Wird Aufgenommen"); break;
+		case 3: status.addClass("green-box"); status.html("Aufgenommen"); break;
+		case 4: status.addClass("yellow-box"); status.html("Wird geändert"); break;
+		case 5: status.addClass("red-box"); status.html("Angemeldet"); break;
+	}
+
+	var all_filled_in = first_name.val().trim().length > 0 &&
+		last_name.val().trim().length > 0 &&
+		birth_date.val().trim().length > 0 &&
+		sup_first_name.val().trim().length > 0 &&
+		sup_last_name.val().trim().length > 0 &&
+		reg_button.val().trim().length > 0 &&
+		cel_phone.val().trim().length > 0;
+	reg_button.prop("disabled", stat == 5 || !all_filled_in);
+
+
+	console.log("----", curr_stat, part_filled);
+}

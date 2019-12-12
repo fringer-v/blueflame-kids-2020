@@ -50,6 +50,29 @@ function str_listappend($list, $value, $sep) {
 		return '';
 	return $list.$sep.$value;
 }
+
+function str_to_date($val)
+{
+	if (is_empty($val))
+		return null;
+	if (str_contains($val, '.'))
+		$ts = DateTime::createFromFormat('d.m.Y', $val);
+	else
+		$ts = DateTime::createFromFormat('d-m-Y', $val);
+	if ($ts === false)
+		return null;
+	$year = (integer) $ts->format('Y');
+	$month = (integer) $ts->format('m');
+	$day = (integer) $ts->format('d');
+	if ($year < 100)
+		$ts->setDate($year+2000, $month, $day);
+	return $ts;
+}
+
+function str_from_date($ts, $fmt)
+{
+	return $ts->format($fmt);
+}
 	
 // This function fixes a bug that empty() has with the results of function calls
 function is_empty($val) {

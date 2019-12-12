@@ -192,10 +192,13 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function modify_participant($prt_id_v, $before_row, $after_row, $group_reserved) {
-		$after_row['prt_modify_stf_id'] = $this->session->stf_login_id;
+		$insert_row = $after_row;
+		$insert_row['prt_birthday'] = str_to_date($after_row['prt_birthday'])->format('Y-m-d');
+		$insert_row['prt_modify_stf_id'] = $this->session->stf_login_id;
+
 		$this->db->set('prt_modifytime', 'NOW()', false);
 		$this->db->where('prt_id', $prt_id_v);
-		$this->db->update('bf_participants', $after_row);
+		$this->db->update('bf_participants', $insert_row);
 
 		$history = [ 'hst_stf_id'=> $this->session->stf_login_id ];
 		$history['hst_prt_id'] = $prt_id_v;
@@ -210,7 +213,7 @@ class BF_Controller extends CI_Controller {
 
 		if ($before_row['prt_birthday'] != $after_row['prt_birthday']) {
 			$history['hst_action'] = BIRTHDAY_CHANGED;
-			$history['hst_notes'] = $before_row['prt_birthday'].' -> '.$after_row['prt_birthday'];
+			$history['hst_notes'] = $before_row['prt_birthday'].' -> '.$after_row['prt_birthday']->format('d.m.Y');
 			$this->db->insert('bf_history', $history);
 		}
 

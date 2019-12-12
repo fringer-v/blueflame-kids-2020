@@ -368,7 +368,7 @@ class Participant extends BF_Controller {
 				$data = [
 					'prt_firstname' => $prt_firstname->getValue(),
 					'prt_lastname' => $prt_lastname->getValue(),
-					'prt_birthday' => $prt_birthday->getDate('Y-m-d'),
+					'prt_birthday' => $prt_birthday->getDate('d.m.Y'),
 					'prt_supervision_firstname' => $prt_supervision_firstname->getValue(),
 					'prt_supervision_lastname' => $prt_supervision_lastname->getValue(),
 					'prt_supervision_cellphone' => $prt_supervision_cellphone->getValue(),
