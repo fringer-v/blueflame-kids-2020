@@ -367,4 +367,9 @@ function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab
 	}
 
 	reg_button.prop("disabled", disabled);
+console.log(stat);
+	if (stat == 4)
+		reg_button.attr("value", "Ändern");
+	else
+		reg_button.attr("value", "Aufnehmen");
 }
