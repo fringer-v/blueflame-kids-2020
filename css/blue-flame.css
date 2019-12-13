@@ -55,6 +55,13 @@ textarea {
 	resize: vertical;
 }
 
+
+button, input {
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+	appearance: none !important;
+}
+
 /* --------------------------- */
 /* Text fields: */
 
@@ -67,9 +74,6 @@ textarea {
 }
 
 .input-field {
-	-webkit-appearance: none !important;
-	-moz-appearance: none !important;
-	appearance: none !important;
 	border-radius: 0px;
 	height: 26px;
 	padding: 0px 4px;
@@ -175,7 +179,7 @@ textarea {
 	color: black;
 }
 
-button:active, input[type=submit]:active {
+button:active, input[type=submit]:active, input[type=button]:active {
 	background-color: #009DDE;
 }
 

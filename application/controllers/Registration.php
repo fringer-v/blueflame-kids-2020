@@ -75,14 +75,6 @@ class Registration extends BF_Controller {
 		$reg_supervision = in('reg_supervision', [ ]);
 		$reg_supervision->persistent();
 
-		$complete = submit('complete', 'Abgeschlossen', [ 'style'=>'height: 40px; border-radius: 0px; font-size: 18px;' ]);
-		if ($complete->submitted()) {
-			$reg_part->setValue(1);
-			$reg_participants->setValue([ ]);
-			$reg_supervision->setValue([ ]);
-			redirect("registration");
-		}
-
 		$reg_part_v = $reg_part->getValue();
 		$reg_participants_v = $reg_participants->getValue();
 		$reg_supervision_v = if_empty($reg_supervision->getValue(),
@@ -91,10 +83,10 @@ class Registration extends BF_Controller {
 		if (isset($_POST['prt_firstname']) &&
 			isset($_POST['prt_lastname']) &&
 			isset($_POST['prt_birthday']) &&
+			isset($_POST['prt_notes']) &&
 			isset($_POST['prt_supervision_firstname']) &&
 			isset($_POST['prt_supervision_lastname']) &&
-			isset($_POST['prt_supervision_cellphone']) &&
-			isset($_POST['prt_notes'])) {
+			isset($_POST['prt_supervision_cellphone'])) {
 			// Save the POST data:
 			$reg_participants_v[$reg_part_v] = [
 				'prt_firstname'=>trim($_POST['prt_firstname']),
@@ -110,13 +102,24 @@ class Registration extends BF_Controller {
 		}
 
 		$reg_participant_form = new Form('reg_participant_form', 'registration', 2, array('class'=>'input-table'));
-		$reg_status = $reg_participant_form->addHidden('reg_status');
+		$reg_before = $reg_participant_form->addHidden('reg_before');
 
 		$reg_set_part = $reg_participant_form->addHidden('reg_set_part');
 		$reg_set_part_v = $reg_set_part->getValue();
 		if ($reg_set_part_v > 0 && $reg_set_part_v <= MAX_PARTICIPANTS) {
 			$reg_part_v = $reg_set_part_v;
 			$reg_part->setValue($reg_part_v);
+			redirect("registration");
+		}
+
+		$complete = button('complete', 'Abschließen',
+			[ 'style'=>'height: 40px; border-radius: 0px; font-size: 18px;',
+				'onclick'=>'if (check_if_complete()) { $("#reg_complete").val(1); $("#reg_participant_form").submit(); }' ]);
+		$reg_complete = $reg_participant_form->addHidden('reg_complete');
+		if ($reg_complete->getValue() == 1) {
+			$reg_part->setValue(1);
+			$reg_participants->setValue([ ]);
+			$reg_supervision->setValue([ ]);
 			redirect("registration");
 		}
 
@@ -179,7 +182,7 @@ class Registration extends BF_Controller {
 			$reg_participants->setValue([ ]);
 			$reg_supervision->setValue([ ]);
 		}
-
+		
 		$reg_participant_form->open();
 
 		div(array('class'=>'topnav'));
@@ -196,6 +199,8 @@ class Registration extends BF_Controller {
 		_tr();
 		tr();
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
+		$stat_part = 1;
+		$stat_rest = 1;
 		for ($i=1; $i<=MAX_PARTICIPANTS; $i++) {
 			$attr = [ 'id'=>'reg_status_'.$i, 'style'=>'width: 100%;' ];
 			$status = $this->get_reg_status(arr_nvl($reg_participants_v, $i, $participant_empty_row) + $reg_supervision_v);
@@ -209,8 +214,16 @@ class Registration extends BF_Controller {
 			td([ 'width'=>(100/MAX_PARTICIPANTS).'%', 'style'=>'height: 22px; padding: 0px 2px 5px 2px;' ], $box);
 			td([ 'width'=>(100/MAX_PARTICIPANTS).'%', 'style'=>'width: 3px; padding: 0;' ], nbsp());
 			if ($reg_part_v == $i)
-				$reg_status->setValue($status.'|'.$prt_firstname->getValue().'|'.$prt_lastname->getValue());
+				$stat_part = $status;
+			else if ($status == 2 || $status == 4)
+				$stat_rest = 0;
+				
 		}
+		$before = $stat_rest.'|'.$stat_part.'|'.$prt_firstname->getValue().'|'. $prt_lastname->getValue().'|'.
+			$prt_birthday->getValue().'|'.$prt_supervision_firstname->getValue().'|'.$prt_supervision_lastname->getValue().'|'.
+			$prt_supervision_cellphone->getValue().'|'.$prt_notes->getValue();
+		$reg_before->setValue($before);
+
 		_tr();
 		_tr();
 		tr([ 'style'=>'border-bottom: 1px solid black; padding: 8px 16px;' ]);
@@ -300,27 +313,41 @@ class Registration extends BF_Controller {
 		script();
 		out('
 			function reg_changed() {
+				var reg_now = $("#prt_firstname").val()+"|"+$("#prt_lastname").val()+"|"+$("#prt_birthday").val()+"|"+
+					$("#prt_supervision_firstname").val()+"|"+$("#prt_supervision_lastname").val()+"|"+
+					$("#prt_supervision_cellphone").val()+"|"+$("#prt_notes").val();
 				iPadRegistrationChanged(
 					'.$reg_part_v.',
-					$("#reg_status").val(),
+					$("#reg_before").val(),
+					reg_now,
 					$("#reg_status_'.$reg_part_v.'"),
 					$("#reg_tab_'.$reg_part_v.'"),
-					$("#prt_firstname"),
-					$("#prt_lastname"),
-					$("#prt_birthday"),
-					$("#prt_supervision_firstname"),
-					$("#prt_supervision_lastname"),
-					$("#prt_supervision_cellphone"),
 					$("#register")
 				);
 			}
 			$("#prt_firstname").keyup(reg_changed);
 			$("#prt_lastname").keyup(reg_changed);
 			$("#prt_birthday").keyup(reg_changed);
+			$("#prt_notes").keyup(reg_changed);
 			$("#prt_supervision_firstname").keyup(reg_changed);
 			$("#prt_supervision_lastname").keyup(reg_changed);
 			$("#prt_supervision_cellphone").keyup(reg_changed);
 			reg_changed();
+		');
+		out('
+			function check_if_complete() {
+				var stat_rest = parseInt($("#reg_before").val().split("|")[0]);
+				var stat_part = 0;
+				if (stat_rest) {
+					var reg_now = $("#prt_firstname").val()+"|"+$("#prt_lastname").val()+"|"+$("#prt_birthday").val()+"|"+
+						$("#prt_supervision_firstname").val()+"|"+$("#prt_supervision_lastname").val()+"|"+
+						$("#prt_supervision_cellphone").val()+"|"+$("#prt_notes").val();
+					stat_part = iPadStatus($("#reg_before").val(), reg_now);
+				}
+				if (!stat_rest || stat_part == 2 || stat_part == 4)
+					return confirm("Wollen Sie wirklich die Aufnahme abschließen, nicht alle Eingaben sind abgeschlossen?");
+				return true;
+			}
 		');
 		_script();
 		$this->footer();

@@ -282,10 +282,42 @@ function toggleSchedule(i, my_leader_changed, current_period)
 	}
 }
 
-function iPadRegistrationChanged(tab, curr_stat, status, reg_tab, first_name, last_name, birth_date, sup_first_name, sup_last_name, cel_phone, reg_button)
+function iPadStatus(before_data, now_data)
 {
-	var fname = first_name.val().trim();
-	var lname = last_name.val().trim();
+	var before_list = before_data.split("|");
+	var now_list = now_data.split("|");
+	var before_stat = parseInt(before_list[1]);
+
+	var samething_changed = false;
+	for (var i=0; i<now_list.length; i++) {
+		if (before_list[2+i] != now_list[i].trim()) {
+			samething_changed = true;
+			break;
+		}
+	}
+
+	if (!samething_changed)
+		return before_stat;
+
+	var fname = now_list[0].trim();
+	var lname = now_list[1].trim();
+	if (fname.length == 0 && lname.length == 0)
+		return 1;
+
+	if (fname != before_list[2] || lname != before_list[3])
+		return 2;
+
+	if (before_stat == 2)
+		return 2;
+
+	return 4;
+}
+
+function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab, reg_button)
+{
+	var now_list = now_data.split("|");
+	var fname = now_list[0].trim();
+	var lname = now_list[1].trim();
 	var tab_title;
 	if (fname.length == 0) {
 		fname = lname;
@@ -309,38 +341,30 @@ function iPadRegistrationChanged(tab, curr_stat, status, reg_tab, first_name, la
 		tab_title = "Kind "+tab.toString();
 	reg_tab.html(tab_title);
 
-	var list = curr_stat.split("|");
-	stat = parseInt(list[0]);
-	fname = list[1];
-	lname = list[2];
-	if (fname != first_name.val().trim() ||
-		lname != last_name.val().trim()) {
-		var part_filled = first_name.val().trim().length > 0 ||
-			last_name.val().trim().length > 0 ||
-			birth_date.val().trim().length > 0;
-		if (part_filled)
-			stat = 2;
-		else
-			stat = 1;
-	}
-	status.removeClass();
+	var stat = iPadStatus(before_data, now_data);
+	status_div.removeClass();
 	switch (stat) {
-		case 1: status.addClass("grey-box"); status.html("&nbsp;"); break;
-		case 2: status.addClass("yellow-box"); status.html("Wird Aufgenommen"); break;
-		case 3: status.addClass("green-box"); status.html("Aufgenommen"); break;
-		case 4: status.addClass("yellow-box"); status.html("Wird geändert"); break;
-		case 5: status.addClass("red-box"); status.html("Angemeldet"); break;
+		case 1: status_div.addClass("grey-box"); status_div.html("&nbsp;"); break;
+		case 2: status_div.addClass("yellow-box"); status_div.html("Wird Aufgenommen"); break;
+		case 3: status_div.addClass("green-box"); status_div.html("Aufgenommen"); break;
+		case 4: status_div.addClass("yellow-box"); status_div.html("Wird geändert"); break;
+		case 5: status_div.addClass("red-box"); status_div.html("Angemeldet"); break;
 	}
 
-	var all_filled_in = first_name.val().trim().length > 0 &&
-		last_name.val().trim().length > 0 &&
-		birth_date.val().trim().length > 0 &&
-		sup_first_name.val().trim().length > 0 &&
-		sup_last_name.val().trim().length > 0 &&
-		reg_button.val().trim().length > 0 &&
-		cel_phone.val().trim().length > 0;
-	reg_button.prop("disabled", stat == 5 || !all_filled_in);
+	var disabled = false;
+	for (var i=0; i<now_list.length-1; i++) {
+		if (now_list[i].trim().length == 0) {
+			disabled = true;
+			break;
+		}
+	}
+	if (!disabled)
+		disabled = stat == 3 || stat == 5 || stat == 1;
+	if (!disabled) {
+		var before_list = before_data.split("|");
+		var before_stat = parseInt(before_list[1]);
+		disabled = before_stat == 5 && stat != 2;
+	}
 
-
-	console.log("----", curr_stat, part_filled);
+	reg_button.prop("disabled", disabled);
 }
