@@ -481,7 +481,7 @@ class Participant extends BF_Controller {
 
 					$this->db->insert('bf_history', $history);
 					if ($group_reserved && $history['hst_action'] == REGISTER)
-						$this->unreserveGroup($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
+						$this->unreserve_group($staff_row['stf_reserved_age_level'], $staff_row['stf_reserved_group_number']);
 
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' '.$comment);
 					redirect("participant");
@@ -883,38 +883,6 @@ class Participant extends BF_Controller {
 		_table();
 	}
 
-	private function reserveGroup($age, $num)
-	{
-		$this->db->set('stf_reserved_count',
-			'IF(stf_reserved_age_level = '.$age.' AND stf_reserved_group_number = '.$num.', stf_reserved_count+1, 1)', false);
-		$this->db->set('stf_reserved_age_level', $age);
-		$this->db->set('stf_reserved_group_number', $num);
-		$this->db->where('stf_id', $this->session->stf_login_id);
-		$this->db->update('bf_staff');
-	}
-
-	private function unreserveGroups($age, $num)
-	{
-		$this->db->set('stf_reserved_age_level', null);
-		$this->db->set('stf_reserved_group_number', null);
-		$this->db->set('stf_reserved_count', 0);
-		$this->db->where('stf_id', $this->session->stf_login_id);
-		$this->db->where('stf_reserved_age_level', $age);
-		$this->db->where('stf_reserved_group_number', $num);
-		$this->db->update('bf_staff');
-	}
-
-	private function unreserveGroup($age, $num)
-	{
-		$this->db->set('stf_reserved_age_level', 'IF (stf_reserved_count = 1, NULL, stf_reserved_age_level)', false);
-		$this->db->set('stf_reserved_group_number', 'IF (stf_reserved_count = 1, NULL, stf_reserved_group_number)', false);
-		$this->db->set('stf_reserved_count', 'stf_reserved_count-1', false);
-		$this->db->where('stf_id', $this->session->stf_login_id);
-		$this->db->where('stf_reserved_age_level', $age);
-		$this->db->where('stf_reserved_group_number', $num);
-		$this->db->update('bf_staff');
-	}
-
 	private function getGroupData($prt_id_v)
 	{
 		list($current_period, $nr_of_groups, $group_counts) = $this->getPeriodData();
@@ -957,10 +925,10 @@ class Participant extends BF_Controller {
 		if (!empty($action_v)) {
 			switch ($action_v) {
 				case 'reserve':
-					$this->reserveGroup($prt_age_level, $prt_group_number);
+					$this->reserve_group($prt_age_level, $prt_group_number);
 					break;
 				case 'unreserve':
-					$this->unreserveGroups($prt_age_level, $prt_group_number);
+					$this->unreserve_groups($prt_age_level, $prt_group_number);
 					break;
 			}
 		}

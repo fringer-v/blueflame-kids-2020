@@ -117,7 +117,7 @@ class BF_Controller extends CI_Controller {
 			);
 		else {
 			$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
-				DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
+				DATE_FORMAT(prt_birthday, "%d.%m.%Y") AS prt_birthday,
 				prt_registered, prt_supervision_firstname, prt_supervision_lastname,
 				prt_supervision_cellphone, prt_notes,
 				prt_age_level, prt_group_number,
@@ -132,7 +132,7 @@ class BF_Controller extends CI_Controller {
 
 	public function get_participant_row_by_name($prt_firstname, $prt_lastname) {
 		$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
-			DATE_FORMAT(prt_birthday, "%e.%c.%Y") AS prt_birthday,
+			DATE_FORMAT(prt_birthday, "%d.%m.%Y") AS prt_birthday,
 			prt_registered, prt_supervision_firstname, prt_supervision_lastname,
 			prt_supervision_cellphone, prt_notes,
 			prt_age_level, prt_group_number,
@@ -164,15 +164,44 @@ class BF_Controller extends CI_Controller {
 		return $query->row_array();
 	}
 
+	public function reserve_group($age, $num)
+	{
+		$this->db->set('stf_reserved_count',
+			'IF(stf_reserved_age_level = '.$age.' AND stf_reserved_group_number = '.$num.', stf_reserved_count+1, 1)', false);
+		$this->db->set('stf_reserved_age_level', $age);
+		$this->db->set('stf_reserved_group_number', $num);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->update('bf_staff');
+	}
+
+	public function unreserve_groups($age, $num)
+	{
+		$this->db->set('stf_reserved_age_level', null);
+		$this->db->set('stf_reserved_group_number', null);
+		$this->db->set('stf_reserved_count', 0);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->where('stf_reserved_age_level', $age);
+		$this->db->where('stf_reserved_group_number', $num);
+		$this->db->update('bf_staff');
+	}
+
+	public function unreserve_group($age, $num)
+	{
+		$this->db->set('stf_reserved_age_level', 'IF (stf_reserved_count = 1, NULL, stf_reserved_age_level)', false);
+		$this->db->set('stf_reserved_group_number', 'IF (stf_reserved_count = 1, NULL, stf_reserved_group_number)', false);
+		$this->db->set('stf_reserved_count', 'stf_reserved_count-1', false);
+		$this->db->where('stf_id', $this->session->stf_login_id);
+		$this->db->where('stf_reserved_age_level', $age);
+		$this->db->where('stf_reserved_group_number', $num);
+		$this->db->update('bf_staff');
+	}
+
 	public function insert_participant($after_row, $group_reserved) {
 		$insert_row = $after_row;
 		$insert_row['prt_registered'] = $group_reserved ? REG_YES : REG_NO;
 		$insert_row['prt_birthday'] = str_to_date($after_row['prt_birthday'])->format('Y-m-d');
 		$insert_row['prt_create_stf_id'] = $this->session->stf_login_id;
 
-bugout("----------------------");
-bugout($insert_row);
-bugout("----------------------");
 		do {
 			$prt_number = (integer) db_1_value('SELECT MAX(prt_number) FROM bf_participants');
 			$prt_number = $prt_number < 100 ? 100 : $prt_number+1;
@@ -188,7 +217,7 @@ bugout("----------------------");
 			$history['hst_age_level'] = $after_row['prt_age_level'];
 			$history['hst_group_number'] = $after_row['prt_group_number'];
 			$this->db->insert('bf_history', $history);
-			$this->unreserveGroup($after_row['prt_age_level'], $after_row['prt_group_number']);
+			$this->unreserve_group($after_row['prt_age_level'], $after_row['prt_group_number']);
 		}
 		else {
 			$history['hst_action'] = CREATED;
@@ -252,12 +281,12 @@ bugout("----------------------");
 		}
 
 		if ($group_reserved) {
-			$history['hst_action'] = CHANGED_GROUP;
+			$history['hst_action'] = ($before_row['prt_registered'] != REG_NO || $before_row['prt_group_number'] > 0) ? CHANGED_GROUP : REGISTER;
 			$history['hst_age_level'] = $after_row['prt_age_level'];
 			$history['hst_group_number'] = $after_row['prt_group_number'];
 			unset($history['hst_notes']);
 			$this->db->insert('bf_history', $history);
-			$this->unreserveGroup($after_row['prt_age_level'], $after_row['prt_group_number']);
+			$this->unreserve_group($after_row['prt_age_level'], $after_row['prt_group_number']);
 		}
 	}
 

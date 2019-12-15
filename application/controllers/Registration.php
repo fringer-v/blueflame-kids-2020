@@ -156,6 +156,8 @@ class Registration extends BF_Controller {
 		if ($register->submitted()) {
 			$edit_part = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
 			$this->error = $prt_birthday->validate();
+			$reg_participants_v[$reg_part_v]['prt_birthday'] = str_to_date($prt_birthday->getValue())->format('d.m.Y');
+			$reg_participants->setValue($reg_participants_v);
 			if (empty($this->error) && !empty($edit_part['prt_firstname']) && !empty($edit_part['prt_lastname'])) {
 				$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);
 				if (empty($db_part)) {
