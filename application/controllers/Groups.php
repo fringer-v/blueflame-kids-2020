@@ -79,7 +79,8 @@ class Groups extends BF_Controller {
 	{
 		global $period_names;
 
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$current_period = $this->db_model->get_setting('current-period');
 
@@ -145,10 +146,8 @@ class Groups extends BF_Controller {
 		global $all_roles;
 		global $extended_roles;
 
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$period = in('period');
 		$p = $period->getValue();
@@ -342,7 +341,8 @@ class Groups extends BF_Controller {
 		global $all_roles;
 		global $extended_roles;
 
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$group = in('group');
 		$group_v = explode('_', $group->getValue());

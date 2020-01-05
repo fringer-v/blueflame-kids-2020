@@ -16,7 +16,8 @@ class Admin extends BF_Controller {
 	{
 		global $period_names;
 
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$current_period = $this->db_model->get_setting('current-period');
 

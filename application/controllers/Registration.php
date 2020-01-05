@@ -15,7 +15,8 @@ class Registration extends BF_Controller {
 
 	public function index()
 	{
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$this->header('iPad Registrierung', false);
 
@@ -30,18 +31,35 @@ class Registration extends BF_Controller {
 
 		$reg_top_form = new Form('reg_top_form', 'registration', 2, array('class'=>'input-table'));
 
+		$reg_back = $reg_top_form->addHidden('reg_back');
+		if (!empty($reg_back->getValue())) {
+			$query = $this->db->query(
+				'SELECT stf_id, stf_username, stf_fullname, stf_password, '.
+				'stf_registered, stf_loginallowed, stf_technician '.
+				'FROM bf_staff WHERE stf_id=?',
+				[ $this->session->stf_login_id ]);
+			$staff_row = $query->row_array();
+
+			$pwd = $reg_back->getValue();
+			$pwd = md5($pwd.'129-3026-19-2089');
+			if (password_verify($pwd, $staff_row['stf_password']))
+				redirect($this->session->ses_prev_page);
+		}
+
 		$reg_top_form->open();
 		div(array('class'=>'topnav'));
 		table([ 'style'=>'width: 100%;' ]);
 		tr();
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
 		td([ 'style'=>'text-align: left; padding: 4px 2px;' ]);
-		a([ 'href'=>'participant' ], img([ 'src'=>base_url('/img/bf-kids-logo2.png'),
+		a([ 'onclick'=>'do_back();' ], img([ 'src'=>base_url('/img/bf-kids-logo2.png'),
 			'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;']));
 		_td();
 		td(nbsp());
 		td([ 'style'=>'text-align: right; padding: 4px 2px; width: 48px;' ]);
-		div([ 'onclick'=>'do_reload();', 'style'=>'border: 1px solid black; background-color: lightgray; padding: 4px 4px 1px 1px; height: 33px; width: 33px; ' ], img([ 'src'=>'../img/reload.png',
+		div([ 'onclick'=>'do_reload();', 'style'=>
+			'border: 1px solid black; background-color: lightgray; padding: 4px 4px 1px 1px; height: 33px; width: 33px;' ],
+			img([ 'src'=>'../img/reload.png',
 			'style'=>'height: 28px; width: auto; position: relative; bottom: -2px; left: -2px']));
 		_td();
 		$complete = button('complete', 'Abschließen',
@@ -57,6 +75,21 @@ class Registration extends BF_Controller {
 
 		script();
 		out('
+			function do_back() {
+				var password = prompt("Please password for '.$this->session->stf_login_name.':", "");
+				if (password != null) {
+					$("#reg_back").val(password);
+					$("#reg_top_form").submit();
+				}
+			}
+			function do_reload() {
+				var content = $("#content-iframe").contents();
+				var form = content.find("#reg_iframe_form");
+				if (form == null || form.length == 0)
+					$("#content-iframe").attr("src", "registration/iframe");
+				else
+					form.submit();
+			}
 			function do_complete() {
 				var content = $("#content-iframe").contents();
 				var stat_rest = parseInt(content.find("#reg_before").val().split("|")[0]);
@@ -74,10 +107,6 @@ class Registration extends BF_Controller {
 				}
 
 				content.find("#reg_complete").val(1);
-				content.find("#reg_iframe_form").submit();
-			}
-			function do_reload() {
-				var content = $("#content-iframe").contents();
 				content.find("#reg_iframe_form").submit();
 			}
 		');
@@ -135,10 +164,9 @@ class Registration extends BF_Controller {
 
 	public function iframe()
 	{
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
-bugout("---------------");
-bugout($_POST);
 		$this->header('iPad Registrierung', false);
 		
 		$reg_part = in('reg_part', 1);

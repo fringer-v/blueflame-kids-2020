@@ -316,15 +316,29 @@ class BF_Controller extends CI_Controller {
 		return [ $current_period, $nr_of_groups, $group_counts ];
 	}
 
-	public function authorize($redirect = true) {
+	public function authorize() {
 		$this->load->library('session');
+
+		$page = str_left($this->uri->uri_string(), "/");
+		if (!$this->session->has_userdata('ses_prev_page'))
+			$this->session->set_userdata('ses_prev_page', $page);
+		if (!$this->session->has_userdata('ses_curr_page') || $this->session->ses_curr_page != $page) {
+			$this->session->set_userdata('ses_prev_page', $this->session->ses_curr_page);
+			$this->session->set_userdata('ses_curr_page', $page);
+		}
+
 		if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {
 			$this->stf_login_id = $this->session->stf_login_id;
 			$this->stf_login_name = $this->session->stf_login_name;
 			return true;
 		}
-		if ($redirect)
-			redirect("login");
+
+		$this->header('Redirect');
+		script();
+		out('window.parent.location = "'.site_url('login').'";');
+		_script();
+		$this->footer();
+
 		return false;
 	}
 

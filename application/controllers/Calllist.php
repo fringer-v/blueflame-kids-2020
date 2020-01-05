@@ -66,7 +66,8 @@ class CallList extends BF_Controller {
 
 	public function index()
 	{
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$form = new Form('calllist_form', 'calllist', 1, array('class'=>'input-table'));
 		$cancel_ok = $form->addHidden('cancel_ok');
@@ -125,10 +126,8 @@ class CallList extends BF_Controller {
 	}
 
 	public function getCalls() {
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$this->db->where('prt_call_status IN ('.CALL_CANCELLED.', '.CALL_COMPLETED.') AND ADDTIME(prt_call_change_time, "'.CALL_ENDED_DISPLAY_TIME.'") <= NOW()');
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));

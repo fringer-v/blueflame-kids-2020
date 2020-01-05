@@ -230,7 +230,8 @@ class Participant extends BF_Controller {
 
 	public function index()
 	{
-		$this->authorize();
+		if (!$this->authorize())
+			return;
 
 		$display_participant = new Form('display_participant', 'participant', 1, array('class'=>'input-table'));
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
@@ -241,7 +242,7 @@ class Participant extends BF_Controller {
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
 		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Aufgenommen',
-			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val("@"+$("#prt_supervision_firstname").val()+" "+$("#prt_supervision_lastname").val()); participants_list(); return false;'));
+			array('class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
 		if (!is_empty($this->session->stf_login_tech))
@@ -741,6 +742,16 @@ class Participant extends BF_Controller {
 		script();
 		// Dummy function, because this tab does not have a load function:
 		out('
+			function get_supervisor_parts() {
+				var fname = $("#prt_supervision_firstname").val().trim();
+				var lname = $("#prt_supervision_lastname").val().trim();
+				if (fname.length > 0 || lname.length > 0) {
+					$("#prt_filter").val("@"+fname+" "+lname);
+					participants_list();
+				}
+			}
+		');
+		out('
 			function supervisor_group_list() {
 			}
 		');
@@ -795,10 +806,8 @@ class Participant extends BF_Controller {
 	}
 
 	public function getkids() {
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$this->db->where('prt_call_status IN ('.CALL_CANCELLED.', '.CALL_COMPLETED.') AND ADDTIME(prt_call_change_time, "'.CALL_ENDED_DISPLAY_TIME.'") <= NOW()');
 		$this->db->update('bf_participants', array('prt_call_status'=>CALL_NOCALL));
@@ -934,10 +943,8 @@ class Participant extends BF_Controller {
 		global $age_level_from;
 		global $age_level_to;
 
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$grp_arg = in('grp_arg');
 		$grp_arg_v = $grp_arg->getValue();
@@ -1032,10 +1039,8 @@ class Participant extends BF_Controller {
 	}
 
 	public function gethistory() {
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$prt_id = in('prt_id');
 		$prt_id->persistent();
@@ -1058,10 +1063,8 @@ class Participant extends BF_Controller {
 	}
 
 	public function pollgroups() {
-		if (!$this->authorize(false)) {
-			echo 'Authorization failed';
+		if (!$this->authorize())
 			return;
-		}
 
 		$prt_id = in('prt_id');
 		$prt_id->persistent();
