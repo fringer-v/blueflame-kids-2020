@@ -41,9 +41,10 @@ class ParticipantTable extends Table {
 			case 'prt_birthday':
 			case 'age':
 			case 'prt_call_status':
+			case 'prt_group_number':
 				return [ 'style'=>'text-align: center;' ];
 		}
-		return [];
+		return null;
 	}
 
 	public function cellValue($field, $row) {
@@ -239,6 +240,8 @@ class Participant extends BF_Controller {
 		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
+		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Aufgenommen',
+			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val("@"+$("#prt_supervision_firstname").val()+" "+$("#prt_supervision_lastname").val()); participants_list(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
 		if (!is_empty($this->session->stf_login_tech))
@@ -680,7 +683,7 @@ class Participant extends BF_Controller {
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>2));
 			$display_participant->open();
 			table([ 'class'=>'input-table' ]);
-			tr(td(table(tr(td($prt_filter), td(nbsp()), td($clear_filter)))));
+			tr(td(table(tr(td($prt_filter), td(nbsp()), td($clear_filter), td(nbsp()), td($also_reg_filter)))));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
 			$display_participant->close();
@@ -833,6 +836,10 @@ class Participant extends BF_Controller {
 				$args[0] .= '%';
 				$args[1] .= '%';
 			}
+			else if (str_startswith($prt_filter_v, '@')) {
+				$qtype = 3;
+				$prt_filter_v = str_right($prt_filter_v, '@');
+			}
 			else
 				$prt_filter_v = '%'.$prt_filter_v.'%';
 		}
@@ -865,6 +872,24 @@ class Participant extends BF_Controller {
 		else if ($qtype == 2) {
 			// First_Last
 			$sql .= 'prt_firstname LIKE ? AND prt_lastname LIKE ?';
+		}
+		else if ($qtype == 3) {
+			if (str_contains($prt_filter_v, ' ')) {
+				$fname = trim(str_left($prt_filter_v, ' '));
+				$lname = trim(str_right($prt_filter_v, ' '));
+				if (empty($fname)) {
+					$sql .= 'prt_supervision_lastname = ?';
+					$args = [ $lname ];
+				}
+				else {
+					$sql .= 'prt_supervision_firstname = ? AND prt_supervision_lastname = ?';
+					$args = [ $fname, $lname ];
+				}
+			}
+			else {
+				$sql .= 'prt_supervision_firstname = ?';
+				$args = [ $prt_filter_v ];
+			}
 		}
 		else {
 			$sql .= 'CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",

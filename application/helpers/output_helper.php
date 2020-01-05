@@ -231,7 +231,7 @@ class Table {
 	}
 
 	public function columnAttributes($field) {
-		return [];
+		return null;
 	}
 
 	public function cellValue($field, $row) {
@@ -272,7 +272,10 @@ class Table {
 			$title = $this->columnTitle($field);
 			if (!($title instanceof Nix)) {
 				$row_count++;
-				$out->add(th($this->columnAttributes($field), $title));
+				$attr = $this->columnAttributes($field);
+				if ($attr == null)
+					$attr = [ 'style'=>'text-align: left;' ];
+				$out->add(th($attr, $title));
 			}
 		}
 		$out->add(_tr());
@@ -284,8 +287,12 @@ class Table {
 				$out->add(tr());
 				foreach ($fields as $field) {
 					$value = $this->cellValue($field, $row);
-					if (!($value instanceof Nix))
-						$out->add(td($this->columnAttributes($field), $value));
+					if (!($value instanceof Nix)) {
+						$attr = $this->columnAttributes($field);
+						if ($attr == null)
+							$attr = [ 'style'=>'text-align: left;' ];
+						$out->add(td($attr, $value));
+					}
 				}
 				$out->add(_tr());
 			}

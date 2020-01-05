@@ -560,6 +560,17 @@ class Button extends InputField {
 	}
 }
 
+class ImageButton extends InputField {
+	public function __construct($name = '', $src = '', $attributes = array()) {
+		$attributes['src'] = $src;
+		parent::__construct($name, '', $attributes);
+	}
+
+	public function output() {
+		return tag('input', $this->getAttributes('image'))->html();
+	}
+}
+
 class Hidden extends InputField {
 	public function output() {
 		return tag('input', $this->getAttributes('hidden'))->html();
@@ -702,6 +713,13 @@ function submit($name, $label, $attributes = [])
 function button($name, $label, $attributes = [])
 {
 	$field = new Button($name, $label, $attributes);
+	$field->autoEchoOn();
+	return $field;
+}
+
+function imagebutton($name, $src, $attributes = [])
+{
+	$field = new ImageButton($name, $src, $attributes);
 	$field->autoEchoOn();
 	return $field;
 }

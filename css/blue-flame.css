@@ -105,6 +105,22 @@ button, input {
 /* --------------------------- */
 /* Input Table: */
 
+.debug-table {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+
+.debug-table th {
+	border: 1px solid red;
+}
+
+.debug-table td {
+	border: 1px solid red;
+}
+
+/* --------------------------- */
+/* Input Table: */
+
 .input-table {
 	border-collapse: collapse;
 }

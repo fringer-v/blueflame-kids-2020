@@ -26,7 +26,7 @@ class StaffTable extends Table {
 			case 'is_present':
 				return [ 'style'=>'text-align: center;' ];
 		}
-		return [];
+		return null;
 	}
 
 	public function cellValue($field, $row) {
