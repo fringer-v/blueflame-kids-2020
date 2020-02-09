@@ -184,7 +184,7 @@ class Staff extends BF_Controller {
 		$schedule->add(th([ 'class'=>'row-header' ], 'Anwesend:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$present[$p] = checkbox('present_'.$p, $this->period_val($periods, $p, 'per_present'),
-				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')', 'class'=>'check-box' ]);
+				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')' ]);
 			if ($p < $current_period)
 				$present[$p]->disable();
 			$schedule->add(td($present[$p]));
@@ -197,7 +197,7 @@ class Staff extends BF_Controller {
 		$schedule->add(th([ 'class'=>'row-header' ], 'Teamleiter:'));
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$leader[$p] = checkbox('leader_'.$p, $this->period_val($periods, $p, 'per_is_leader'),
-				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')', 'class'=>'check-box' ]);
+				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')' ]);
 			$schedule->add(td($leader[$p]));
 		}
 		$schedule->add(_tr());
@@ -228,7 +228,7 @@ class Staff extends BF_Controller {
 			$schedule->add(th([ 'class'=>'row-header' ], $age_level_from[$i].' - '.$age_level_to[$i].':'));
 			$groups[$i] = [];
 			for ($p=0; $p<PERIOD_COUNT; $p++) {
-				$groups[$i][$p] = checkbox('groups_'.$i.'_'.$p, $this->period_val($periods, $p, 'per_age_level_'.$i), [ 'class'=>'check-box g-'.$i ]);
+				$groups[$i][$p] = checkbox('groups_'.$i.'_'.$p, $this->period_val($periods, $p, 'per_age_level_'.$i));
 				$schedule->add(td($groups[$i][$p]));
 			}
 			$schedule->add(_tr());
