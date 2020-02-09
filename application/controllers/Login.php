@@ -95,13 +95,6 @@ class Login extends BF_Controller {
 		$this->printResult();
 		_td();
 		_tr();
-
-		tr();
-		td();
-		checkbox('abc', 1);
-		_td();
-		_tr();
-
 		_table();
 
 		_td();
