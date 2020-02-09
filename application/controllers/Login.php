@@ -83,7 +83,20 @@ class Login extends BF_Controller {
 		_tr();
 		tr();
 		td(array('align'=>'center'));
+
+		table();
+		tr();
+		td();		
 		$login_form->show();
+		_td();
+		_tr();
+		tr();
+		td(array('align'=>'center'));
+		$this->printResult();
+		_td();
+		_tr();
+		_table();
+
 		_td();
 		_tr();
 		_table();

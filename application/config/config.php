@@ -23,8 +23,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 | a PHP script and you can easily do that on your own.
 |
 */
-$config['base_url'] = 'http://192.168.2.111:8080/blueflame/';
-//$config['base_url'] = 'http://localhost:8080/blueflame/';
+//$config['base_url'] = 'http://192.168.2.111:8080/blueflame/';
+$config['base_url'] = 'http://localhost:8080/blueflame/';
+//$config['base_url'] = 'http://172.20.10.14:8080/blueflame/';
 
 /*
 |--------------------------------------------------------------------------
