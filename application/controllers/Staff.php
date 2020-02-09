@@ -152,8 +152,11 @@ class Staff extends BF_Controller {
 		}
 		$stf_username = $update_staff->addTextInput('stf_username', 'Kurzname', $staff_row['stf_username'], [ 'maxlength'=>'9', 'style'=>'width: 100px' ]);
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
-		$stf_password = $update_staff->addPassword('stf_password', 'Passwort');
-		$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
+		if (is_empty($stf_id_v) || $this->stf_login_id == $stf_id_v) {
+			$stf_password = $update_staff->addPassword('stf_password', 'Passwort', '');
+			$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
+			$confirm_password->setRule('matches[stf_password]');
+		}
 
 		$stf_role = $update_staff->addSelect('stf_role', 'Aufgabe', $all_roles, $staff_row['stf_role'],
 				[ 'onchange'=>'toggleRole($(this).val(), '.ROLE_GROUP_LEADER.')' ]);
@@ -277,7 +280,6 @@ class Staff extends BF_Controller {
 		// Rules
 		$stf_username->setRule('required|is_unique[bf_staff.stf_username.stf_id]|maxlength[9]');
 		$stf_fullname->setRule('required|is_unique[bf_staff.stf_fullname.stf_id]');
-		$confirm_password->setRule('matches[stf_password]');
 
 		// Buttons:
 		if (is_empty($stf_id_v)) {
@@ -299,7 +301,7 @@ class Staff extends BF_Controller {
 		}
 
 		if ($save_staff->submitted()) {
-			$pwd = $stf_password->getValue();
+			$pwd = isset($stf_password) ? $stf_password->getValue() : '';
 
 			$this->error = $update_staff->validate();
 			//if (is_empty($this->error) &&
