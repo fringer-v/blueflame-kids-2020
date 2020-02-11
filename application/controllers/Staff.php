@@ -332,13 +332,17 @@ class Staff extends BF_Controller {
 					$this->db->where('stf_id', $stf_id_v);
 					$this->db->update('bf_staff', $data);
 					for ($p=$current_period; $p<PERIOD_COUNT; $p++) {
+						$p_p = $present[$p]->getValue();
+						$l_p = $leader[$p]->getValue();
+						$my_l = 0;
+						if ($p_p && !$l_p && $my_leader[$p] instanceof Select)
+							$my_l = $my_leader[$p]->getValue();
 						$data = array(
 							'per_staff_id' => $stf_id_v,
 							'per_period' => $p,
-							'per_present' => $present[$p]->getValue(),
-							'per_is_leader' => $leader[$p]->getValue(),
-							'per_my_leader_id' =>
-								(!$present[$p]->getValue() || $leader[$p]->getValue()) ? 0 : $my_leader[$p]->getValue(),
+							'per_present' => $p_p,
+							'per_is_leader' => $l_p,
+							'per_my_leader_id' => $my_l,
 							'per_age_level_0' => $groups[0][$p]->getValue(),
 							'per_age_level_1' => $groups[1][$p]->getValue(),
 							'per_age_level_2' => $groups[2][$p]->getValue(),
