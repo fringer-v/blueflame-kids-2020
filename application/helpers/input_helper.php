@@ -360,11 +360,11 @@ class InputField extends BaseOutput {
 	}
 
 	public function __destruct() {
-		// If this instance has not been shown then show it new.
+		// If this instance has not been shown then show it now.
 		// This is so you can print with out('text');
 		// rather than typing out('text')->show();
-		if ($this->autoEcho() && !$this->isHidden())
-			warningout("> WARNING: AUTO-ECHO $this->name | auto_echo=".$this->autoEcho()." | hidden=".$this->isHidden());
+		//if ($this->autoEcho() && !$this->isHidden())
+		//	warningout("> WARNING: AUTO-ECHO $this->name | auto_echo=".$this->autoEcho()." | hidden=".$this->isHidden());
 		parent::__destruct();
 	}
 

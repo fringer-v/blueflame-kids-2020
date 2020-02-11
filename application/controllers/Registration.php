@@ -164,6 +164,18 @@ class Registration extends BF_Controller {
 
 		return 5;
 	}
+	
+	public function updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v)
+	{
+		for ($i=1; $i<=count($reg_participants_v); $i++) {
+			$prt_id = $reg_participants_v[$i]['prt_id'];
+			if ($i != $reg_part_v && !empty($prt_id))  {
+				$db_part = $this->get_participant_row($prt_id);
+				$edit_part = $reg_participants_v[$i] + $reg_supervision_v;
+				$this->modify_participant($prt_id, $db_part, $edit_part, false);
+			}
+		}
+	}
 
 	public function iframe()
 	{
@@ -194,16 +206,32 @@ class Registration extends BF_Controller {
 			isset($_POST['prt_supervision_lastname']) &&
 			isset($_POST['prt_supervision_cellphone'])) {
 			// Save the POST data:
-			$reg_participants_v[$reg_part_v] = [
-				'prt_firstname'=>trim($_POST['prt_firstname']),
-				'prt_lastname'=>trim($_POST['prt_lastname']),
-				'prt_birthday'=>trim($_POST['prt_birthday']),
-				'prt_notes'=>trim($_POST['prt_notes']) ];
+			// Don't allow the name to be set to a name we already have!:
+			$found = false;
+			for ($i=1; $i<=count($reg_participants_v); $i++) {
+				if ($i != $reg_part_v &&
+					strtolower($reg_participants_v[$i]['prt_firstname']) == strtolower(trim($_POST['prt_firstname'])) &&
+					strtolower($reg_participants_v[$i]['prt_lastname']) == strtolower(trim($_POST['prt_lastname']))) {
+					$found = true;
+					break;
+				}
+			}
+			if ($found) {
+				$reg_participants_v[$reg_part_v]['prt_firstname'] = '';
+				$reg_participants_v[$reg_part_v]['prt_lastname'] = '';
+				$_POST['prt_firstname'] = '';
+				$_POST['prt_lastname'] = '';
+			}
+			else {
+				$reg_participants_v[$reg_part_v]['prt_firstname'] = trim($_POST['prt_firstname']);
+				$reg_participants_v[$reg_part_v]['prt_lastname'] = trim($_POST['prt_lastname']);
+			}
+			$reg_participants_v[$reg_part_v]['prt_birthday'] = trim($_POST['prt_birthday']);
+			$reg_participants_v[$reg_part_v]['prt_notes'] = trim($_POST['prt_notes']);
 			$reg_participants->setValue($reg_participants_v);
-			$reg_supervision_v = [
-				'prt_supervision_firstname'=>trim($_POST['prt_supervision_firstname']),
-				'prt_supervision_lastname'=>trim($_POST['prt_supervision_lastname']),
-				'prt_supervision_cellphone'=>trim($_POST['prt_supervision_cellphone']) ];
+			$reg_supervision_v['prt_supervision_firstname'] = trim($_POST['prt_supervision_firstname']);
+			$reg_supervision_v['prt_supervision_lastname'] = trim($_POST['prt_supervision_lastname']);
+			$reg_supervision_v['prt_supervision_cellphone'] = trim($_POST['prt_supervision_cellphone']);
 			$reg_supervision->setValue($reg_supervision_v);
 		}
 
@@ -226,7 +254,7 @@ class Registration extends BF_Controller {
 			redirect("registration/iframe");
 		}
 
-		$participant_empty_row = [ 'prt_firstname'=>'', 'prt_lastname'=>'', 'prt_birthday'=>'', 'prt_notes'=>'' ];
+		$participant_empty_row = [ 'prt_id'=>0, 'prt_firstname'=>'', 'prt_lastname'=>'', 'prt_birthday'=>'', 'prt_notes'=>'' ];
 		$participant_row = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
 		$prt_firstname = textinput('prt_firstname', $participant_row['prt_firstname'],
 			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;', 'onkeyup'=>'capitalize($(this));' ]);
@@ -263,21 +291,44 @@ class Registration extends BF_Controller {
 			$reg_participants->setValue($reg_participants_v);
 			if (empty($this->error) && !empty($edit_part['prt_firstname']) && !empty($edit_part['prt_lastname'])) {
 				$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);
+				if (!empty($edit_part['prt_id'])) {
+					$db_part_by_id = $this->get_participant_row($edit_part['prt_id']);
+					if (!empty($db_part)) {
+						$reg_participants_v[$reg_part_v]['prt_firstname'] = $db_part_by_id['prt_firstname'];
+						$reg_participants_v[$reg_part_v]['prt_lastname'] = $db_part_by_id['prt_lastname'];
+						$reg_participants->setValue($reg_participants_v);
+						redirect("registration/iframe");
+					}
+				}
+				unset($edit_part['prt_id']);
 				if (empty($db_part)) {
 					$prt_id_v = $this->insert_participant($edit_part, false);
 					if (!empty($prt_id_v)) {
-						$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' aufgenommen');
+						$reg_participants_v[$reg_part_v]['prt_id'] = $prt_id_v;
+						$reg_participants->setValue($reg_participants_v);
+						$this->updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
+						$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' registriert');
 						redirect("registration/iframe");
+					}
+					else {
+						$reg_participants_v[$reg_part_v]['prt_id'] = 0;
+						$reg_participants->setValue($reg_participants_v);
 					}
 				}
 				else {
 					if ($db_part['prt_registered'] == REG_NO && empty($db_part['prt_group_number'])) {
 						$this->modify_participant($db_part['prt_id'], $db_part, $edit_part, false);
+						$reg_participants_v[$reg_part_v]['prt_id'] = $db_part['prt_id'];
+						$reg_participants->setValue($reg_participants_v);
+						$this->updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
 						$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' geändert');
 						redirect("registration/iframe");
 					}
-					else
-						$this->error = $edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' ist bereits angemeldet';
+					else {
+						$reg_participants_v[$reg_part_v]['prt_id'] = 0;
+						$reg_participants->setValue($reg_participants_v);
+						$this->error = $edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' ist bereits aufgenommen';
+					}
 				}
 			}
 		}
