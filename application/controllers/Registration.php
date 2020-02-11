@@ -47,9 +47,8 @@ class Registration extends BF_Controller {
 		}
 
 		$reg_top_form->open();
-		div(array('class'=>'topnav'));
 		table([ 'style'=>'width: 100%;' ]);
-		tr();
+		tr([ 'class'=>'topnav' ]);
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
 		td([ 'style'=>'text-align: left; padding: 4px 2px;' ]);
 		a([ 'onclick'=>'do_back();' ], img([ 'src'=>base_url('/img/bf-kids-logo2.png'),
@@ -68,10 +67,14 @@ class Registration extends BF_Controller {
 		td([ 'style'=>'width: 124px; text-align: right; padding: 4px 0px;' ], $complete);
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
 		_tr();
+		tr();
+		td( [ 'colspan'=>6, 'style'=>'height: 800px; background-color: #009DDE;' ] );
+		//out('x');
+		tag('iframe', [ 'id'=>'content-iframe', 'src'=>'registration/iframe', 'style'=>'width: 100%; height: 100%; border: 0;' ], '');
+		_td();
+		_tr();
 		_table();
-		_div();
 		$reg_top_form->close();
-		tag('iframe', [ 'id'=>'content-iframe', 'src'=>'registration/iframe', 'style'=>'width: 100%; height: 500px; border: 0;' ], '');
 
 		script();
 		out('
@@ -250,7 +253,7 @@ class Registration extends BF_Controller {
 
 		$prt_notes = textarea('prt_notes', $participant_row['prt_notes'], [ 'style'=>'width: 98%;' ]);
 
-		$register = submit('register', 'Aufnehmen', [ 'class'=>'button-green', 'style'=>'width: 100%; height: 48px; font-size: 24px;' ]);
+		$register = submit('register', 'Aufnehmen', [ 'class'=>'button-green', 'style'=>'width: 96%; height: 48px; font-size: 24px;' ]);
 		$register->disable();
 
 		if ($register->submitted()) {
@@ -382,7 +385,7 @@ class Registration extends BF_Controller {
 			table([ 'style'=>'width: 100%;' ]);
 			tr();
 			td([ 'style'=>'width: 75%;' ], $prt_notes);
-			td([ 'valign'=>'top', 'style'=>'width: 25%;' ], $register);
+			td([ 'valign'=>'top', 'align'=>'right', 'style'=>'width: 25%;' ], $register);
 			_tr();
 			_table();
 		_td();

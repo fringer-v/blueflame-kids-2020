@@ -34,7 +34,7 @@ class Admin extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 		td([ 'class'=>'left-panel', 'align'=>'left', 'valign'=>'top' ]);
-		out("Select the current period:");
+		out("Select the current session:");
 		$form->show();
 		_td();
 		_tr();
