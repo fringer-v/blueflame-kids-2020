@@ -13,12 +13,52 @@ class Registration extends BF_Controller {
 		$this->load->database();
 	}
 
+	public function prompted_login($pwd) {
+		if ($this->is_logged_in())
+			$staff_row = $this->get_staff_row($this->session->stf_login_id);
+		else {
+			$staff_row = $this->get_staff_row_by_username('Registrierung');
+			if (is_empty($staff_row)) {
+				$data = array(
+					'stf_username' => 'Registrierung',
+					'stf_fullname' => 'Registrierung',
+					'stf_role' => '',
+					'stf_loginallowed' => true,
+					'stf_technician' => false,
+					'stf_password' => password_hash(strtolower(md5('bf2020129-3026-19-2089')), PASSWORD_DEFAULT)
+				);
+				$this->db->insert('bf_staff', $data);
+				$staff_row = $this->get_staff_row_by_username('Registrierung');
+			}
+		}
+		$pwd = md5($pwd.'129-3026-19-2089');
+		if (!password_verify($pwd, $staff_row['stf_password']))
+			return false;
+		$this->set_logged_in($staff_row);
+		$this->stf_login_id = $this->session->stf_login_id;
+		$this->stf_login_name = $this->session->stf_login_name;
+		return true;
+	}
+
 	public function index()
 	{
-		if (!$this->authorize())
-			return;
-
 		$this->header('iPad Registrierung', false);
+
+		$reg_top_form = new Form('reg_top_form', 'registration', 2, array('class'=>'input-table'));
+		$reg_back = $reg_top_form->addHidden('reg_back');
+		if (!empty($reg_back->getValue())) {
+			if ($this->prompted_login($reg_back->getValue())) {
+				if ($this->session->ses_prev_page == "registration")
+					redirect("participant");
+				redirect($this->session->ses_prev_page);
+			}
+			redirect("registration");
+		}
+		$reg_login = $reg_top_form->addHidden('reg_login');
+		if (!empty($reg_login->getValue())) {
+			$this->prompted_login($reg_login->getValue());
+			redirect('registration');
+		}
 
 		$reg_part = in('reg_part', 1);
 		$reg_part->persistent();
@@ -28,23 +68,6 @@ class Registration extends BF_Controller {
 
 		$reg_supervision = in('reg_supervision', [ ]);
 		$reg_supervision->persistent();
-
-		$reg_top_form = new Form('reg_top_form', 'registration', 2, array('class'=>'input-table'));
-
-		$reg_back = $reg_top_form->addHidden('reg_back');
-		if (!empty($reg_back->getValue())) {
-			$query = $this->db->query(
-				'SELECT stf_id, stf_username, stf_fullname, stf_password, '.
-				'stf_registered, stf_loginallowed, stf_technician '.
-				'FROM bf_staff WHERE stf_id=?',
-				[ $this->session->stf_login_id ]);
-			$staff_row = $query->row_array();
-
-			$pwd = $reg_back->getValue();
-			$pwd = md5($pwd.'129-3026-19-2089');
-			if (password_verify($pwd, $staff_row['stf_password']))
-				redirect($this->session->ses_prev_page);
-		}
 
 		$reg_top_form->open();
 		table([ 'style'=>'width: 100%;' ]);
@@ -57,33 +80,41 @@ class Registration extends BF_Controller {
 		td(nbsp());
 		td([ 'style'=>'text-align: right; padding: 4px 2px; width: 48px;' ]);
 		div([ 'onclick'=>'do_reload();', 'style'=>
-			'border: 1px solid black; background-color: lightgray; padding: 4px 4px 1px 1px; height: 33px; width: 33px;' ],
+			'border: 1px solid black; background-color: lightgray; border-radius: 6px; padding: 4px 4px 1px 1px; height: 33px; width: 33px;' ],
 			img([ 'src'=>'../img/reload.png',
 			'style'=>'height: 28px; width: auto; position: relative; bottom: -2px; left: -2px']));
 		_td();
-		$complete = button('complete', 'Abschließen',
-			[ 'style'=>'height: 40px; background-color: lightgray; color: black; border-radius: 0px; font-size: 18px;',
+		$complete = button('complete', 'Registrierung Abschließen',
+			[ 'style'=>'height: 40px; background-color: lightgray; color: black; border-radius: 6px; font-size: 18px;',
 				'onclick'=>'do_complete();' ]);
-		td([ 'style'=>'width: 124px; text-align: right; padding: 4px 0px;' ], $complete);
+		td([ 'style'=>'width: 232px; text-align: right; padding: 4px 0px;' ], $complete);
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
-		_tr();
-		tr();
-		td( [ 'colspan'=>6, 'style'=>'height: 800px; background-color: #009DDE;' ] );
-		//out('x');
-		tag('iframe', [ 'id'=>'content-iframe', 'src'=>'registration/iframe', 'style'=>'width: 100%; height: 100%; border: 0;' ], '');
-		_td();
 		_tr();
 		_table();
 		$reg_top_form->close();
 
+		if ($this->is_logged_in())
+			tag('iframe', [ 'id'=>'content-iframe', 'src'=>'registration/iframe', 'style'=>'width: 100%; height: 400px; border: 0;' ], '');
+
 		script();
 		out('
+			function do_login_prompt(user) {
+				return prompt("Bitte geben Sie das Passwort für "+user+" ein:", "");
+			}
 			function do_back() {
-				var password = prompt("Please password for '.$this->session->stf_login_name.':", "");
+				password = do_login_prompt("'.$this->stf_login_name.'");
 				if (password != null) {
 					$("#reg_back").val(password);
 					$("#reg_top_form").submit();
 				}
+			}
+			function do_login() {
+				do {
+					password = do_login_prompt("Registrierung");
+				}
+				while (password == null);
+				$("#reg_login").val(password);
+				$("#reg_top_form").submit();
 			}
 			function do_reload() {
 				var content = $("#content-iframe").contents();
@@ -105,7 +136,7 @@ class Registration extends BF_Controller {
 					stat_part = iPadStatus(content.find("#reg_before").val(), reg_now);
 				}
 				if (!stat_rest || stat_part == 2 || stat_part == 4) {
-					if (!confirm("Wollen Sie wirklich die Aufnahme abschließen, nicht alle Eingaben sind abgeschlossen?"))
+					if (!confirm("Wollen Sie wirklich die Registrierung abschließen, nicht alle Eingaben sind abgeschlossen?"))
 						return;
 				}
 
@@ -113,6 +144,8 @@ class Registration extends BF_Controller {
 				content.find("#reg_iframe_form").submit();
 			}
 		');
+		if (!$this->is_logged_in())
+			out('document.getElementsByTagName("body").addEventListener("load", setTimeout(do_login, 500));');
 		_script();
 
 		$this->footer();
@@ -153,8 +186,9 @@ class Registration extends BF_Controller {
 			return 2;
 
 		$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);
-		if (empty($db_part))
+		if (empty($db_part)) {
 			return 2;
+		}
 
 		if ($db_part['prt_registered'] == REG_NO && empty($db_part['prt_group_number'])) {
 			if ($this->rows_equal($edit_part, $db_part))
@@ -165,7 +199,7 @@ class Registration extends BF_Controller {
 		return 5;
 	}
 	
-	public function updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v)
+	public function update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v)
 	{
 		for ($i=1; $i<=count($reg_participants_v); $i++) {
 			$prt_id = $reg_participants_v[$i]['prt_id'];
@@ -177,9 +211,47 @@ class Registration extends BF_Controller {
 		}
 	}
 
+	public function any_empty($part_row)
+	{
+		return empty($part_row['prt_firstname']) ||
+			empty($part_row['prt_lastname']) ||
+			empty($part_row['prt_birthday']) ||
+			empty($part_row['prt_supervision_firstname']) ||
+			empty($part_row['prt_supervision_lastname']) ||
+			empty($part_row['prt_supervision_cellphone']);
+	}
+
+	public function set_default_lastname($reg_participants, $reg_participants_v, $reg_part_v, $participant_empty_row)
+	{
+		if (!isset($reg_participants_v[$reg_part_v]))
+			$reg_participants_v[$reg_part_v] = $participant_empty_row;
+
+		if (empty($reg_participants_v[$reg_part_v]['prt_lastname'])) {
+			// Set child default surname:
+			$last_name = '';
+			for ($i=count($reg_participants_v); $i>=1; $i--) {
+				if ($i != $reg_part_v && !empty($reg_participants_v[$i]['prt_lastname']))  {
+					$last_name = $reg_participants_v[$i]['prt_lastname'];
+					break;
+				}
+			}
+			$reg_participants_v[$reg_part_v]['prt_lastname'] = $last_name;
+		}
+
+		// Remove extras:
+		for ($i=count($reg_participants_v); $i>$reg_part_v; $i--) {
+			if (empty($reg_participants_v[$i]['prt_firstname']) &&
+				empty($reg_participants_v[$i]['prt_birthday']) &&
+				empty($reg_participants_v[$i]['prt_notes']))
+				$reg_participants_v[$i] = $participant_empty_row;
+		}
+
+		$reg_participants->setValue($reg_participants_v);
+	}
+
 	public function iframe()
 	{
-		if (!$this->authorize())
+		if (!$this->authorize('registration'))
 			return;
 
 		$this->header('iPad Registrierung', false);
@@ -192,6 +264,8 @@ class Registration extends BF_Controller {
 
 		$reg_supervision = in('reg_supervision', [ ]);
 		$reg_supervision->persistent();
+
+		$participant_empty_row = [ 'prt_id'=>0, 'prt_firstname'=>'', 'prt_lastname'=>'', 'prt_birthday'=>'', 'prt_notes'=>'' ];
 
 		$reg_part_v = $reg_part->getValue();
 		$reg_participants_v = $reg_participants->getValue();
@@ -217,10 +291,14 @@ class Registration extends BF_Controller {
 				}
 			}
 			if ($found) {
-				$reg_participants_v[$reg_part_v]['prt_firstname'] = '';
-				$reg_participants_v[$reg_part_v]['prt_lastname'] = '';
-				$_POST['prt_firstname'] = '';
-				$_POST['prt_lastname'] = '';
+				if (!isset($reg_participants_v[$reg_part_v]['prt_firstname'])) {
+					$reg_participants_v[$reg_part_v]['prt_firstname'] = '';
+					$_POST['prt_firstname'] = '';
+				}
+				if (!isset($reg_participants_v[$reg_part_v]['prt_lastname'])) {
+					$reg_participants_v[$reg_part_v]['prt_lastname'] = '';
+					$_POST['prt_lastname'] = '';
+				}
 			}
 			else {
 				$reg_participants_v[$reg_part_v]['prt_firstname'] = trim($_POST['prt_firstname']);
@@ -237,16 +315,9 @@ class Registration extends BF_Controller {
 
 		$reg_iframe_form = new Form('reg_iframe_form', 'iframe', 2, array('class'=>'input-table'));
 		$reg_before = $reg_iframe_form->addHidden('reg_before');
-
-		$reg_set_part = $reg_iframe_form->addHidden('reg_set_part');
-		$reg_set_part_v = $reg_set_part->getValue();
-		if ($reg_set_part_v > 0 && $reg_set_part_v <= MAX_PARTICIPANTS) {
-			$reg_part_v = $reg_set_part_v;
-			$reg_part->setValue($reg_part_v);
-			redirect("registration/iframe");
-		}
-
 		$reg_complete = $reg_iframe_form->addHidden('reg_complete');
+		$reg_set_part = $reg_iframe_form->addHidden('reg_set_part');
+
 		if ($reg_complete->getValue() == 1) {
 			$reg_part->setValue(1);
 			$reg_participants->setValue([ ]);
@@ -254,81 +325,141 @@ class Registration extends BF_Controller {
 			redirect("registration/iframe");
 		}
 
-		$participant_empty_row = [ 'prt_id'=>0, 'prt_firstname'=>'', 'prt_lastname'=>'', 'prt_birthday'=>'', 'prt_notes'=>'' ];
-		$participant_row = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
-		$prt_firstname = textinput('prt_firstname', $participant_row['prt_firstname'],
+		$reg_set_part_v = $reg_set_part->getValue();
+		if ($reg_set_part_v < 0 && $reg_set_part_v > MAX_PARTICIPANTS)
+			$reg_set_part_v = 0;
+
+		$edit_part = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
+
+bugout(">>1", $reg_part_v, $reg_set_part_v);
+		if (!empty($reg_set_part_v) && $this->any_empty($edit_part)) {
+bugout(">>2");
+			// May leave a partially empty tab:
+			$reg_part->setValue($reg_set_part_v);
+			$this->set_default_lastname($reg_participants, $reg_participants_v, $reg_set_part_v, $participant_empty_row);
+			redirect("registration/iframe");
+		}
+
+		$prt_firstname = textinput('prt_firstname', $edit_part['prt_firstname'],
 			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_firstname->setFormat([ 'clear-box'=>true ]);
 		$prt_firstname->setRule('required');
-		$prt_lastname = textinput('prt_lastname', $participant_row['prt_lastname'],
+		$prt_lastname = textinput('prt_lastname', $edit_part['prt_lastname'],
 			[ 'placeholder'=>'Nachname', 'style'=>'width: 220px;', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_lastname->setFormat([ 'clear-box'=>true ]);
 		$prt_lastname->setRule('required');
-		$prt_birthday = new NumericField('prt_birthday', $participant_row['prt_birthday'],
+		$prt_birthday = new NumericField('prt_birthday', $edit_part['prt_birthday'],
 			[ 'placeholder'=>'DD.MM.JJJJ', 'style'=>'font-family: Monospace; width: 120px;', 'onkeyup'=>'dateChanged($(this));' ]);
 		$prt_birthday->setFormat([ 'clear-box'=>true ]);
 		$prt_birthday->setRule('is_valid_date', 'Geburtstag');
 
-		$prt_supervision_firstname = textinput('prt_supervision_firstname', $participant_row['prt_supervision_firstname'],
+		$prt_supervision_firstname = textinput('prt_supervision_firstname', $edit_part['prt_supervision_firstname'],
 			[ 'placeholder'=>'Vorname', 'style'=>'width: 160px;', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_supervision_firstname->setFormat([ 'clear-box'=>true ]);
-		$prt_supervision_lastname = textinput('prt_supervision_lastname', $participant_row['prt_supervision_lastname'],
+		$prt_supervision_lastname = textinput('prt_supervision_lastname', $edit_part['prt_supervision_lastname'],
 			[ 'placeholder'=>'Nachname', 'style'=>'width: 220px;', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_supervision_lastname->setFormat([ 'clear-box'=>true ]);
-		$prt_supervision_cellphone = new NumericField('prt_supervision_cellphone', $participant_row['prt_supervision_cellphone'],
+		$prt_supervision_cellphone = new NumericField('prt_supervision_cellphone', $edit_part['prt_supervision_cellphone'],
 			[ 'style'=>'width: 220px; font-family: Monospace;' ]);
 		$prt_supervision_cellphone->setFormat([ 'clear-box'=>true ]);
 
-		$prt_notes = textarea('prt_notes', $participant_row['prt_notes'], [ 'style'=>'width: 98%;' ]);
+		$prt_notes = textarea('prt_notes', $edit_part['prt_notes'], [ 'style'=>'width: 98%;' ]);
 
-		$register = submit('register', 'Aufnehmen', [ 'class'=>'button-green', 'style'=>'width: 96%; height: 48px; font-size: 24px;' ]);
+		$register = submit('register', 'Registrieren', [ 'class'=>'button-green', 'style'=>'width: 96%; height: 48px; font-size: 24px;' ]);
 		$register->disable();
 
-		if ($register->submitted()) {
-			$edit_part = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
+		if ($register->submitted() || !empty($reg_set_part_v)) {
 			$this->error = $prt_birthday->validate();
-			$reg_participants_v[$reg_part_v]['prt_birthday'] = str_to_date($prt_birthday->getValue())->format('d.m.Y');
-			$reg_participants->setValue($reg_participants_v);
-			if (empty($this->error) && !empty($edit_part['prt_firstname']) && !empty($edit_part['prt_lastname'])) {
-				$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);
-				if (!empty($edit_part['prt_id'])) {
-					$db_part_by_id = $this->get_participant_row($edit_part['prt_id']);
-					if (!empty($db_part)) {
-						$reg_participants_v[$reg_part_v]['prt_firstname'] = $db_part_by_id['prt_firstname'];
-						$reg_participants_v[$reg_part_v]['prt_lastname'] = $db_part_by_id['prt_lastname'];
-						$reg_participants->setValue($reg_participants_v);
-						redirect("registration/iframe");
-					}
-				}
-				unset($edit_part['prt_id']);
-				if (empty($db_part)) {
-					$prt_id_v = $this->insert_participant($edit_part, false);
-					if (!empty($prt_id_v)) {
-						$reg_participants_v[$reg_part_v]['prt_id'] = $prt_id_v;
-						$reg_participants->setValue($reg_participants_v);
-						$this->updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
-						$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' registriert');
-						redirect("registration/iframe");
-					}
-					else {
-						$reg_participants_v[$reg_part_v]['prt_id'] = 0;
-						$reg_participants->setValue($reg_participants_v);
-					}
-				}
+			if (empty($this->error)) {
+				$bday = str_to_date($prt_birthday->getValue());
+				if (empty($bday))
+					$this->error = "Geburtstag ist kein gültiges Datum";
 				else {
-					if ($db_part['prt_registered'] == REG_NO && empty($db_part['prt_group_number'])) {
-						$this->modify_participant($db_part['prt_id'], $db_part, $edit_part, false);
-						$reg_participants_v[$reg_part_v]['prt_id'] = $db_part['prt_id'];
-						$reg_participants->setValue($reg_participants_v);
-						$this->updateSupervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
-						$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' geändert');
-						redirect("registration/iframe");
+					$year = (integer) $bday->format('Y');
+					if ($year < 2003 || $year > 2017)
+						$this->error = "Geburtstag ist kein gültiges Datum";
+				}
+			}
+			if (empty($this->error)) {
+				$reg_participants_v[$reg_part_v]['prt_birthday'] = $bday->format('d.m.Y');
+				$reg_participants->setValue($reg_participants_v);
+				$edit_part = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
+				if (!empty($edit_part['prt_firstname']) && !empty($edit_part['prt_lastname'])) {
+					$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);
+					if (!empty($edit_part['prt_id'])) {
+						$db_part_by_id = $this->get_participant_row($edit_part['prt_id']);
+						if (empty($db_part))
+							// Name was not found, change the name...
+							$db_part = $db_part_by_id;
+						else {
+							if ($db_part['prt_id'] != $db_part_by_id['prt_id']) {
+								// Revert name completely:
+								$this->error = $edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' ist bereits registriert';
+								$_POST['prt_firstname'] = $db_part_by_id['prt_firstname'];
+								$_POST['prt_lastname'] = $db_part_by_id['prt_lastname'];
+								$edit_part['prt_firstname'] = $db_part_by_id['prt_firstname'];
+								$edit_part['prt_lastname'] = $db_part_by_id['prt_lastname'];
+								$reg_participants_v[$reg_part_v]['prt_firstname'] = $db_part_by_id['prt_firstname'];
+								$reg_participants_v[$reg_part_v]['prt_lastname'] = $db_part_by_id['prt_lastname'];
+								$reg_participants->setValue($reg_participants_v);
+								goto end_of_edit;
+							}
+						}
+					}
+					unset($edit_part['prt_id']);
+					if (empty($db_part)) {
+						$prt_id_v = $this->insert_participant($edit_part, false);
+						if (!empty($prt_id_v)) {
+							$reg_participants_v[$reg_part_v]['prt_id'] = $prt_id_v;
+							$reg_participants->setValue($reg_participants_v);
+							$this->update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
+							$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' registriert');
+							// Move to next tab:
+							$reg_part_v++;
+							if ($reg_part_v > MAX_PARTICIPANTS)
+								$reg_part_v = MAX_PARTICIPANTS;
+							$reg_part->setValue($reg_part_v);
+							$this->set_default_lastname($reg_participants, $reg_participants_v, $reg_part_v, $participant_empty_row);
+							if (!empty($reg_set_part_v)) {
+								$reg_part->setValue($reg_set_part_v);
+								$this->set_default_lastname($reg_participants, $reg_participants_v,
+									$reg_set_part_v, $participant_empty_row);
+							}
+							redirect("registration/iframe");
+						}
+						else {
+							$reg_participants_v[$reg_part_v]['prt_id'] = 0;
+							$reg_participants->setValue($reg_participants_v);
+						}
 					}
 					else {
-						$reg_participants_v[$reg_part_v]['prt_id'] = 0;
-						$reg_participants->setValue($reg_participants_v);
-						$this->error = $edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' ist bereits aufgenommen';
+						if (!empty($reg_set_part_v) && $this->rows_equal($edit_part, $db_part)) {
+							// No change, just change tab:
+							$reg_part->setValue($reg_set_part_v);
+							$this->set_default_lastname($reg_participants, $reg_participants_v,
+							$reg_set_part_v, $participant_empty_row);
+							redirect("registration/iframe");
+						}
+						if ($db_part['prt_registered'] == REG_NO && empty($db_part['prt_group_number'])) {
+							$this->modify_participant($db_part['prt_id'], $db_part, $edit_part, false);
+							$reg_participants_v[$reg_part_v]['prt_id'] = $db_part['prt_id'];
+							$reg_participants->setValue($reg_participants_v);
+							$this->update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
+							$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' geändert');
+							if (!empty($reg_set_part_v)) {
+								$reg_part->setValue($reg_set_part_v);
+								$this->set_default_lastname($reg_participants, $reg_participants_v,
+									$reg_set_part_v, $participant_empty_row);
+							}
+							redirect("registration/iframe");
+						}
+						else {
+							$reg_participants_v[$reg_part_v]['prt_id'] = 0;
+							$reg_participants->setValue($reg_participants_v);
+							$this->error = $edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' ist bereits angemeldet';
+						}
 					}
+					end_of_edit:;
 				}
 			}
 		}
@@ -346,8 +477,8 @@ class Registration extends BF_Controller {
 			$status = $this->get_reg_status(arr_nvl($reg_participants_v, $i, $participant_empty_row) + $reg_supervision_v);
 			switch ($status) {
 				case 1: $box = div($attr + [ 'class'=>'grey-box' ], nbsp()); break;
-				case 2: $box = div($attr + [ 'class'=>'yellow-box' ], 'Wird Aufgenommen'); break;
-				case 3: $box = div($attr + [ 'class'=>'green-box' ], 'Aufgenommen'); break;
+				case 2: $box = div($attr + [ 'class'=>'yellow-box' ], 'Wird registriert'); break;
+				case 3: $box = div($attr + [ 'class'=>'green-box' ], 'Registriert'); break;
 				case 4: $box = div($attr + [ 'class'=>'yellow-box' ], 'Wird geändert'); break;
 				case 5: $box = div($attr + [ 'class'=>'red-box' ], 'Angemeldet'); break;
 			}
@@ -369,9 +500,9 @@ class Registration extends BF_Controller {
 		tr([ 'style'=>'border-bottom: 1px solid black; padding: 8px 16px;' ]);
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
 		for ($i=1; $i<=MAX_PARTICIPANTS; $i++) {
-			$participant_row = arr_nvl($reg_participants_v, $i, $participant_empty_row);
-			$fname = arr_nvl($participant_row, 'prt_firstname', '');
-			$lname = arr_nvl($participant_row, 'prt_lastname', '');
+			$part_row = arr_nvl($reg_participants_v, $i, $participant_empty_row);
+			$fname = arr_nvl($part_row, 'prt_firstname', '');
+			$lname = arr_nvl($part_row, 'prt_lastname', '');
 			if (empty($fname)) {
 				$fname = $lname;
 				$lname = '';
@@ -430,7 +561,7 @@ class Registration extends BF_Controller {
 			_table();
 		_td();
 		_tr();
-		tr(td(nbsp().b('Hinweise (Allergien, etc.)')));
+		tr(td(nbsp().'Allergien und andere Besonderheiten des Kindes:'));
 		tr();
 		td([ 'colspan'=>2 ]);
 			table([ 'style'=>'width: 100%;' ]);

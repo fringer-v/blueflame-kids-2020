@@ -311,7 +311,7 @@ class Staff extends BF_Controller {
 
 			if (is_empty($this->error)) {
 				if (!is_empty($pwd))
-					$pwd = password_hash(strtolower(md5($pwd."129-3026-19-2089")), PASSWORD_DEFAULT);
+					$pwd = password_hash(strtolower(md5($pwd.'129-3026-19-2089')), PASSWORD_DEFAULT);
 				$data = array(
 					'stf_username' => $stf_username->getValue(),
 					'stf_fullname' => $stf_fullname->getValue(),

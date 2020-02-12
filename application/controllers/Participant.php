@@ -136,7 +136,7 @@ class HistoryTable extends Table {
 			case 'hst_action':
 				switch ($row[$field]) {
 					case CREATED:
-						return 'Aufgenommen';
+						return 'Registriert';
 					case REGISTER:
 						return 'Angemeldet';
 					case UNREGISTER:
@@ -241,7 +241,7 @@ class Participant extends BF_Controller {
 		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
 			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
-		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Aufgenommen',
+		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
 			array('class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;'));
 
 		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
@@ -395,12 +395,12 @@ class Participant extends BF_Controller {
 							$prt_filter->setValue('');
 							$prt_page->setValue(1);
 							$prt_id->setValue($prt_id_v);
-							$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' angemeldet');
+							$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' aufgeno');
 							redirect("participant");
 						}
 					}
 					else
-						$this->error = $prt_firstname->getValue()." ".$prt_lastname->getValue().' ist bereits aufgenommen';
+						$this->error = $prt_firstname->getValue()." ".$prt_lastname->getValue().' ist bereits registriert';
 				}
 				else {
 					$this->modify_participant($prt_id_v, $participant_row, $data, $group_reserved);

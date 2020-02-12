@@ -264,11 +264,6 @@ button:active, input[type=submit]:active, input[type=button]:active {
     border-bottom: 1px solid #f1f1f1;
 }
 
-.breadcrumb {
-	padding: 10px;
-    font-size: 20px;
-}
-
 .row {
     padding: 10px;
 }

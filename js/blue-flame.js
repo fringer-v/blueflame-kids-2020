@@ -288,15 +288,15 @@ function iPadStatus(before_data, now_data)
 	var now_list = now_data.split("|");
 	var before_stat = parseInt(before_list[1]);
 
-	var samething_changed = false;
+	var something_changed = false;
 	for (var i=0; i<now_list.length; i++) {
 		if (before_list[2+i] != now_list[i].trim()) {
-			samething_changed = true;
+			something_changed = true;
 			break;
 		}
 	}
 
-	if (!samething_changed)
+	if (!something_changed)
 		return before_stat;
 
 	var fname = now_list[0].trim();
@@ -304,8 +304,8 @@ function iPadStatus(before_data, now_data)
 	if (fname.length == 0 && lname.length == 0)
 		return 1;
 
-	if (fname != before_list[2] || lname != before_list[3])
-		return 2;
+	//if (fname != before_list[2] || lname != before_list[3])
+	//	return 2;
 
 	if (before_stat == 2)
 		return 2;
@@ -345,8 +345,8 @@ function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab
 	status_div.removeClass();
 	switch (stat) {
 		case 1: status_div.addClass("grey-box"); status_div.html("&nbsp;"); break;
-		case 2: status_div.addClass("yellow-box"); status_div.html("Wird Aufgenommen"); break;
-		case 3: status_div.addClass("green-box"); status_div.html("Aufgenommen"); break;
+		case 2: status_div.addClass("yellow-box"); status_div.html("Wird registriert"); break;
+		case 3: status_div.addClass("green-box"); status_div.html("Registriert"); break;
 		case 4: status_div.addClass("yellow-box"); status_div.html("Wird geändert"); break;
 		case 5: status_div.addClass("red-box"); status_div.html("Angemeldet"); break;
 	}
@@ -370,5 +370,5 @@ function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab
 	if (stat == 4)
 		reg_button.attr("value", "Ändern");
 	else
-		reg_button.attr("value", "Aufnehmen");
+		reg_button.attr("value", "Registrieren");
 }

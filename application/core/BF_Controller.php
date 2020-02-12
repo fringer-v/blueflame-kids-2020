@@ -164,6 +164,15 @@ class BF_Controller extends CI_Controller {
 		return $query->row_array();
 	}
 
+	public function get_staff_row_by_username($stf_username) {
+		$query = $this->db->query(
+			'SELECT stf_id, stf_username, stf_fullname, stf_password, '.
+			'stf_registered, stf_loginallowed, stf_technician '.
+			'FROM bf_staff WHERE stf_username=?', [ $stf_username ]);
+		$staff_row = $query->row_array();
+		return $staff_row;
+	}
+
 	public function reserve_group($age, $num)
 	{
 		$this->db->set('stf_reserved_count',
@@ -316,7 +325,7 @@ class BF_Controller extends CI_Controller {
 		return [ $current_period, $nr_of_groups, $group_counts ];
 	}
 
-	public function authorize() {
+	public function is_logged_in() {
 		$this->load->library('session');
 
 		$page = str_left($this->uri->uri_string(), "/");
@@ -332,10 +341,25 @@ class BF_Controller extends CI_Controller {
 			$this->stf_login_name = $this->session->stf_login_name;
 			return true;
 		}
+		return false;
+	}
+
+	public function set_logged_in($staff_row) {
+		$this->load->library('session');
+		$this->session->set_userdata('stf_login_id', $staff_row['stf_id']);
+		$this->session->set_userdata('stf_login_name', $staff_row['stf_fullname']);
+		$this->session->set_userdata('stf_login_tech', $staff_row['stf_technician']);
+		$this->db->query('UPDATE bf_staff SET stf_registered = 1 WHERE stf_id = ?',
+			array($staff_row['stf_id']));
+	}
+
+	public function authorize($redirect_page = 'login') {
+		if ($this->is_logged_in())
+			return true;
 
 		$this->header('Redirect');
 		script();
-		out('window.parent.location = "'.site_url('login').'";');
+		out('window.parent.location = "'.site_url($redirect_page).'";');
 		_script();
 		$this->footer();
 
@@ -377,7 +401,7 @@ class BF_Controller extends CI_Controller {
 				$prt_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_registered != '.REG_NO);
 				$stf_count = (integer) db_1_value('SELECT COUNT(*) FROM bf_staff WHERE stf_registered = 1');
 			}
-	
+
 			div(array('class'=>'topnav'));
 			table();
 			tr(array('style'=>'height: 12px;'));
@@ -417,8 +441,8 @@ class BF_Controller extends CI_Controller {
 			_table();
 			_div();
 
-			div(array('class'=>'breadcrumb'));
-			_div();
+			// Little padding before content:
+			div([ 'style'=>'height: 20px;' ], nbsp());
 		}
 	}
 
