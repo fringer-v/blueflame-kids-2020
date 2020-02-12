@@ -331,9 +331,7 @@ class Registration extends BF_Controller {
 
 		$edit_part = arr_nvl($reg_participants_v, $reg_part_v, $participant_empty_row) + $reg_supervision_v;
 
-bugout(">>1", $reg_part_v, $reg_set_part_v);
 		if (!empty($reg_set_part_v) && $this->any_empty($edit_part)) {
-bugout(">>2");
 			// May leave a partially empty tab:
 			$reg_part->setValue($reg_set_part_v);
 			$this->set_default_lastname($reg_participants, $reg_participants_v, $reg_set_part_v, $participant_empty_row);

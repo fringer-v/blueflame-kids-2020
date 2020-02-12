@@ -304,10 +304,7 @@ function iPadStatus(before_data, now_data)
 	if (fname.length == 0 && lname.length == 0)
 		return 1;
 
-	//if (fname != before_list[2] || lname != before_list[3])
-	//	return 2;
-
-	if (before_stat == 2)
+	if (before_stat == 2 || before_stat == 5)
 		return 2;
 
 	return 4;
@@ -360,11 +357,6 @@ function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab
 	}
 	if (!disabled)
 		disabled = stat == 3 || stat == 5 || stat == 1;
-	if (!disabled) {
-		var before_list = before_data.split("|");
-		var before_stat = parseInt(before_list[1]);
-		disabled = before_stat == 5 && stat != 2;
-	}
 
 	reg_button.prop("disabled", disabled);
 	if (stat == 4)
