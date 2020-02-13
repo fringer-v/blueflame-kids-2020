@@ -152,7 +152,7 @@ class Staff extends BF_Controller {
 		}
 		$stf_username = $update_staff->addTextInput('stf_username', 'Kurzname', $staff_row['stf_username'], [ 'maxlength'=>'9', 'style'=>'width: 100px' ]);
 		$stf_fullname = $update_staff->addTextInput('stf_fullname', 'Name', $staff_row['stf_fullname']);
-		if (is_empty($stf_id_v) || $this->stf_login_id == $stf_id_v) {
+		if (is_empty($stf_id_v) || $this->stf_login_id == $stf_id_v || $this->stf_login_name == "Administrator") {
 			$stf_password = $update_staff->addPassword('stf_password', 'Passwort', '');
 			$confirm_password = $update_staff->addPassword('confirm_password', 'Passwort wiederholen');
 			$confirm_password->setRule('matches[stf_password]');
