@@ -67,6 +67,13 @@ class Form {
 		return $field;
 	}
 
+	function addTextWithLabel($label, $text) {
+		$field = new OutputField($text);
+		$field->setForm($this);
+		$this->fields['$'.count($this->fields)] = array($label, $field);
+		return $field;
+	}
+
 	function addTextInput($name, $label, $default_value = '', $attributes = array()) {
 		$field = new TextInput($name, $default_value, $attributes);
 		$field->setForm($this);
@@ -245,36 +252,44 @@ class Form {
 
 					$colspan = 1;
 					$haslabel = true;
+					$style = '';
 					if (!empty($field->format)) {
 						foreach ($field->format as $format=>$value) {
 							if ($format == "nolabel")
 								$haslabel = false;
 							else if (isset($field->format['colspan'])) {
-								if ($field->format['colspan'] == '*')
+								if ($value == '*')
 									$colspan = $this->columns;
 								else
-									$colspan = (integer) $field->format['colspan'];
+									$colspan = (integer) $value;
 							}
+							else if ($format == "style")
+								$style = $value;
 						}
 					}
 
+					if (empty($style))
+						$attr = [];
+					else
+						$attr['style'] = $style;
 					if ($field instanceof Checkbox) {
-						td(array('colspan'=>$colspan*2));
+						$attr['colspan'] = $colspan*2;
+						td($attr);
 						$field->show();
 						label(array('for'=>$name), ' '.$label);
 						_td();
 					}
 					else if (!$haslabel) {
-						td(array('colspan'=>$colspan*2));
+						$attr['colspan'] = $colspan*2;
+						td($attr);
 						$field->show();
 						_td();
 					}
 					else {
 						th(label(array('for'=>$name), is_empty($label) ? '' : $label.':'));
 						if ($colspan*2-1 != 1)
-							td(array('colspan'=>$colspan*2-1));
-						else
-							td();
+							$attr['colspan'] = $colspan*2-1;
+						td($attr);
 						$field->show();
 						_td();
 					}

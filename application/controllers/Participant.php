@@ -244,7 +244,7 @@ class Participant extends BF_Controller {
 		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
 			array('class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;'));
 
-		$update_participant = new Form('update_participant', 'participant', 2, array('class'=>'input-table'));
+		$update_participant = new Form('update_participant', 'participant', 2, [ 'class'=>'input-table', 'style'=>'width: 100%;' ]);
 		if (!is_empty($this->session->stf_login_tech))
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
@@ -261,7 +261,7 @@ class Participant extends BF_Controller {
 		
 		$participant_row = $this->get_participant_row($prt_id_v);
 
-		// Aufnehmen u. Ändern
+		// Registrierung u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
 		$number1->setFormat([ 'colspan'=>'2' ]);
 		$prt_firstname = $update_participant->addTextInput('prt_firstname', 'Name',
@@ -283,7 +283,8 @@ class Participant extends BF_Controller {
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', '',
 			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capitalize($(this));' ]);
 		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
-		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
+		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr',
+			$participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes'],
 			[ 'style'=>'height: 24px;' ]);
@@ -299,21 +300,21 @@ class Participant extends BF_Controller {
 		// An u. Abmeldung
 		$number2 = $update_participant->addField('Kinder-Nr');
 		$number2->setFormat([ 'colspan'=>'2' ]);
-		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname']);
-		$f1->disable();
-		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname']);
-		$f2->disable();
-		//$f2->setFormat([ 'nolabel'=>true ]);
-		$f3 = $update_participant->addTextInput('prt_birthday', 'Geburtstag', $participant_row['prt_birthday']);
-		$f3->disable();
+		$update_participant->addTextWithLabel('Name', $participant_row['prt_firstname'].' '.$participant_row['prt_lastname']);
+		$update_participant->addTextWithLabel('Begleitperson',
+			$participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname']);
 		$curr_age_str = str_get_age($prt_birthday->getDate());
-		$update_participant->addText(b(nbsp().$curr_age_str));
+		$update_participant->addTextWithLabel('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
+		$f1 = $update_participant->addTextWithLabel('Handy-Nr',
+			$participant_row['prt_supervision_cellphone']);
+		$f1->setFormat([ 'style'=>'width: 50%;' ]);
 
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
 
-		$register_comment = $update_participant->addTextInput('register_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
-		$register_comment->setFormat([ 'colspan'=>'2' ]);
+		// NO LONGER USED:
+		//$register_comment = $update_participant->addTextInput('register_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
+		//$register_comment->setFormat([ 'colspan'=>'2' ]);
 
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', array('class'=>'button-white wc'));
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', array('class'=>'button-white wc strike-thru'));
@@ -416,10 +417,13 @@ class Participant extends BF_Controller {
 				$being_fetched->submitted() || $cancel_fetch->submitted()) {
 				
 				$data = [ ];
+				//$history = [
+				//	'hst_prt_id'=>$prt_id_v,
+				//	'hst_stf_id'=> $this->session->stf_login_id,
+				//	'hst_notes'=>$register_comment->getValue() ];
 				$history = [
 					'hst_prt_id'=>$prt_id_v,
-					'hst_stf_id'=> $this->session->stf_login_id,
-					'hst_notes'=>$register_comment->getValue() ];
+					'hst_stf_id'=> $this->session->stf_login_id ];
 
 				$staff_row = $this->get_staff_row($this->session->stf_login_id);
 				$group_reserved = if_empty($staff_row['stf_reserved_count'], 0) > 0;
@@ -566,11 +570,15 @@ class Participant extends BF_Controller {
 				}
 				$this->db->query($sql, array($prt_id_v));
 
+				//$this->db->insert('bf_history', array(
+				//	'hst_prt_id'=>$prt_id_v,
+				//	'hst_stf_id'=>$this->session->stf_login_id,
+				//	'hst_action'=>$action,
+				//	'hst_notes'=>$register_comment->getValue()));
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
 					'hst_stf_id'=>$this->session->stf_login_id,
-					'hst_action'=>$action,
-					'hst_notes'=>$register_comment->getValue()));
+					'hst_action'=>$action));
 
 				$this->setSuccess($prt_supervision_firstname->getValue()." ".$prt_supervision_lastname->getValue().' '.$msg);
 				redirect("participant");
@@ -698,8 +706,8 @@ class Participant extends BF_Controller {
 			tbody();
 			tr();
 
-			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'modify', 'margin-right: 2px;'), 'Aufnehmen u. Ändern'));
 			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'register', 'margin-left: 2px; margin-right: 2px;'), 'An u. Abmeldung'));
+			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'modify', 'margin-right: 2px;'), 'Registrierung u. Ändern'));
 			td(array('width'=>'33.33%'), div($this->tabAttr($prt_tab, 'supervisor', 'margin-left: 2px;'), 'Eltern Ruf'));
 			_tr();
 			tr();
@@ -709,11 +717,11 @@ class Participant extends BF_Controller {
 				tbody();
 					tr();
 					td(array('style'=>'border: 1px solid black; padding: 10px 5px;'));
-					div($this->tabContentAttr($prt_tab, 'modify'));
-					$update_participant->show('tab_modify');
-					_div();
 					div($this->tabContentAttr($prt_tab, 'register'));
 					$update_participant->show('tab_register');
+					_div();
+					div($this->tabContentAttr($prt_tab, 'modify'));
+					$update_participant->show('tab_modify');
 					_div();
 					div($this->tabContentAttr($prt_tab, 'supervisor'));
 					$update_participant->show('tab_supervisor');
