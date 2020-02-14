@@ -285,13 +285,14 @@ class Participant extends BF_Controller {
 		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
-		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes']);
+		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes'],
+			[ 'style'=>'height: 24px;' ]);
 		$prt_notes->setFormat([ 'colspan'=>'2' ]);
 
-		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', array('class'=>'button-green'));
-		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Aufnehmen ', array('class'=>'button-green'));
-		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen...', array('class'=>'button-blue'));
-		$clear_participant = $update_participant->addSubmit('clear_participant', '', array('class'=>'button-black'));
+		$save_participant = $update_participant->addSubmit('save_participant', 'Änderung Sichern', [ 'class'=>'button-green' ]);
+		$new_participant = $update_participant->addSubmit('new_participant', 'Kind Registrieren', [ 'class'=>'button-green' ]);
+		$clear_nr_name = $update_participant->addSubmit('clear_no_name', 'Geschwister Aufnehmen...', [ 'class'=>'button-blue' ]); // DEFUKT
+		$clear_participant = $update_participant->addSubmit('clear_participant', '', [ 'class'=>'button-black' ]);
 
 		$update_participant->createGroup('tab_modify');
 
@@ -594,7 +595,9 @@ class Participant extends BF_Controller {
 			$age_field->setValue(div(array('id' => 'prt_age'), ''));
 		}
 		else {
-			$clear_participant->setValue('Weiteres Aufnehmen...');
+			$clear_participant->setValue('Kind Registrieren...');
+			// Not using this button, so always hidden!
+			$clear_nr_name->hide();
 
 			$new_participant->hide();
 			if ($participant_row['prt_registered'] == REG_YES) {
@@ -917,9 +920,11 @@ class Participant extends BF_Controller {
 		_table();
 	}
 
-	private function getGroupData($prt_id_v)
+	private function get_group_data($prt_id_v)
 	{
-		list($current_period, $nr_of_groups, $group_counts) = $this->getPeriodData();
+		list($current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts) = $this->get_period_data();
 
 		$reserve_counts = db_array_2('SELECT CONCAT(stf_reserved_age_level, "_", stf_reserved_group_number),
 			SUM(stf_reserved_count)
@@ -936,7 +941,10 @@ class Participant extends BF_Controller {
 
 		$staff_row = $this->get_staff_row($this->session->stf_login_id);
 
-		return [ $current_period, $nr_of_groups, $group_counts, $reserve_counts, $participant_row, $staff_row ];
+		return [ $current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts,
+			$reserve_counts, $participant_row, $staff_row ];
 	}
 
 	public function getgroups() {
@@ -972,12 +980,10 @@ class Participant extends BF_Controller {
 		$tab = in('tab');
 		$tab_v = $tab->getValue();
 
-		list($current_period,
-			$nr_of_groups,
-			$group_counts,
-			$reserve_counts,
-			$participant_row,
-			$staff_row) = $this->getGroupData($prt_id_v);
+		list($current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts,
+			$reserve_counts, $participant_row, $staff_row) = $this->get_group_data($prt_id_v);
 
 		table([ 'style'=>'border-spacing: 0;' ]);
 		$groups_per_age = ''; 
@@ -987,15 +993,15 @@ class Participant extends BF_Controller {
 			if (empty($group_nr))
 				continue;
 			tr();
-			th([ 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
+			th([ 'style'=>'padding: 0px 2px;', 'align'=>'right' ], $age_level_from[$a].' - '.$age_level_to[$a].':');
 			for ($i=1; $i<=$group_nr; $i++) {
-				td( [ 'style'=>'padding: 4px;'] );
+				td( [ 'style'=>'padding: 0px 2px;' ] );
 
 				$reserve_onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "reserve");';
-				$std_r_count = if_empty($staff_row['stf_reserved_count'], 0);
+				$my_reserve_count = if_empty($staff_row['stf_reserved_count'], 0);
 				if ($staff_row['stf_reserved_age_level'] == $a &&
 					$staff_row['stf_reserved_group_number'] == $i &&
-					$std_r_count > 0) {
+					$my_reserve_count > 0) {
 					$table_onclick = '';
 					$onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "unreserve");';
 					$vis = '';
@@ -1013,19 +1019,26 @@ class Participant extends BF_Controller {
 				$opa = '';
 				if (!empty($vis) &&
 					($participant_row['prt_age_level'] != $a || $participant_row['prt_group_number'] != $i))
-					$opa = 'opacity: 0.3;';
+					$opa = 'opacity: 0.5;';
 
 				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
-				$r_count -= $std_r_count;
-				if ($r_count > 0)
-					$count = $count.'/'.$r_count;
+				$r_count -= $my_reserve_count;
+				$limit = if_empty(arr_nvl($group_limits, $a.'_'.$i, 0), DEFAULT_GROUP_SIZE);
 
+				// GROUP BOX:
 				table([ 'class'=>'participant-group g-'.$a, 'onclick'=>$table_onclick, 'style'=>$opa ]);
 				tr();
-				td([ 'onclick'=>$onclick ], span([ 'class'=>'group-number' ], $i));
-				td([ 'onclick'=>$onclick, 'style'=>'min-width: 28px; text-align: center;' ], span([ 'id'=>$tab_v.'_group_'.$a.'_'.$i ], $count));
-				td([ 'onclick'=>$reserve_onclick ], $reserve_box);
+				$row_style = 'padding: 2px 0px 0px 0px; text-align: center;';
+				td([ 'onclick'=>$onclick, 'style'=>$row_style ], span([ 'class'=>'group-number' ], $i));
+				td([ 'id'=>$tab_v.'_group_c_'.$a.'_'.$i, 'onclick'=>$onclick, 'style'=>$row_style.' min-width: 24px;' ], $count > 0 ? $count : '-');
+				td([ 'onclick'=>$reserve_onclick, 'style'=>$row_style ], $reserve_box);
+				_tr();
+				tr();
+				$row_style = 'padding: 0px 0px 2px 0px; font-size: 14px; text-align: center;';
+				td([ 'onclick'=>$onclick, 'style'=>$row_style  ], nbsp());
+				td([ 'id'=>$tab_v.'_group_l_'.$a.'_'.$i, 'onclick'=>$onclick, 'style'=>$row_style  ], $limit);
+				td([ 'id'=>$tab_v.'_group_r_'.$a.'_'.$i, 'onclick'=>$reserve_onclick, 'style'=>$row_style  ], $r_count > 0 ? $r_count : '');
 				_tr();
 				_table();
 				_td();
@@ -1079,12 +1092,10 @@ class Participant extends BF_Controller {
 		$cnt = in('cnt');
 		$cnt_v = $cnt->getValue();
 
-		list($current_period,
-			$nr_of_groups,
-			$group_counts,
-			$reserve_counts,
-			$participant_row,
-			$staff_row) = $this->getGroupData($prt_id_v);
+		list($current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts,
+			$reserve_counts, $participant_row, $staff_row) = $this->get_group_data($prt_id_v);
 
 		$groups_per_age = ''; 
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
@@ -1093,13 +1104,14 @@ class Participant extends BF_Controller {
 			if (empty($group_nr))
 				continue;
 			for ($i=1; $i<=$group_nr; $i++) {
-				$std_r_count = if_empty($staff_row['stf_reserved_count'], 0);
+				$my_reserve_count = if_empty($staff_row['stf_reserved_count'], 0);
 				$r_count = arr_nvl($reserve_counts, $a.'_'.$i, 0);
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0) + $r_count;
-				$r_count -= $std_r_count;
-				if ($r_count > 0)
-					$count = $count.'/'.$r_count;
-				out('$("#'.$tab_v.'_group_'.$a.'_'.$i.'").html("'.$count.'");');
+				$r_count -= $my_reserve_count;
+				$limit = if_empty(arr_nvl($group_limits, $a.'_'.$i, 0), DEFAULT_GROUP_SIZE);
+				out('$("#'.$tab_v.'_group_c_'.$a.'_'.$i.'").html("'.($count > 0 ? $count : '-').'");');
+				out('$("#'.$tab_v.'_group_r_'.$a.'_'.$i.'").html("'.($r_count > 0 ? $r_count : '').'");');
+				out('$("#'.$tab_v.'_group_l_'.$a.'_'.$i.'").html("'.$limit.'");');
 			}
 		}
 		if ($participant_row['prt_group_number'] > 0)

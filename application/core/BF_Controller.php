@@ -61,6 +61,8 @@ define('PERIOD_COUNT', 5);
 
 define('CURRENT_PERIOD', 0);
 
+define('DEFAULT_GROUP_SIZE', 8);
+
 $period_names = array (
 	PERIOD_FRIDAY => 'Freitag Abend',
 	PERIOD_SAT_MORNING => 'Samstag Morgen',
@@ -299,15 +301,36 @@ class BF_Controller extends CI_Controller {
 		}
 	}
 
-	public function getPeriodData($p = 0)
+	public function get_period_data($p = 0)
 	{
 		$current_period = $this->db_model->get_setting('current-period');
 		if ($p == 0)
 			$p = $current_period;
 
-		$nr_of_groups = db_array_2('SELECT grp_age_level, grp_count
+		$nr_of_groups = [];
+		$total_limit = 0;
+		$total_count = 0;
+		$total_limits = [];
+		$total_counts = [];
+		$group_limits = [];
+		$group_counts = [];
+
+		$groups = db_row_array('SELECT grp_age_level, grp_count, grp_size_hints
 			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $p ]);
 
+bugout("========");
+		foreach ($groups as $group) {
+			$nr_of_groups[$group['grp_age_level']] = $group['grp_count'];
+			$limits = explode(',', $group['grp_size_hints']);
+bugout($group['grp_size_hints'], $limits);
+			if (!empty($limits)) {
+				for ($i=1; $i<=count($limits); $i++)
+					$group_limits[$group['grp_age_level'].'_'.$i] = if_empty($limits[$i-1], 0);
+			}
+		}
+bugout($group_limits);
+
+		// Number of kids in each group:
 		if ($p == $current_period) {
 			$group_counts = db_array_2('SELECT CONCAT(prt_age_level, "_", prt_group_number),
 				COUNT(DISTINCT prt_id)
@@ -319,10 +342,23 @@ class BF_Controller extends CI_Controller {
 					$nr_of_groups[$age] = $num;
 			}
 		}
-		else
-			$group_counts = [];
 
-		return [ $current_period, $nr_of_groups, $group_counts ];
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$a_limit = 0;
+			$a_count = 0;
+			$max_group_nr = arr_nvl($nr_of_groups, $a, 0);
+			for ($i=1; $i<=$max_group_nr; $i++) {
+				$a_limit += if_empty(arr_nvl($group_limits, $a.'_'.$i, 0), DEFAULT_GROUP_SIZE);
+				$a_count += if_empty(arr_nvl($group_counts, $a.'_'.$i, 0), 0);
+			}
+			$total_limits[$a] = $a_limit;
+			$total_counts[$a] = $a_count;
+			$total_limit += $a_limit;
+			$total_count += $a_count;
+		}
+		return [ $current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts ];
 	}
 
 	public function is_logged_in() {
