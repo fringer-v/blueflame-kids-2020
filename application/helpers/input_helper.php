@@ -67,13 +67,6 @@ class Form {
 		return $field;
 	}
 
-	function addTextWithLabel($label, $text) {
-		$field = new OutputField($text);
-		$field->setForm($this);
-		$this->fields['$'.count($this->fields)] = array($label, $field);
-		return $field;
-	}
-
 	function addTextInput($name, $label, $default_value = '', $attributes = array()) {
 		$field = new TextInput($name, $default_value, $attributes);
 		$field->setForm($this);

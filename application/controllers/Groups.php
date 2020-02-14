@@ -37,36 +37,6 @@ class GroupsTable extends Table {
 	}
 }
 
-class MemberTable extends Table {
-	public function columnTitle($field) {
-		switch ($field) {
-			case 'prt_number':
-				return 'Nr.';
-			case 'prt_name':
-				return 'Name';
-			case 'prt_supervision_name':
-				return 'Begleitperson';
-			case 'prt_notes':
-				return 'Hinweise';
-		}
-		return nix();
-	}
-
-	public function cellValue($field, $row) {
-		switch ($field) {
-			case 'prt_number':
-			case 'prt_name':
-			case 'prt_supervision_name':
-				$value = $row[$field];
-				return $value;
-			case 'prt_notes':
-				$value = $row[$field];
-				return $value;
-		}
-		return nix();
-	}
-}
-
 class Groups extends BF_Controller {
 	public function __construct()
 	{
@@ -94,7 +64,9 @@ class Groups extends BF_Controller {
 				if ($p > 0)
 					tr(td([ 'style'=>'height: 10px' ]));
 				tr();
-				td([ 'class'=>'group-header' ], b($period_names[$p]));
+				td([ 'class'=>'group-header' ], b($period_names[$p]), nbsp(), nbsp(), nbsp(),
+					href('groups/prints?session='.$p, img([ 'src'=>'../img/print-50.png',
+						'style'=>'height: 20px; width: auto; position: relative; bottom: -5px;'])));
 				_tr();
 				tr();
 				td();
@@ -112,7 +84,7 @@ class Groups extends BF_Controller {
 		$this->footer();
 	}
 
-	private function leadersAndHelpers($p, $include_fullname = false)
+	private function leaders_and_helpers($p, $include_fullname = false)
 	{
 		$sql = 'SELECT CONCAT(per_age_level, "_", per_group_number), per_staff_id';
 		$sql .= $include_fullname ? ', stf_fullname ' : ' ';
@@ -247,7 +219,7 @@ class Groups extends BF_Controller {
 			}
 		}
 
-		list($group_leaders, $group_helpers) = $this->leadersAndHelpers($p);
+		list($group_leaders, $group_helpers) = $this->leaders_and_helpers($p);
 
 		$period_leaders = db_row_array('SELECT stf_id, stf_username, per_group_number,
 			CONCAT(per_age_level_0, per_age_level_1, per_age_level_2) ages
@@ -259,7 +231,8 @@ class Groups extends BF_Controller {
 		$i = 0;
 		table( [ 'width'=>'100%', 'style'=>'margin-top: 4px;' ] );
 		tr();
-		td([ 'style'=>'width: 50px;', 'align'=>'right' ], if_empty($total_count, '-').'/'.if_empty($total_limit, 0).nbsp());
+		td([ 'id'=>'total_'.$p, 'style'=>'width: 58px; font-size: 18px;', 'align'=>'center' ],
+			if_empty($total_count, '-').'/'.if_empty($total_limit, 0));
 		td();
 		foreach ($period_leaders as $period_leader) {
 			$val = '';
@@ -294,9 +267,10 @@ class Groups extends BF_Controller {
 		table([ 'style'=>'border-spacing: 5px;' ]);
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
 			tr();
-			td([ 'style'=>'width: 50px;', 'align'=>'right' ],
-				b($age_level_from[$a].' - '.$age_level_to[$a].':').br().
-				if_empty(arr_nvl($total_counts, $a, 0), '-').'/'.if_empty(arr_nvl($total_limits, $a, 0), 0).nbsp()
+			td([ 'style'=>'width: 58px; font-size: 18px;', 'align'=>'center' ],
+				div([ 'style'=>'padding: 0px 0px 4px 0px;' ], b($age_level_from[$a].' - '.$age_level_to[$a])),
+				div([ 'id'=>'sum_'.$p.'_'.$a ],
+					if_empty(arr_nvl($total_counts, $a, 0), '-').'/'.if_empty(arr_nvl($total_limits, $a, 0), 0))
 				);
 			$max_group_nr = arr_nvl($nr_of_groups, $a, 0);
 			for ($i=1; $i<=$max_group_nr; $i++) {
@@ -331,8 +305,10 @@ class Groups extends BF_Controller {
 				tr();
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
 				$limit = arr_nvl($group_limits, $a.'_'.$i, 0);
-				$usage_and_limit = if_empty($count, '-').'/'.if_empty($limit, DEFAULT_GROUP_SIZE);
-				td([ 'style'=>'text-align: center; font-size: 18px; font-weight: bold;', 'onclick'=>$print_group ], $usage_and_limit);
+				$count_and_limit = if_empty($count, '-').'/'.if_empty($limit, DEFAULT_GROUP_SIZE);
+				td([ 'id'=>'usage_'.$p.'_'.$a.'_'.$i,
+					'style'=>'text-align: center; font-size: 18px; font-weight: bold;',
+					'onclick'=>$print_group ], $count_and_limit);
 				$helpers = arr_nvl($group_helpers, $a.'_'.$i, []);
 				if (empty($helpers))
 					td(nbsp());
@@ -379,73 +355,193 @@ class Groups extends BF_Controller {
 				}
 			}
 		');
+		if ($current_period == $p) {
+			out('
+				function poll_group_data() {
+				console.log("poll!");
+					$.getScript("groups/pollgroupdata");
+				}
+			');
+			out('window.setInterval(poll_group_data, 5000);');
+		}
 		_script();
 		$display_groups->close();
 	}
 
+	/*
+	prt_id, prt_number, 
+				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
+				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name,
+				prt_notes
+	*/
+	private function print_group($a, $i) {
+		$members = db_row_array('SELECT * FROM bf_participants
+			WHERE prt_age_level = ? AND prt_group_number = ?
+			ORDER BY prt_id', [ $a, $i ]);
+
+		if (empty($members)) {
+			div([ 'style'=>'font-weight: bold; padding: 4px;' ], 'Anwesend:');
+			$add_lines = 5;
+		}
+		else {
+			table([ 'class'=>'printable-table', 'style' => 'width: 720px; padding: 5px;' ]);
+			tr();
+			th([ 'style'=> 'width: 20px;' ], 'Nr.');
+			th([ 'style'=> 'text-align: center; width: 20px;' ], 'Anw.');
+			th('Name');
+			th('Begleitperson');
+			th([ 'style'=> 'width: 40%;' ], 'Hinweise');
+			_tr();
+			$box = div([ 'style'=>'margin: 0 auto; border: 1px solid black; background-color: white; height: 20px; width: 20px;' ], '');
+			foreach ($members as $member) {
+				tr();
+				td([ 'style'=> 'width: 20px; white-space: nowrap;' ], $member['prt_number']);
+
+				td([ 'style'=> 'text-align: center; width: 20px; white-space: nowrap;' ], $box);
+
+				$name = $member['prt_firstname'].' '.$member['prt_lastname'];
+				if (!empty($member['prt_birthday']))
+					$name .= ' ('.get_age($member['prt_birthday']).')';
+				td([ 'style'=> 'white-space: nowrap;' ],$name);
+
+				$name = $member['prt_supervision_firstname'].' '.$member['prt_supervision_lastname'];
+				if (!empty($member['prt_supervision_cellphone']))
+					$name .= ' ('.$member['prt_supervision_cellphone'].')';
+				td([ 'style'=> 'white-space: nowrap;' ], $name);
+
+				td([ 'style'=> 'width: 40%;' ], $member['prt_notes']);
+				_tr();
+			}
+			_table();
+
+			div([ 'style'=>'font-weight: bold; padding: 4px;' ], 'Auch anwesend:');
+			$add_lines = 3;
+		}
+
+		// Add a table to enter kids in the group but not listed.
+		table([ 'class'=>'printable-table', 'style' => 'width: 720px; padding: 5px;' ]);
+		tr();
+		td([ 'style'=> 'background-color: white; width: 20px; font-weight: bold;' ], 'Nr.');
+		td([ 'style'=> 'background-color: white;' ], b('Name').' (falls Nr. nicht bekannt)');
+		td([ 'style'=> 'background-color: white; width: 20px; font-weight: bold;' ], 'Nr.');
+		td([ 'style'=> 'background-color: white;' ], b('Name').' (falls Nr. nicht bekannt)');
+		_tr();
+		$box = div([ 'style'=> 'margin: 0 auto; border: 1px solid black; background-color: white; height: 20px; width: 48px;' ], '');
+		for ($i=0; $i<$add_lines; $i++) {
+			tr();
+			td($box);
+			td('');
+			td($box);
+			td('');
+			_tr();
+		}
+		_table();
+	}
+
 	// <div style='page-break-after:always'></div>
-	// $print_group = 'window.location = "groups/printable?group='.$p.'_'.$a.'_'.$i.'";';
-	public function printable() {
+	// $print_group = 'window.location = "groups/prints?group='.$p.'_'.$a.'_'.$i.'";';
+	public function prints() {
+		global $period_names;
 		global $age_level_from;
 		global $age_level_to;
 		global $all_roles;
 		global $extended_roles;
+		global $group_colors;
 
 		if (!$this->authorize())
 			return;
 
-		$group = in('group');
-		$group_v = explode('_', $group->getValue());
-		$p = $group_v[0];
-		$age = $group_v[1];
-		$num = $group_v[2];
+		$period = in('session');
+		$p = (integer) $period->getValue();
 
-		list($group_leaders, $group_helpers) = $this->leadersAndHelpers($p, true);
-		$group_leader = arr_nvl($group_leaders, $age.'_'.$num, []);
-		$helpers = arr_nvl($group_helpers, $age.'_'.$num, []);
+		list($current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts) = $this->get_period_data($p);
 
-		$print_group = new Form('print_group', 'groups', 1, array('class'=>'output-table'));
+		list($group_leaders, $group_helpers) = $this->leaders_and_helpers($p, true);
 
-		switch ($age) {
-			case 0:
-				$group_name = 'Rot ';
-				break;
-			case 1:
-				$group_name = 'Blau ';
-				break;
-			case 2:
-				$group_name = 'Gelb ';
-				break;
+		$all_empty = $current_period != $p || empty($total_count);
+		
+		$this->head($period_names[$p]);
+		tag('body');
+
+		if ($all_empty) {
+			h1($period_names[$p]);
+			table([ 'class'=>'printable-table', 'style' => 'width: 720px; padding: 5px;' ]);
+			tr();
+			th('Gruppe');
+			th('Obergrenze');
+			th('Leiter');
+			th('Co-Leiter');
+			_tr();
 		}
-		$group_name .= $num.' ('.$age_level_from[$age].' - '.$age_level_to[$age].')';
 
-		$print_group->addField('Gruppe', b($group_name));
-		$print_group->addField('Leiter', a([ 'href'=>'../staff?set_stf_id='.arr_nvl($group_leader, 'per_staff_id') ],
-			arr_nvl($group_leader, 'stf_fullname')));
-		$print_group->addField('Co-Leiter', $this->linkList('../staff?set_stf_id=',
-						explode(',', arr_nvl($helpers, 'helper_ids', '')), explode(',', arr_nvl($helpers, 'helper_names', ''))));
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			for ($i=1; $i<=$group_nr; $i++) {
+				$group_leader = arr_nvl($group_leaders, $a.'_'.$i, []);
+				$helpers = arr_nvl($group_helpers, $a.'_'.$i, []);
 
-		$current_period = $this->db_model->get_setting('current-period');
-		$member_table = new MemberTable('SELECT prt_id, prt_number, 
-				CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
-				CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) AS prt_supervision_name,
-			 	prt_notes
-			FROM bf_participants
-			WHERE prt_age_level = ? AND prt_group_number = ? AND '.$p.' = '.$current_period.'
-			ORDER BY prt_id',
-			[ $age, $num ], array('class'=>'printable-table'));
+				$group_name = $group_colors[$a].' '.$i.' ('.$age_level_from[$a].' - '.$age_level_to[$a].')';
 
-		$this->header($group_name, false);
+				$limit = if_empty(arr_nvl($group_limits, $a.'_'.$i, 0), DEFAULT_GROUP_SIZE);
+				$leader = a([ 'href'=>'../staff?set_stf_id='.arr_nvl($group_leader, 'per_staff_id') ],
+					arr_nvl($group_leader, 'stf_fullname'));
+				$co_leader = $this->linkList('../staff?set_stf_id=',
+					explode(',', arr_nvl($helpers, 'helper_ids', '')), explode(',', arr_nvl($helpers, 'helper_names', '')));
 
-		table(array('style' => 'width: 720px; padding: 5px;'));
-		tr();
-		td();
-		$print_group->show();
-		_td();
-		_tr();
-		tr(td($member_table->html()));
-		_table();
+				if ($all_empty) {
+					tr();
+					td($group_name);
+					td($limit);
+					td($leader);
+					td($co_leader);
+					_tr();
+				}
+				else {
+					$print_group = new Form('print_group', 'groups', 1, array('class'=>'output-table'));
+					$print_group->addField('Gruppe', b($group_name));
+					$print_group->addField('Obergrenze', $limit.' ('.arr_nvl($group_counts, $a.'_'.$i, 0).' angemeldet)');
+					$print_group->addField('Leiter', $leader);
+					$print_group->addField('Co-Leiter', $co_leader);
 
-		$this->footer();
+					$print_group->show();
+					$this->print_group($a, $i);
+					br();
+					div([ 'style'=>'page-break-after: always;' ], '');
+				}
+			}
+		}
+
+		if ($all_empty)
+			_table();
+
+		_tag('body');
+		_tag('html');
+	}
+
+	public function pollgroupdata() {
+		if (!$this->authorize())
+			return;
+
+		list($current_period, $nr_of_groups,
+			$total_limit, $total_count, $total_limits, $total_counts,
+			$group_limits, $group_counts) = $this->get_period_data();
+
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			if (empty($group_nr))
+				continue;
+			for ($i=1; $i<=$group_nr; $i++) {
+				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
+				$limit = arr_nvl($group_limits, $a.'_'.$i, 0);
+				$count_and_limit = if_empty($count, '-').'/'.if_empty($limit, DEFAULT_GROUP_SIZE);
+				out('$("#usage_'.$current_period.'_'.$a.'_'.$i.'").html("'.$count_and_limit.'");');
+			}
+			$sum = if_empty(arr_nvl($total_counts, $a, 0), '-').'/'.if_empty(arr_nvl($total_limits, $a, 0), 0);
+			out('$("#sum_'.$current_period.'_'.$a.'").html("'.$sum .'");');
+		}
+		$total = if_empty($total_count, '-').'/'.if_empty($total_limit, 0);
+		out('$("#total_'.$current_period.'").html("'.$total.'");');
 	}
 }

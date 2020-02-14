@@ -300,13 +300,12 @@ class Participant extends BF_Controller {
 		// An u. Abmeldung
 		$number2 = $update_participant->addField('Kinder-Nr');
 		$number2->setFormat([ 'colspan'=>'2' ]);
-		$update_participant->addTextWithLabel('Name', $participant_row['prt_firstname'].' '.$participant_row['prt_lastname']);
-		$update_participant->addTextWithLabel('Begleitperson',
+		$update_participant->addField('Name', $participant_row['prt_firstname'].' '.$participant_row['prt_lastname']);
+		$update_participant->addField('Begleitperson',
 			$participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname']);
 		$curr_age_str = str_get_age($prt_birthday->getDate());
-		$update_participant->addTextWithLabel('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
-		$f1 = $update_participant->addTextWithLabel('Handy-Nr',
-			$participant_row['prt_supervision_cellphone']);
+		$update_participant->addField('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
+		$f1 = $update_participant->addField('Handy-Nr', $participant_row['prt_supervision_cellphone']);
 		$f1->setFormat([ 'style'=>'width: 50%;' ]);
 
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
@@ -779,7 +778,6 @@ class Participant extends BF_Controller {
 		');
 		out('
 			function poll_groups() {
-				console.log("Polling...");
 				var tab = "";
 				if ($("#tab_content_modify").css("display") == "block")
 					tab = "modify";

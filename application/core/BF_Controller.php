@@ -88,6 +88,12 @@ define('AGE_LEVEL_1', 1);
 define('AGE_LEVEL_2', 2);
 define('AGE_LEVEL_COUNT', 3);
 
+$group_colors = array(
+	AGE_LEVEL_0 => 'Rot',
+	AGE_LEVEL_1 => 'Blau',	
+	AGE_LEVEL_2 => 'Gelb'	
+);
+
 $age_level_from = array (AGE_LEVEL_0 => 4, AGE_LEVEL_1 => 6, AGE_LEVEL_2 => 9);
 $age_level_to = array (AGE_LEVEL_0 => 5, AGE_LEVEL_1 => 8, AGE_LEVEL_2 => 11);
 
@@ -318,17 +324,14 @@ class BF_Controller extends CI_Controller {
 		$groups = db_row_array('SELECT grp_age_level, grp_count, grp_size_hints
 			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $p ]);
 
-bugout("========");
 		foreach ($groups as $group) {
 			$nr_of_groups[$group['grp_age_level']] = $group['grp_count'];
 			$limits = explode(',', $group['grp_size_hints']);
-bugout($group['grp_size_hints'], $limits);
 			if (!empty($limits)) {
 				for ($i=1; $i<=count($limits); $i++)
 					$group_limits[$group['grp_age_level'].'_'.$i] = if_empty($limits[$i-1], 0);
 			}
 		}
-bugout($group_limits);
 
 		// Number of kids in each group:
 		if ($p == $current_period) {
@@ -410,7 +413,7 @@ bugout($group_limits);
 		return $attr;
 	}
 
-	public function header($title, $menu = true) {
+	public function head($title) {
 		out('<!DOCTYPE html>');
 		tag('html');
 		tag('head');
@@ -422,6 +425,10 @@ bugout($group_limits);
 		script(base_url('/js/jquery.js'));
 		script(base_url('/js/blue-flame.js'));
 		_tag('head');
+	}
+
+	public function header($title, $menu = true) {
+		$this->head($title);
 		tag('body');
 
 		table([ 'style'=>'width: 100%; border-collapse: collapse; border: 0px;' ]);

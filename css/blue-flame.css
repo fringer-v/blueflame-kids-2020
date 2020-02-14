@@ -762,7 +762,7 @@ table.scrollable-table tbody {
 }
 
 .printable-table tr:nth-child(odd) {
-	background: lightgrey;
+	background-color: #EBEBEB;
 }
 
 .ipad-table {
