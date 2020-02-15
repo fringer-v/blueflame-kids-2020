@@ -121,8 +121,12 @@ class Staff extends BF_Controller {
 		$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
 		$stf_select_role = $filter_staff->addSelect('stf_select_role', '', $extended_roles, 0, [ 'onchange'=>'this.form.submit()' ]);
 		$stf_select_role->persistent();
-		$std_select_period = $filter_staff->addSelect('std_select_period', '', [ -1 => '']  + $period_names, -1, [ 'onchange'=>'this.form.submit()' ]);
-		$std_select_period->persistent();
+		$stf_select_period = $filter_staff->addSelect('stf_select_period', '', [ -1 => '']  + $period_names, -1, [ 'onchange'=>'this.form.submit()' ]);
+		$stf_select_period->persistent();
+
+		$filter_options = [ 0=>'', 1=>'Anwesend', 2=>'Angemeldet', 3=>'Abwesend' ];
+		$stf_filter = $filter_staff->addSelect('stf_filter', '', $filter_options, 0, [ 'onchange'=>'this.form.submit()' ]);
+		$stf_filter->persistent();
 
 		$display_staff = new Form('display_staff', 'staff', 1, array('class'=>'input-table'));
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
@@ -375,7 +379,7 @@ class Staff extends BF_Controller {
 
 		$having = '';
 		$where = '';
-		if ($std_select_period->getValue() == -1) {
+		if ($stf_select_period->getValue() == -1) {
 			// No period
 			$select_list = 'SELECT TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
 				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
@@ -388,7 +392,7 @@ class Staff extends BF_Controller {
 				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
 				s2.stf_fullname my_leaders,
 				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
-			$on = ' AND per_period = '.$std_select_period->getValue().' ';
+			$on = ' AND per_period = '.$stf_select_period->getValue().' ';
 		}
 		$sql = 'FROM bf_staff s1
 				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
@@ -406,6 +410,23 @@ class Staff extends BF_Controller {
 				break;
 			case EXT_ROLE_TEAM_COLEADER:
 				$having = 'my_leaders IS NOT NULL ';
+				break;
+		}
+		switch ($stf_filter->getValue()) {
+			case 1:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where = 'per_present != 0 ';
+				break;
+			case 2:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where = 's1.stf_registered != 0 ';
+				break;
+			case 3:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where = 'per_present != 0 AND s1.stf_registered = 0 ';
 				break;
 		}
 		if (!empty($where))
@@ -426,7 +447,7 @@ class Staff extends BF_Controller {
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 			table([ 'class'=>'input-table' ]);
 			$filter_staff->open();
-			tr(td(b('Suchauswahl: '), $stf_select_role->html(), " ", $std_select_period->html()));
+			tr(td(b('Suchauswahl: '), $stf_select_role, " ", $stf_select_period, ' ', $stf_filter));
 			$filter_staff->close();
 			$display_staff->open();
 			tr(td($staff_list->paginationHtml()));
