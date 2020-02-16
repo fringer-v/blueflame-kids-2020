@@ -304,9 +304,10 @@ class Participant extends BF_Controller {
 		$update_participant->addField('Begleitperson',
 			$participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname']);
 		$curr_age_str = str_get_age($prt_birthday->getDate());
-		$update_participant->addField('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
+		$f1 = $update_participant->addField('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
+		$f1->setFormat([ 'style'=>'width: 40%;' ]);
 		$f1 = $update_participant->addField('Handy-Nr', $participant_row['prt_supervision_cellphone']);
-		$f1->setFormat([ 'style'=>'width: 50%;' ]);
+		$f1->setFormat([ 'style'=>'width: 40%;' ]);
 
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
@@ -669,12 +670,12 @@ class Participant extends BF_Controller {
 			$history_list_loader = new AsyncLoader('history_list', 'participant/gethistory');
 
 			$curr_age = get_age($prt_birthday->getDate());
-			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre alt")));
+			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre")));
 		}
 
 		$status_line = table(array('width'=>'100%'),
 			tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field),
-			td(array('align'=>'right', 'nowrap'=>''), $reg_field)));
+			td(array('align'=>'right', 'style'=> 'white-space: nowrap;'), $reg_field)));
 		$number1->setValue($status_line);
 		$number2->setValue($status_line);
 		$number3->setValue($status_line);
@@ -772,7 +773,7 @@ class Participant extends BF_Controller {
 				if (age < 0)
 					$("#prt_age").html("&nbsp;-");
 				else
-					$("#prt_age").html("&nbsp;<b>"+age+" Jahre alt</b>");
+					$("#prt_age").html("&nbsp;<b>"+age+" Jahre</b>");
 			}
 			$("#prt_birthday").keyup(birthday_changed);
 		');

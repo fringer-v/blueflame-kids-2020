@@ -129,7 +129,7 @@ function str_get_age($dob) {
 	$age = get_age($dob);
 	if (empty($age))
 		return '';
-	return $age.' Jahre alt';
+	return $age.' Jahre';
 }
 
 function format_seconds($totalseconds) {

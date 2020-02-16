@@ -179,10 +179,13 @@ class Registration extends BF_Controller {
 
 	private function get_reg_status($edit_part)
 	{
-		if (empty($edit_part['prt_firstname']) && empty($edit_part['prt_lastname']))
+		if (empty($edit_part['prt_firstname'])) {
+			if (!empty($edit_part['prt_birthday']))
+				return 2;
 			return 1;
+		}
 
-		if (empty($edit_part['prt_firstname']) || empty($edit_part['prt_lastname']))
+		if (empty($edit_part['prt_lastname']))
 			return 2;
 
 		$db_part = $this->get_participant_row_by_name($edit_part['prt_firstname'], $edit_part['prt_lastname']);

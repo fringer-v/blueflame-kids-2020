@@ -134,10 +134,12 @@ button, input {
 
 .input-table th {
 	padding: 4px 3px; 
+	white-space: nowrap;
 }
 
 .input-table td {
 	padding: 4px 0px; 
+	white-space: nowrap;
 }
 
 .input-table .button-row {

@@ -301,10 +301,17 @@ function iPadStatus(before_data, now_data)
 
 	var fname = now_list[0].trim();
 	var lname = now_list[1].trim();
-	if (fname.length == 0 && lname.length == 0)
+	var bday = now_list[2].trim();
+	if (fname.length == 0) {
+		if (bday.length != 0)
+			return 2;
 		return 1;
+	}
+	
+	if (lname.length == 0)
+		return 2;
 
-	if (before_stat == 2 || before_stat == 5)
+	if (before_stat == 1 || before_stat == 2 || before_stat == 5)
 		return 2;
 
 	return 4;
@@ -316,10 +323,6 @@ function iPadRegistrationChanged(tab, before_data, now_data, status_div, reg_tab
 	var fname = now_list[0].trim();
 	var lname = now_list[1].trim();
 	var tab_title;
-	if (fname.length == 0) {
-		fname = lname;
-		lname = "";
-	}
 	if (fname.length > 0) {
 		if (fname.length + lname.length > 14) {
 			if (lname.length == 0)
