@@ -403,6 +403,8 @@ class Staff extends BF_Controller {
 			case ROLE_GROUP_LEADER:
 			case ROLE_OFFICIAL:
 			case ROLE_TECHNICIAN:
+			case ROLE_REGISTRATION:
+			case ROLE_MANAGEMENT:
 				$where .= 's1.stf_role = '.$stf_select_role->getValue().' ';
 				break;
 			case EXT_ROLE_TEAM_LEADER:
