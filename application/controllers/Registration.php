@@ -73,21 +73,19 @@ class Registration extends BF_Controller {
 		table([ 'style'=>'width: 100%;' ]);
 		tr([ 'class'=>'topnav' ]);
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
-		td([ 'style'=>'text-align: left; padding: 4px 2px;' ]);
-		a([ 'onclick'=>'do_back();' ], img([ 'src'=>base_url('/img/bf-kids-logo2.png'),
-			'style'=>'height: 40px; width: auto; position: relative; bottom: -2px;']));
+		td([ 'style'=>'width: 200px; text-align: left; padding: 4px 2px;' ]);
+		button('back', img([ 'src'=>'../img/bf-kids-logo3.png', 'style'=>'height: 34px; width: auto;']),
+			[ 'class'=>'button-box', 'style'=>'border: 1px solid #ffbd4d; height: 40px; font-size: 18px;', 'onclick'=>'do_back(); return false;' ]);
 		_td();
-		td(nbsp());
-		td([ 'style'=>'text-align: right; padding: 4px 2px; width: 48px;' ]);
-		div([ 'onclick'=>'do_reload();', 'style'=>
-			'border: 1px solid black; background-color: lightgray; border-radius: 6px; padding: 4px 4px 1px 1px; height: 33px; width: 33px;' ],
-			img([ 'src'=>'../img/reload.png',
-			'style'=>'height: 28px; width: auto; position: relative; bottom: -2px; left: -2px']));
+		td([ 'style'=>'text-align: center; padding: 4px 2px;' ]);
+		button('reload', img([ 'src'=>'../img/reload.png',
+			'style'=>'height: 28px; width: auto; position: relative; bottom: -3px; left: -1px']),
+			[ 'class'=>'button-box button-lightgrey', 'style'=>'height: 40px; font-size: 18px;', 'onclick'=>'do_reload(); return false;' ]);
 		_td();
-		$complete = button('complete', 'Registrierung Abschließen',
-			[ 'style'=>'height: 40px; background-color: lightgray; color: black; border-radius: 6px; font-size: 18px;',
-				'onclick'=>'do_complete();' ]);
-		td([ 'style'=>'width: 232px; text-align: right; padding: 4px 0px;' ], $complete);
+		td([ 'style'=>'width: 200px; text-align: right; padding: 4px 0px;' ]);
+		button('complete', 'Abschließen',
+			[ 'class'=>'button-box', 'style'=>'border: 1px solid #ffbd4d; height: 40px; font-size: 18px;', 'onclick'=>'do_complete(); return false;' ]);
+		_td();
 		td([ 'style'=>'width: 3px; padding: 0;' ], nbsp());
 		_tr();
 		_table();
@@ -101,19 +99,19 @@ class Registration extends BF_Controller {
 			function do_login_prompt(user) {
 				return prompt("Bitte geben Sie das Passwort für "+user+" ein:", "");
 			}
-			function do_back() {
-				password = do_login_prompt("'.$this->stf_login_name.'");
-				if (password != null) {
-					$("#reg_back").val(password);
-					$("#reg_top_form").submit();
-				}
-			}
 			function do_login() {
 				do {
 					password = do_login_prompt("Registrierung");
 				}
 				while (password == null);
 				$("#reg_login").val(password);
+				$("#reg_top_form").submit();
+			}
+			function do_back() {
+				password = do_login_prompt("'.$this->stf_login_name.'");
+				if (!password)
+					return;
+				$("#reg_back").val(password);
 				$("#reg_top_form").submit();
 			}
 			function do_reload() {
@@ -254,8 +252,9 @@ class Registration extends BF_Controller {
 
 	public function iframe()
 	{
-		if (!$this->authorize('registration'))
+		if (!$this->authorize('registration')) {
 			return;
+		}
 
 		$this->header('iPad Registrierung', false);
 		
@@ -366,7 +365,7 @@ class Registration extends BF_Controller {
 
 		$prt_notes = textarea('prt_notes', $edit_part['prt_notes'], [ 'style'=>'width: 98%;' ]);
 
-		$register = submit('register', 'Registrieren', [ 'class'=>'button-green', 'style'=>'width: 96%; height: 48px; font-size: 24px;' ]);
+		$register = button('register', 'Registrieren', [ 'class'=>'button-box button-green', 'style'=>'width: 100%; height: 48px; font-size: 24px;' ]);
 		$register->disable();
 
 		if ($register->submitted() || !empty($reg_set_part_v)) {

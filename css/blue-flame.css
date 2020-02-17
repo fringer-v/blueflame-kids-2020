@@ -55,6 +55,15 @@ textarea {
 	resize: vertical;
 }
 
+textarea:focus {
+	outline: none;
+	border: 1px solid #009DDE;
+}
+
+button:focus, input[type=submit]:focus, input[type=button]:focus {
+	outline: 0;
+}
+
 /*
 This makes checkbox disappear!
 button, input {
@@ -63,6 +72,29 @@ button, input {
 	appearance: none !important;
 }
 */
+
+/* --------------------------- */
+/* Custom Buttons: */
+
+.button-box {
+	background-color: black;
+	border: 1px solid black;
+	border-radius: 6px;
+	font-size: 14px;
+	text-align: center;
+	color: white;
+	margin: 0;
+}
+
+.button-box:disabled {
+	border: 1px solid grey;
+	background-color: lightgrey;
+}
+
+.button-box:active {
+	opacity: 0.3;
+    background-color: black;
+}
 
 /* --------------------------- */
 /* Text fields: */
@@ -192,6 +224,10 @@ button, input {
 
 .button-blue {
 	background-color: blue;	
+}
+
+.button-lightgrey {
+	background-color: lightgrey;	
 }
 
 .button-yellow {
@@ -784,7 +820,3 @@ table.scrollable-table tbody {
     height: 42px;
 }
 
-textarea:focus {
-	outline: none;
-	border: 1px solid #009DDe;
-}

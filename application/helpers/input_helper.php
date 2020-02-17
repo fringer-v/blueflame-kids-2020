@@ -563,8 +563,16 @@ class Submit extends InputField {
 }
 
 class Button extends InputField {
+	private $title;
+	
+	public function __construct($name = '', $default_value = '', $attributes = array()) {
+		$this->title = $default_value;
+		parent::__construct($name, $default_value, $attributes);
+	}
+
 	public function output() {
-		return tag('input', $this->getAttributes('button'))->html();
+		$v = tag('button', $this->getAttributes('', false), $this->title)->html();
+		return $v;
 	}
 }
 
@@ -594,7 +602,6 @@ class OutputField extends InputField {
 		return out('[]', $this->default_value)->html();
 	}
 }
-
 
 class TextField extends InputField {
 	public function clearBox() {
