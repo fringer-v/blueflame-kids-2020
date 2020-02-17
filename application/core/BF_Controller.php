@@ -46,6 +46,8 @@ define('ROLE_OTHER', 0);
 define('ROLE_GROUP_LEADER', 1);
 define('ROLE_OFFICIAL', 2);
 define('ROLE_TECHNICIAN', 3);
+define('ROLE_REGISTRATION', 4);
+define('ROLE_MANAGEMENT', 5);
 
 // Extended roles
 define('EXT_ROLE_TEAM_LEADER', 100);
@@ -74,7 +76,9 @@ $all_roles = array(
 	ROLE_OTHER => '',
 	ROLE_GROUP_LEADER => 'Gruppenleiter',
 	ROLE_OFFICIAL => 'Ordner',	
-	ROLE_TECHNICIAN => 'Techniker'	
+	ROLE_TECHNICIAN => 'Techniker',
+	ROLE_REGISTRATION => 'An/Abmeldung',
+	ROLE_MANAGEMENT => 'Organisation'
 );
 
 $extended_roles = $all_roles + array(
