@@ -84,9 +84,21 @@ class ParticipantTable extends Table {
 				$call_status = $row['prt_call_status'];
 				if (is_empty($call_status))
 					return nbsp();
-				if ($call_status == CALL_CANCELLED || $call_status == CALL_COMPLETED)
+				if ($call_status == CALL_CANCELLED)
 					return div(array('class'=>'red-box in-col'), 'Ruf Aufh.');
-				return div(array('class'=>'blue-box in-col'), 'Ruf '.how_long_ago($row['prt_call_start_time']));
+				if ($call_status == CALL_COMPLETED)
+					return div(array('class'=>'green-box in-col'), 'Ruf Been.');
+				$tag = 'Ruf';
+				$box = 'blue-box';
+				if (arr_nvl($row, 'prt_call_escalation', 0) > 0) {
+					$tag = 'Esk';
+					$box = 'red-box';
+				}
+				if ($call_status == CALL_CALLED) {
+					$tag = 'Ger';
+					$box = 'green-box';
+				}
+				return div(array('class'=>$box.' in-col'), $tag.' '.how_long_ago($row['prt_call_start_time']));
 			}
 /*
 			case 'prt_registered':
@@ -640,7 +652,7 @@ class Participant extends BF_Controller {
 				if ($call_status == CALL_CANCELLED)
 					$call_field = div(array('class'=>'red-box'), TEXT_CANCELLED);
 				else if ($call_status == CALL_COMPLETED)
-					$call_field = div(array('class'=>'red-box'), TEXT_COMPLETED);
+					$call_field = div(array('class'=>'green-box'), TEXT_COMPLETED);
 				else
 					$call_field = '';
 				$escallate->hide();
@@ -652,12 +664,12 @@ class Participant extends BF_Controller {
 					$str .= ' ('.$participant_row['prt_call_escalation'].')';
 				if ($participant_row['prt_call_status'] == CALL_CALLED) {
 					$cancel_super->setValue('Ruf Beenden');
-					$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_CALLED.': '.$str);
+					$call_field = div(array('class'=>'green-box', 'style'=>'width: 210px;'), TEXT_CALLED.': '.$str);
 				}
 				else {
 					$cancel_super->setValue('Ruf Aufheben');
 					if (!is_empty($participant_row['prt_call_escalation']))
-						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_ESCALATED.': '.$str);
+						$call_field = div(array('class'=>'red-box', 'style'=>'width: 210px;'), TEXT_ESCALATED.': '.$str);
 					else
 						$call_field = div(array('class'=>'blue-box', 'style'=>'width: 210px;'), TEXT_PENDING.': '.$str);
 				}
@@ -729,7 +741,6 @@ class Participant extends BF_Controller {
 		$register_data->setValue($reg_data);
 
 		$participants_list_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
-
 
 		$prt_tab = in('prt_tab', 'register');
 		$prt_tab->persistent();
@@ -921,7 +932,7 @@ class Participant extends BF_Controller {
 
 		$prt_last_filter->setValue($prt_filter_v.'|'.$order_by);
 
-		$sql = 'SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, CONCAT(prt_firstname, " ", prt_lastname) as prt_name,
+		$sql = 'SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, CONCAT(prt_firstname, " ", prt_lastname) as prt_name, prt_call_escalation,
 			prt_birthday, "age", prt_age_level, prt_group_number, prt_call_status, prt_registered, prt_wc_time, "button_column",
 			IF(prt_call_status = '.CALL_PENDING.' OR prt_call_status = '.CALL_CALLED.', 0, 1) calling, prt_call_start_time
 			FROM bf_participants WHERE ';
@@ -1008,6 +1019,8 @@ class Participant extends BF_Controller {
 
 		if (!$this->authorize())
 			return;
+
+		$read_only = !is_empty($this->session->stf_login_tech);
 
 		$grp_arg = in('grp_arg');
 		$grp_arg_v = $grp_arg->getValue();

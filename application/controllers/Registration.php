@@ -252,9 +252,12 @@ class Registration extends BF_Controller {
 
 	public function iframe()
 	{
-		if (!$this->authorize('registration')) {
+		if (!$this->authorize('registration'))
 			return;
-		}
+
+		$read_only = !is_empty($this->session->stf_login_tech);
+		if ($read_only)
+			return;
 
 		$this->header('iPad Registrierung', false);
 		

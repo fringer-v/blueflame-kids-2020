@@ -32,7 +32,7 @@ class CallListTable extends Table {
 			case 'prt_call_status':
 				if ($row[$field] == CALL_PENDING) {
 					if ($row['prt_call_escalation'] > 0)
-						return div(array('class'=>'green-box', 'style'=>'width: 140px; height: 22px;'), TEXT_ESCALATED);
+						return div(array('class'=>'red-box', 'style'=>'width: 140px; height: 22px;'), TEXT_ESCALATED);
 					return div(array('class'=>'blue-box', 'style'=>'width: 140px; height: 22px;'), TEXT_PENDING);
 				}
 				if ($row[$field] == CALL_CANCELLED)
