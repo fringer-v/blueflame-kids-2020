@@ -63,7 +63,7 @@ define('PERIOD_COUNT', 5);
 
 define('CURRENT_PERIOD', 0);
 
-define('DEFAULT_GROUP_SIZE', 8);
+define('DEFAULT_GROUP_SIZE', 10);
 
 $period_names = array (
 	PERIOD_FRIDAY => 'Freitag Abend',

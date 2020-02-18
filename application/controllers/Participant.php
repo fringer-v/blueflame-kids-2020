@@ -237,6 +237,8 @@ class Participant extends BF_Controller {
 		if (!$this->authorize())
 			return;
 
+		$read_only = !is_empty($this->session->stf_login_tech);
+
 		$display_participant = new Form('display_participant', 'participant', 1, [ 'class'=>'input-table' ]);
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
 		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', [ 'placeholder'=>'Suchfilter' ]);
@@ -249,7 +251,7 @@ class Participant extends BF_Controller {
 			[ 'class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;' ]);
 
 		$update_participant = new Form('update_participant', 'participant', 2, [ 'class'=>'input-table', 'style'=>'width: 100%;' ]);
-		if (!is_empty($this->session->stf_login_tech))
+		if ($read_only)
 			$update_participant->disable();
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->persistent();
@@ -337,6 +339,8 @@ class Participant extends BF_Controller {
 
 		$escallate = $update_participant->addSubmit('escallate', 'Eskalieren', [ 'class'=>'button-blue' ]);
 		$call_super = $update_participant->addSubmit('call_super', 'Ruf Eltern', [ 'class'=>'button-blue' ]);
+		if ($participant_row['prt_registered'] == REG_NO)
+			$call_super->disable();
 		$cancel_super = $update_participant->addSubmit('cancel_super', 'Ruf Aufheben ', [ 'class'=>'button-red' ]);
 
 		$update_participant->createGroup('tab_supervisor');
@@ -907,7 +911,7 @@ class Participant extends BF_Controller {
 				$prt_filter_v = '%'.$prt_filter_v.'%';
 		}
 		if ($prt_tab->getValue() == 'supervisor')
-			$order_by = 'prt_registered DESC,calling,prt_call_start_time DESC';
+			$order_by = 'calling,prt_registered DESC,prt_call_start_time DESC';
 
 		$prt_page_v = $prt_page->getValue();
 		if ($prt_filter_v.'|'.$order_by != $prt_last_filter->getValue()) {
@@ -1077,7 +1081,7 @@ class Participant extends BF_Controller {
 						$enable_groups = true;
 				}
 
-				if (!$enable_groups) {
+				if (!$enable_groups || $read_only) {
 					$table_onclick = '';
 					$onclick = '';
 					$reserve_onclick = '';

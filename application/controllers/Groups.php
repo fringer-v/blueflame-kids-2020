@@ -121,6 +121,8 @@ class Groups extends BF_Controller {
 		if (!$this->authorize())
 			return;
 
+		$read_only = !is_empty($this->session->stf_login_tech);
+
 		$period = in('period');
 		$p = $period->getValue();
 		if ($p < 0)
@@ -274,11 +276,14 @@ class Groups extends BF_Controller {
 				);
 			$max_group_nr = arr_nvl($nr_of_groups, $a, 0);
 			for ($i=1; $i<=$max_group_nr; $i++) {
-				$print_group = 'set_limit_'.$p.'('.$a.','.$i.');';
+				if ($read_only)
+					$set_group_limit = '';
+				else
+					$set_group_limit = 'set_limit_'.$p.'('.$a.','.$i.');';
 				td();
 				table([ 'class'=>'group g-'.$a ]);
 				tr();
-				td([ 'onclick'=>$print_group ], span(['class'=>'group-number'], $i));
+				td([ 'onclick'=>$set_group_limit ], span(['class'=>'group-number'], $i));
 				$rows = db_array_n("SELECT stf_id, per_group_number, stf_username
 					FROM bf_staff, bf_period
 					WHERE stf_id = per_staff_id AND per_is_leader = TRUE AND
@@ -296,11 +301,14 @@ class Groups extends BF_Controller {
 						
 					$leaders[$id] = $pre.$row['stf_username'];
 				}
-				td([ 'class'=>'input-table' ], select('select_leader', $leaders, $group_leader,
+				$select = select('select_leader', $leaders, $group_leader,
 					[ 'onchange'=>'$("#age_level").val('.$a.');
 						$("#args").val("'.$i.'_" + $(this).val());
 						$("#action").val("set-leader");
-						group_list_'.$p.'();' ]));
+						group_list_'.$p.'();' ]);
+				if ($read_only)
+					$select->disable();
+				td([ 'class'=>'input-table' ], $select);
 				_tr();
 				tr();
 				$count = arr_nvl($group_counts, $a.'_'.$i, 0);
@@ -308,7 +316,7 @@ class Groups extends BF_Controller {
 				$count_and_limit = if_empty($count, '-').'/'.if_empty($limit, DEFAULT_GROUP_SIZE);
 				td([ 'id'=>'usage_'.$p.'_'.$a.'_'.$i,
 					'style'=>'text-align: center; font-size: 18px; font-weight: bold;',
-					'onclick'=>$print_group ], $count_and_limit);
+					'onclick'=>$set_group_limit ], $count_and_limit);
 				$helpers = arr_nvl($group_helpers, $a.'_'.$i, []);
 				if (empty($helpers))
 					td(nbsp());
@@ -321,11 +329,13 @@ class Groups extends BF_Controller {
 			}
 			td();
 			table([ 'spacing'=>'0', 'style'=>'position: relative; top: -2px;' ]);
-			tr(td([ 'style'=>'border: 1px solid black; text-align: center; font-weight: bold;
-				width: 22px; height: 22px; background-color: black; color: white; font-size: 20px;',
-				'onclick'=>'$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' ], '+'));
+			$enable = !$read_only;
+			tr(td([ 'style'=>($enable ? 'background-color: black; color: white;' : 'background-color: darkgrey; color: grey;').' border: 1px solid black; text-align: center; font-weight: bold;
+				width: 22px; height: 22px; font-size: 20px;',
+				'onclick'=> $enable ? '$("#age_level").val('.$a.'); $("#action").val("add-group"); group_list_'.$p.'();' : '' ], '+'));
 			tr(td(''));
-			$enable = $max_group_nr > 0 && arr_nvl($group_leaders, $a.'_'.$max_group_nr, 0) == 0 && arr_nvl($group_counts, $a.'_'.$max_group_nr, 0) == 0;
+			if ($enable)
+				$enable = $max_group_nr > 0 && arr_nvl($group_leaders, $a.'_'.$max_group_nr, 0) == 0 && arr_nvl($group_counts, $a.'_'.$max_group_nr, 0) == 0;
 			tr(td([ 'style'=>($enable ? 'border: 1px solid black;' : 'border: 1px solid grey; color: grey;').' text-align: center; font-weight: bold;
 				width: 22px; height: 22px;  font-size: 20px;',
 				'onclick'=> $enable ? '$("#age_level").val('.$a.'); $("#action").val("remove-group"); group_list_'.$p.'();' : '' ], '-'));

@@ -124,6 +124,8 @@ class Staff extends BF_Controller {
 		if (!$this->authorize())
 			return;
 
+		$read_only = !is_empty($this->session->stf_login_tech);
+
 		$current_period = $this->db_model->get_setting('current-period');
 
 		$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
@@ -140,7 +142,7 @@ class Staff extends BF_Controller {
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
 
 		$update_staff = new Form('update_staff', 'staff', 2, array('class'=>'input-table'));
-		if (!is_empty($this->session->stf_login_tech))
+		if ($read_only)
 			$update_staff->disable();
 		$stf_id = $update_staff->addHidden('stf_id');
 		$stf_id->persistent();
@@ -200,7 +202,7 @@ class Staff extends BF_Controller {
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$present[$p] = checkbox('present_'.$p, $this->period_val($periods, $p, 'per_present'),
 				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')' ]);
-			if ($p < $current_period)
+			if ($p < $current_period || $read_only)
 				$present[$p]->disable();
 			$schedule->add(td($present[$p]));
 		}
@@ -213,6 +215,8 @@ class Staff extends BF_Controller {
 		for ($p=0; $p<PERIOD_COUNT; $p++) {
 			$leader[$p] = checkbox('leader_'.$p, $this->period_val($periods, $p, 'per_is_leader'),
 				[ 'onchange'=>'toggleSchedule('.$p.', false, '.$current_period.')' ]);
+			if ($p < $current_period || $read_only)
+				$leader[$p]->disable();
 			$schedule->add(td($leader[$p]));
 		}
 		$schedule->add(_tr());
@@ -229,6 +233,8 @@ class Staff extends BF_Controller {
 			if (sizeof($leaders) > 1) {
 				$my_leader[$p] = select('my_leader_'.$p, $leaders, $this->period_val($periods, $p, 'per_my_leader_id'),
 					[ 'onchange'=>'toggleSchedule('.$p.', true, '.$current_period.')' ]);
+				if ($p < $current_period || $read_only)
+					$my_leader[$p]->disable();
 			}
 			else
 				$my_leader[$p] = b('-');
@@ -244,6 +250,8 @@ class Staff extends BF_Controller {
 			$groups[$i] = [];
 			for ($p=0; $p<PERIOD_COUNT; $p++) {
 				$groups[$i][$p] = checkbox('groups_'.$i.'_'.$p, $this->period_val($periods, $p, 'per_age_level_'.$i));
+				if ($p < $current_period || $read_only)
+					$groups[$i][$p]->disable();
 				$schedule->add(td($groups[$i][$p]));
 			}
 			$schedule->add(_tr());
@@ -492,9 +500,11 @@ class Staff extends BF_Controller {
 		_tr();
 		_table();
 
-		script();
-		out('toggleStaffPage('.PERIOD_COUNT.', '.$current_period.', $("#stf_role").val(), '.ROLE_GROUP_LEADER.');');
-		_script();
+		if (!$read_only) {
+			script();
+			out('toggleStaffPage('.PERIOD_COUNT.', '.$current_period.', $("#stf_role").val(), '.ROLE_GROUP_LEADER.');');
+			_script();
+		}
 		$this->footer();
 	}
 }
