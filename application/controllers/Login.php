@@ -25,8 +25,12 @@ class Login extends BF_Controller {
 		if ($logout_action->getValue() == "logout") {
 			$this->load->library('session');
 			if ($this->session->has_userdata('stf_login_id') && $this->session->stf_login_id > 0) {
-				$this->db->query('UPDATE bf_staff SET stf_registered = 0 WHERE stf_id = ?',
-					array($this->session->stf_login_id));
+				$this->db->set('stf_registered', 0);
+				$this->db->set('stf_reserved_age_level', null);
+				$this->db->set('stf_reserved_group_number', null);
+				$this->db->set('stf_reserved_count', 0);
+				$this->db->where('stf_id', $this->session->stf_login_id);
+				$this->db->update('bf_staff');
 			}
 			$this->session->sess_destroy();
 		}

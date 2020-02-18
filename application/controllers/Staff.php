@@ -31,6 +31,7 @@ class StaffTable extends Table {
 
 	public function cellValue($field, $row) {
 		global $all_roles;
+		global $group_colors;
 
 		switch ($field) {
 			case 'stf_username':
@@ -58,6 +59,13 @@ class StaffTable extends Table {
 						break;
 				}
 				$val .= implode(', ', $roles);
+				if (!empty($row['stf_reserved_group_number'])) {
+					if (!empty($val))
+						$val .= ', ';
+					$val .= 'Reserviert: '.substr($group_colors[$row['stf_reserved_age_level']], 0, 1).$row['stf_reserved_group_number'];
+					if ($row['stf_reserved_count'] > 1)
+						$val .= ' ('.$row['stf_reserved_count'].')';
+				}
 				return $val;
 			case 'is_present':
 				if ($row['all_periods']) {
@@ -367,8 +375,14 @@ class Staff extends BF_Controller {
 
 		if (!is_empty($stf_id_v) && $reg_unregister->submitted()) {
 			$registered = !$staff_row['stf_registered'];
-			$sql = 'UPDATE bf_staff SET stf_registered = ? WHERE stf_id = ?';
-			$this->db->query($sql, array($registered, $stf_id_v));
+			$this->db->set('stf_registered', $registered);
+			if (!$registered) {
+				$this->db->set('stf_reserved_age_level', null);
+				$this->db->set('stf_reserved_group_number', null);
+				$this->db->set('stf_reserved_count', 0);
+			}
+			$this->db->where('stf_id', $stf_id_v);
+			$this->db->update('bf_staff');
 			$this->setSuccess($stf_fullname->getValue().' '.($registered ? 'angemeldet' : 'abgemeldet'));
 			redirect("staff");
 		}
@@ -382,6 +396,7 @@ class Staff extends BF_Controller {
 		if ($stf_select_period->getValue() == -1) {
 			// No period
 			$select_list = 'SELECT TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
 				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
 				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
 				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
@@ -389,6 +404,7 @@ class Staff extends BF_Controller {
 		}
 		else {
 			$select_list = 'SELECT FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
 				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
 				s2.stf_fullname my_leaders,
 				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';

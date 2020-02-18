@@ -675,7 +675,7 @@ class Participant extends BF_Controller {
 		$number3->setValue($status_line);
 
 		$bday = '';
-		$group = ''; // Info for Abholkarte
+		$unreg_group = ''; // Info for Abholkarte
 		if (!is_null($curr_age)) {
 			$attr = [ 'class'=>'group-s',
 				'style'=>'width: 32px; min-width: 32px; height: 28px; font-size: 24px; text-align: center;' ];
@@ -689,7 +689,7 @@ class Participant extends BF_Controller {
 			}
 			else {
 				$attr['style'] .= ' background-color: lightgrey; color: white;';
-				$group = span([ 'class'=>'group-s',
+				$unreg_group = span([ 'class'=>'group-s',
 					'style'=>'width: 40px; min-width: 40px; height: 28px; font-size: 24px; text-align: center; color: black;' ],
 					substr($group_colors[$participant_row['prt_age_level']], 0, 1).$participant_row['prt_group_number']);
 			}
@@ -704,7 +704,7 @@ class Participant extends BF_Controller {
 			$participant_row['prt_firstname'].' '.$participant_row['prt_lastname'])));
 		$child_data->add(tr());
 		$child_data->add(td([ 'style'=>'padding: 5px 5px 5px 10px; font-size: 18px;'], $bday));
-		$child_data->add(td([ 'align'=>'right', 'style'=>'padding-right: 10px; ' ], $group));
+		$child_data->add(td([ 'align'=>'right', 'style'=>'padding-right: 10px; ' ], $unreg_group));
 		$child_data->add(_tr());
 		$child_data->add(_table());
 		
@@ -1048,8 +1048,8 @@ class Participant extends BF_Controller {
 			for ($i=1; $i<=$group_nr; $i++) {
 				td( [ 'style'=>'padding: 0px 2px;' ] );
 
-				$reserve_onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "reserve");';
 				$my_reserve_count = if_empty($staff_row['stf_reserved_count'], 0);
+				$reserve_onclick = $tab_v.'_group_list("'.$a.'_'.$i.'", "reserve");';
 				if ($staff_row['stf_reserved_age_level'] == $a &&
 					$staff_row['stf_reserved_group_number'] == $i &&
 					$my_reserve_count > 0) {
@@ -1066,6 +1066,22 @@ class Participant extends BF_Controller {
 				$reserve_box = span([ 'class'=>'group-number',
 					'style'=>'background-color: white; border-radius: 0px; width: 18px;'.$vis ],
 					$staff_row['stf_reserved_count']);
+
+				$enable_groups = false;
+				if ($tab_v == 'register') {
+					if ($participant_row['prt_registered'] == REG_NO)
+						$enable_groups = true;
+				}
+				else if ($tab_v == 'modify') {
+					if ($participant_row['prt_registered'] != REG_NO)
+						$enable_groups = true;
+				}
+
+				if (!$enable_groups) {
+					$table_onclick = '';
+					$onclick = '';
+					$reserve_onclick = '';
+				}
 
 				$opa = '';
 				if (!empty($vis) &&

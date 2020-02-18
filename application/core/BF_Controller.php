@@ -160,7 +160,7 @@ class BF_Controller extends CI_Controller {
 		if (is_empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
 				'stf_reserved_age_level'=>0, 'stf_reserved_group_number'=>0, 'stf_reserved_count'=>0,
-				'stf_role'=>ROLE_OTHER, 'stf_registered'=>'', 'stf_loginallowed'=>'', 'stf_technician'=>0);
+				'stf_role'=>ROLE_OTHER, 'stf_registered'=>0, 'stf_loginallowed'=>'', 'stf_technician'=>0);
 
 		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
 			s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
@@ -187,6 +187,9 @@ class BF_Controller extends CI_Controller {
 
 	public function reserve_group($age, $num)
 	{
+		if (empty($num))
+			return;
+		$this->db->set('stf_registered', 1); // Unregistered users cannot reserve!
 		$this->db->set('stf_reserved_count',
 			'IF(stf_reserved_age_level = '.$age.' AND stf_reserved_group_number = '.$num.', stf_reserved_count+1, 1)', false);
 		$this->db->set('stf_reserved_age_level', $age);
