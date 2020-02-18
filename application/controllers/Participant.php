@@ -230,19 +230,23 @@ class Participant extends BF_Controller {
 
 	public function index()
 	{
+		global $age_level_to;
+		global $age_level_from;
+		global $group_colors;
+
 		if (!$this->authorize())
 			return;
 
-		$display_participant = new Form('display_participant', 'participant', 1, array('class'=>'input-table'));
+		$display_participant = new Form('display_participant', 'participant', 1, [ 'class'=>'input-table' ]);
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
-		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', array('placeholder'=>'Suchfilter'));
+		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', [ 'placeholder'=>'Suchfilter' ]);
 		$prt_filter->persistent();
 		$prt_page = in('prt_page', 1);
 		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
-			array('class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;'));
+			[ 'class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;' ]);
 		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
-			array('class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;'));
+			[ 'class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;' ]);
 
 		$update_participant = new Form('update_participant', 'participant', 2, [ 'class'=>'input-table', 'style'=>'width: 100%;' ]);
 		if (!is_empty($this->session->stf_login_tech))
@@ -298,17 +302,7 @@ class Participant extends BF_Controller {
 		$update_participant->createGroup('tab_modify');
 
 		// An u. Abmeldung
-		$number2 = $update_participant->addField('Kinder-Nr');
-		$number2->setFormat([ 'colspan'=>'2' ]);
-		$update_participant->addField('Name', $participant_row['prt_firstname'].' '.$participant_row['prt_lastname']);
-		$update_participant->addField('Begleitperson',
-			$participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname']);
-		$curr_age_str = str_get_age($prt_birthday->getDate());
-		$f1 = $update_participant->addField('Geburtstag', $participant_row['prt_birthday'].' ('.$curr_age_str.')');
-		$f1->setFormat([ 'style'=>'width: 40%;' ]);
-		$f1 = $update_participant->addField('Handy-Nr', $participant_row['prt_supervision_cellphone']);
-		$f1->setFormat([ 'style'=>'width: 40%;' ]);
-
+		$register_data = $update_participant->addRow('');
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
 
@@ -316,36 +310,34 @@ class Participant extends BF_Controller {
 		//$register_comment = $update_participant->addTextInput('register_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
 		//$register_comment->setFormat([ 'colspan'=>'2' ]);
 
-		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', array('class'=>'button-white wc'));
-		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', array('class'=>'button-white wc strike-thru'));
-		$being_fetched = $update_participant->addSubmit('being_fetched', 'Wird Abgeholt', array('class'=>'button-yellow register'));
-		$cancel_fetch = $update_participant->addSubmit('cancel_fetch', 'Abholen Abbrechen', array('class'=>'button-yellow register'));
-		$unregister = $update_participant->addSubmit('unregister', 'Abmelden', array('class'=>'button-red register'));
-		$register = $update_participant->addSubmit('register', 'Anmelden', array('class'=>'button-green register'));
+		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', [ 'class'=>'button-white wc' ]);
+		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', [ 'class'=>'button-white wc strike-thru' ]);
+		$being_fetched = $update_participant->addSubmit('being_fetched', 'Wird Abgeholt', [ 'class'=>'button-yellow register' ]);
+		$cancel_fetch = $update_participant->addSubmit('cancel_fetch', 'Abholen Abbrechen', [ 'class'=>'button-yellow register' ]);
+		$unregister = $update_participant->addSubmit('unregister', 'Abmelden', [ 'class'=>'button-red register' ]);
+		$register = $update_participant->addSubmit('register', 'Anmelden', [ 'class'=>'button-green register' ]);
 
 		$update_participant->createGroup('tab_register');
 
 		// Eltern Ruf
 		$number3 = $update_participant->addField('Kinder-Nr');
 		$number3->setFormat([ 'colspan'=>'2' ]);
-		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], array('placeholder'=>'Vorname'));
+		$f1 = $update_participant->addTextInput('prt_firstname', 'Name', $participant_row['prt_firstname'], [ 'placeholder'=>'Vorname' ]);
 		$f1->disable();
-		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname'], array('placeholder'=>'Nachname'));
+		$f2 = $update_participant->addTextInput('prt_lastname', '', $participant_row['prt_lastname'], [ 'placeholder'=>'Nachname' ]);
 		$f2->disable();
-		//$f2->setFormat([ 'nolabel'=>true ]);
 		$f3 = $update_participant->addTextInput('prt_supervision_firstname', 'Begleitperson',
-			$participant_row['prt_supervision_firstname'], array('placeholder'=>'Vorname'));
+			$participant_row['prt_supervision_firstname'], [ 'placeholder'=>'Vorname' ]);
 		$f3->disable();
 		$f4 = $update_participant->addTextInput('prt_supervision_lastname', '',
-			$participant_row['prt_supervision_lastname'], array('placeholder'=>'Nachname'));
+			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname' ]);
 		$f4->disable();
-		//$f4->setFormat([ 'nolabel'=>true ]);
 		$supervisor_comment = $update_participant->addTextInput('supervisor_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
 		$supervisor_comment->setFormat([ 'colspan'=>'2' ]);
 
-		$escallate = $update_participant->addSubmit('escallate', 'Eskalieren', array('class'=>'button-blue'));
-		$call_super = $update_participant->addSubmit('call_super', 'Ruf Eltern', array('class'=>'button-blue'));
-		$cancel_super = $update_participant->addSubmit('cancel_super', 'Ruf Aufheben ', array('class'=>'button-red'));
+		$escallate = $update_participant->addSubmit('escallate', 'Eskalieren', [ 'class'=>'button-blue' ]);
+		$call_super = $update_participant->addSubmit('call_super', 'Ruf Eltern', [ 'class'=>'button-blue' ]);
+		$cancel_super = $update_participant->addSubmit('cancel_super', 'Ruf Aufheben ', [ 'class'=>'button-red' ]);
 
 		$update_participant->createGroup('tab_supervisor');
 
@@ -390,7 +382,7 @@ class Participant extends BF_Controller {
 				if (is_empty($prt_id_v)) {
 					$count = (integer) db_1_value('SELECT COUNT(*) FROM bf_participants WHERE prt_firstname = ? '.
 						'AND prt_lastname = ?',
-						array($prt_firstname->getValue(), $prt_lastname->getValue()));
+						[ $prt_firstname->getValue(), $prt_lastname->getValue() ]);
 					if ($count == 0) {
 						$prt_id_v = $this->insert_participant($data, $group_reserved);
 						if (!empty($prt_id_v)) {
@@ -520,7 +512,7 @@ class Participant extends BF_Controller {
 					$msg = 'ruf aufgehoben';
 				}
 				$sql .= 'WHERE prt_id = ?';
-				$this->db->query($sql, array($prt_id_v));
+				$this->db->query($sql, [ $prt_id_v ]);
 
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
@@ -601,6 +593,7 @@ class Participant extends BF_Controller {
 			$reg_field = '';
 			$call_field = '';
 			$age_field->setValue(div(array('id' => 'prt_age'), ''));
+			$curr_age = null;
 		}
 		else {
 			$clear_participant->setValue('Kind Registrieren...');
@@ -672,18 +665,69 @@ class Participant extends BF_Controller {
 			$curr_age = get_age($prt_birthday->getDate());
 			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre")));
 		}
+			
 
-		$status_line = table(array('width'=>'100%'),
-			tr(td($participant_row['prt_number']), td(array('align'=>'center'), $call_field),
-			td(array('align'=>'right', 'style'=> 'white-space: nowrap;'), $reg_field)));
+		$status_line = table([ 'width'=>'100%' ],
+			tr(td($participant_row['prt_number']),
+			td([ 'align'=>'center' ], $call_field),
+			td([ 'align'=>'right', 'style'=>'white-space: nowrap;' ], $reg_field)));
 		$number1->setValue($status_line);
-		$number2->setValue($status_line);
 		$number3->setValue($status_line);
+
+		$bday = '';
+		$group = ''; // Info for Abholkarte
+		if (!is_null($curr_age)) {
+			$attr = [ 'class'=>'group-s',
+				'style'=>'width: 32px; min-width: 32px; height: 28px; font-size: 24px; text-align: center;' ];
+			if ($participant_row['prt_registered'] == REG_NO || empty($participant_row['prt_group_number'])) {
+				if ($curr_age <= $age_level_to[AGE_LEVEL_0])
+					$attr['class'] .= ' g-'.AGE_LEVEL_0;
+				else if ($curr_age >= $age_level_from[AGE_LEVEL_2])
+					$attr['class'] .= ' g-'.AGE_LEVEL_2;
+				else
+					$attr['class'] .= ' g-'.AGE_LEVEL_1;
+			}
+			else {
+				$attr['style'] .= ' background-color: lightgrey; color: white;';
+				$group = span([ 'class'=>'group-s',
+					'style'=>'width: 40px; min-width: 40px; height: 28px; font-size: 24px; text-align: center; color: black;' ],
+					substr($group_colors[$participant_row['prt_age_level']], 0, 1).$participant_row['prt_group_number']);
+			}
+			$bday = span($attr, $curr_age);
+			$bday .= ' '.$participant_row['prt_birthday'];
+		}
+		$child_data = table([ 'width'=>'100%', 'style'=>
+			'border: 1px solid black; font-weight: bold; background-color: white;' ]);
+		$child_data->add(tr(td([ 'colspan'=>2, 'style'=>'padding: 5px 5px 5px 10px; font-size: 20px; '],
+			'# '.$participant_row['prt_number'])));
+		$child_data->add(tr(td([ 'colspan'=>2, 'style'=>'padding: 5px 5px 5px 10px; font-size: 20px; '],
+			$participant_row['prt_firstname'].' '.$participant_row['prt_lastname'])));
+		$child_data->add(tr());
+		$child_data->add(td([ 'style'=>'padding: 5px 5px 5px 10px; font-size: 18px;'], $bday));
+		$child_data->add(td([ 'align'=>'right', 'style'=>'padding-right: 10px; ' ], $group));
+		$child_data->add(_tr());
+		$child_data->add(_table());
+		
+		$status_line = table([ 'width'=>'100%' ],
+			td([ 'align'=>'left', 'style'=>'white-space: nowrap; padding: 0px;' ], $call_field),
+			td([ 'align'=>'right', 'style'=>'white-space: nowrap; padding: 0px;' ], $reg_field));
+		$reg_data = table([ 'width'=>'100%' ]);
+		$reg_data->add(tr());
+		$perc = empty($call_field) ? 48 : 40;
+		$reg_data->add(td([ 'rowspan'=>3, 'valign'=>'top', 'style'=>'width: '.$perc.'%;' ], $child_data));
+		$reg_data->add(td([ 'colspan'=>2, 'valign'=>'top', 'style'=>'padding-left: 10px;'  ], $status_line));
+		$reg_data->add(_tr());
+		$reg_data->add(tr(th(['align'=>'right', 'style'=>'padding-left: 10px;' ], 'Begleitperson:'),
+			td($participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'])));
+		$reg_data->add(tr(th(['align'=>'right' ], 'Handy-Nr:'),
+			td($participant_row['prt_supervision_cellphone'])));
+		$reg_data->add(_table());
+		$register_data->setValue($reg_data);
 
 		$participants_list_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
 
 
-		$prt_tab = in('prt_tab', 'modify');
+		$prt_tab = in('prt_tab', 'register');
 		$prt_tab->persistent();
 
 		// Generate page ------------------------------------------
