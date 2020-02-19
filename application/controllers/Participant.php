@@ -262,6 +262,16 @@ class Participant extends BF_Controller {
 		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
 			[ 'class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;' ]);
 
+		list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data();
+		$group_options = [ '#'=>'' ];
+		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+			$group_nr = arr_nvl($nr_of_groups, $a, 0);
+			for ($i=1; $i<=$group_nr; $i++) {
+				$group_options[substr($group_colors[$a], 0, 1).$i] = $group_colors[$a].' '.$i;
+			}
+		}
+		$select_group = $display_participant->addSelect('select_group', '', $group_options, '#', [ 'onchange'=>'get_group_parts(); return false;' ]);
+
 		$update_participant = new Form('update_participant', 'participant', 2, [ 'class'=>'input-table', 'style'=>'width: 100%;' ]);
 		if ($read_only)
 			$update_participant->disable();
@@ -681,7 +691,6 @@ class Participant extends BF_Controller {
 			$curr_age = get_age($prt_birthday->getDate());
 			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre")));
 		}
-			
 
 		$status_line = table([ 'width'=>'100%' ],
 			tr(td($participant_row['prt_number']),
@@ -754,7 +763,10 @@ class Participant extends BF_Controller {
 		td(array('class'=>'left-panel', 'style'=>'width: 604px;', 'align'=>'left', 'valign'=>'top', 'rowspan'=>2));
 			$display_participant->open();
 			table([ 'class'=>'input-table' ]);
-			tr(td(table(tr(td($prt_filter), td(nbsp()), td($clear_filter), td(nbsp()), td($also_reg_filter)))));
+			tr(td(table(tr(td($prt_filter),
+				td(nbsp()), td($clear_filter),
+				td(nbsp()), td($also_reg_filter),
+				td(nbsp()), td($select_group)))));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
 			$display_participant->close();
@@ -810,7 +822,6 @@ class Participant extends BF_Controller {
 		_table();
 
 		script();
-		// Dummy function, because this tab does not have a load function:
 		out('
 			function get_supervisor_parts() {
 				var fname = $("#prt_supervision_firstname").val().trim();
@@ -821,6 +832,17 @@ class Participant extends BF_Controller {
 				}
 			}
 		');
+		out('
+			function get_group_parts() {
+				var grp = $("#select_group").val().trim();
+				if (grp.length > 0 && grp != "#") {
+					$("#prt_filter").val("#"+grp);
+					$("#select_group").val("#");
+					participants_list();
+				}
+			}
+		');
+		// Dummy function, because this tab does not have a load function:
 		out('
 			function supervisor_group_list() {
 			}
@@ -875,6 +897,8 @@ class Participant extends BF_Controller {
 	}
 
 	public function getkids() {
+		global $group_colors;
+
 		if (!$this->authorize())
 			return;
 
@@ -890,7 +914,7 @@ class Participant extends BF_Controller {
 		$prt_tab = in('prt_tab', 'modify');
 		$prt_tab->persistent();
 		
-		$prt_filter_v = $prt_filter->getValue();
+		$prt_filter_v = trim($prt_filter->getValue());
 		$qtype = 0;
 		if (is_empty($prt_filter_v)) {
 			$prt_filter_v = '%';
@@ -917,6 +941,10 @@ class Participant extends BF_Controller {
 			else if (str_startswith($prt_filter_v, '@')) {
 				$qtype = 3;
 				$prt_filter_v = str_right($prt_filter_v, '@');
+			}
+			else if (str_startswith($prt_filter_v, '#')) {
+				$qtype = 4;
+				$prt_filter_v = str_right($prt_filter_v, '#');
 			}
 			else
 				$prt_filter_v = '%'.$prt_filter_v.'%';
@@ -953,8 +981,8 @@ class Participant extends BF_Controller {
 		}
 		else if ($qtype == 3) {
 			if (str_contains($prt_filter_v, ' ')) {
-				$fname = trim(str_left($prt_filter_v, ' '));
-				$lname = trim(str_right($prt_filter_v, ' '));
+				$fname = str_left($prt_filter_v, ' ');
+				$lname = str_right($prt_filter_v, ' ');
 				if (empty($fname)) {
 					$sql .= 'prt_supervision_lastname = ?';
 					$args = [ $lname ];
@@ -968,6 +996,23 @@ class Participant extends BF_Controller {
 				$sql .= 'prt_supervision_firstname = ?';
 				$args = [ $prt_filter_v ];
 			}
+		}
+		else if ($qtype == 4) {
+			// Search group:
+			$age_str = strtoupper(substr($prt_filter_v, 0, 1));
+			$num_str = strtoupper(substr($prt_filter_v, 1));
+			$a = -1;
+			foreach ($group_colors as $age=>$color) {
+				if ($age_str == substr($color, 0, 1)) {
+					$a = $age;
+					break;
+				}
+			}
+			$i = -1;
+			if (is_int_val($num_str))
+				$i = (integer) $num_str;
+			$sql .= 'prt_age_level = ? AND prt_group_number = ?';
+			$args = [ $a, $i ];
 		}
 		else {
 			$sql .= 'CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
@@ -986,7 +1031,7 @@ class Participant extends BF_Controller {
 		_table();
 	}
 
-	private function get_group_data($prt_id_v)
+	private function get_participant_group_data($prt_id_v)
 	{
 		list($current_period, $nr_of_groups,
 			$total_limit, $total_count, $total_limits, $total_counts,
@@ -1051,7 +1096,7 @@ class Participant extends BF_Controller {
 		list($current_period, $nr_of_groups,
 			$total_limit, $total_count, $total_limits, $total_counts,
 			$group_limits, $group_counts,
-			$reserve_counts, $participant_row, $staff_row) = $this->get_group_data($prt_id_v);
+			$reserve_counts, $participant_row, $staff_row) = $this->get_participant_group_data($prt_id_v);
 
 		table([ 'style'=>'border-spacing: 0;' ]);
 		$groups_per_age = ''; 
@@ -1179,7 +1224,7 @@ class Participant extends BF_Controller {
 		list($current_period, $nr_of_groups,
 			$total_limit, $total_count, $total_limits, $total_counts,
 			$group_limits, $group_counts,
-			$reserve_counts, $participant_row, $staff_row) = $this->get_group_data($prt_id_v);
+			$reserve_counts, $participant_row, $staff_row) = $this->get_participant_group_data($prt_id_v);
 
 		$groups_per_age = ''; 
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {

@@ -314,19 +314,14 @@ class BF_Controller extends CI_Controller {
 		}
 	}
 
-	public function get_period_data($p = 0)
+	public function get_group_data($p = 0)
 	{
 		$current_period = $this->db_model->get_setting('current-period');
 		if ($p == 0)
 			$p = $current_period;
 
 		$nr_of_groups = [];
-		$total_limit = 0;
-		$total_count = 0;
-		$total_limits = [];
-		$total_counts = [];
 		$group_limits = [];
-		$group_counts = [];
 
 		$groups = db_row_array('SELECT grp_age_level, grp_count, grp_size_hints
 			FROM bf_groups WHERE grp_period = ? ORDER BY grp_period, grp_age_level', [ $p ]);
@@ -339,6 +334,19 @@ class BF_Controller extends CI_Controller {
 					$group_limits[$group['grp_age_level'].'_'.$i] = if_empty($limits[$i-1], 0);
 			}
 		}
+		
+		return [ $current_period, $nr_of_groups, $group_limits ];
+	}
+
+	public function get_period_data($p = 0)
+	{
+		list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data($p);
+
+		$total_limit = 0;
+		$total_count = 0;
+		$total_limits = [];
+		$total_counts = [];
+		$group_counts = [];
 
 		// Number of kids in each group:
 		if ($p == $current_period) {

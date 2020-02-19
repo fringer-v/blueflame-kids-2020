@@ -85,6 +85,14 @@ function is_not_empty($val) {
 	return !is_empty($val);
 }
 
+function is_int_val($data) {
+	if (is_int($data))
+		return true;
+	if (is_string($data) && is_numeric($data))
+		return strpos($data, '.') === false;
+	return false;
+}
+
 function if_empty($val, $def) {
 	if (empty($val))
 		return $def;
