@@ -182,7 +182,7 @@ class Staff extends BF_Controller {
 		if (empty($staff_row['team_names']))
 			$update_staff->addSpace();
 		else
-			$update_staff->addField('Teammitglieder', $this->linkList('staff?set_stf_id=',
+			$update_staff->addField('Teammitglieder', $this->link_list('staff?set_stf_id=',
 						explode(',', $staff_row['team_ids']), explode(',', $staff_row['team_names'])));
 
 		$periods = db_array_n('SELECT per_period, per_age_level, per_group_number, per_location_id,

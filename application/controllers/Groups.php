@@ -321,7 +321,7 @@ class Groups extends BF_Controller {
 				if (empty($helpers))
 					td(nbsp());
 				else
-					td($this->linkList('staff?set_stf_id=',
+					td($this->link_list('staff?set_stf_id=',
 						explode(',', $helpers['helper_ids']), explode(',', $helpers['helper_names'])));
 				_tr();
 				_table();
@@ -497,7 +497,7 @@ class Groups extends BF_Controller {
 				$limit = if_empty(arr_nvl($group_limits, $a.'_'.$i, 0), DEFAULT_GROUP_SIZE);
 				$leader = a([ 'href'=>'../staff?set_stf_id='.arr_nvl($group_leader, 'per_staff_id') ],
 					arr_nvl($group_leader, 'stf_fullname'));
-				$co_leader = $this->linkList('../staff?set_stf_id=',
+				$co_leader = $this->link_list('../staff?set_stf_id=',
 					explode(',', arr_nvl($helpers, 'helper_ids', '')), explode(',', arr_nvl($helpers, 'helper_names', '')));
 
 				if ($all_empty) {

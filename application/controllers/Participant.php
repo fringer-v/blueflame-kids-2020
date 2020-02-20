@@ -23,13 +23,11 @@ class ParticipantTable extends Table {
 			case 'prt_birthday':
 				return 'Geburtstag';
 			case 'age':
-				return 'Alter';
+				return $this->getOrder('prt_birthday').'Alter';
 			case 'prt_group_number':
 				return 'Gruppe';
 			case 'prt_call_status':
 				return $this->getOrder('prt_registered').'Status';
-//			case 'prt_registered';
-//				return 'Angem.';
 			case 'button_column':
 				return '&nbsp;';
 		}
@@ -257,10 +255,8 @@ class Participant extends BF_Controller {
 		$prt_filter->persistent();
 		$prt_page = in('prt_page', 1);
 		$prt_page->persistent();
-		$clear_filter = $display_participant->addSubmit('clear_filter', 'Clear',
+		$clear_filter = $display_participant->addSubmit('clear_filter', 'X',
 			[ 'class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;' ]);
-		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
-			[ 'class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;' ]);
 		list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data();
 		$group_options = [ '#'=>'' ];
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
@@ -287,6 +283,20 @@ class Participant extends BF_Controller {
 		}
 		
 		$participant_row = $this->get_participant_row($prt_id_v);
+
+		$registered_with = '';
+		if (!empty($prt_id_v)) {
+			$co_kids = db_array_2('SELECT prt_id, CONCAT(prt_firstname, " ", prt_lastname) as prt_name FROM bf_participants WHERE '.
+				'prt_id != ? AND prt_supervision_firstname = ? AND prt_supervision_lastname = ? ORDER BY prt_birthday DESC, prt_name',
+				[ $prt_id_v, $participant_row['prt_supervision_firstname'], $participant_row['prt_supervision_lastname'] ]);
+			if (count($co_kids) > 0) {
+				$registered_with = b();
+				$registered_with->add(a([ 'onclick'=>'get_supervisor_parts();' ], 'Mit Registriert'));
+				$registered_with->add(': ');
+				$registered_with->add(_b());
+				$registered_with->add($this->link_list('participant?set_prt_id=', $co_kids));
+			}
+		}
 
 		// Registrierung u. Ändern
 		$number1 = $update_participant->addField('Kinder-Nr');
@@ -328,10 +338,8 @@ class Participant extends BF_Controller {
 		$register_data = $update_participant->addRow('');
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
-
-		// NO LONGER USED:
-		//$register_comment = $update_participant->addTextInput('register_comment', 'Kommentar', '', [ 'style'=>'width: 494px;' ]);
-		//$register_comment->setFormat([ 'colspan'=>'2' ]);
+		if (!empty($registered_with))
+			$update_participant->addRow($registered_with);
 
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', [ 'class'=>'button-white wc' ]);
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', [ 'class'=>'button-white wc strike-thru' ]);
@@ -434,10 +442,6 @@ class Participant extends BF_Controller {
 				$being_fetched->submitted() || $cancel_fetch->submitted()) {
 				
 				$data = [ ];
-				//$history = [
-				//	'hst_prt_id'=>$prt_id_v,
-				//	'hst_stf_id'=> $this->session->stf_login_id,
-				//	'hst_notes'=>$register_comment->getValue() ];
 				$history = [
 					'hst_prt_id'=>$prt_id_v,
 					'hst_stf_id'=> $this->session->stf_login_id ];
@@ -587,11 +591,6 @@ class Participant extends BF_Controller {
 				}
 				$this->db->query($sql, array($prt_id_v));
 
-				//$this->db->insert('bf_history', array(
-				//	'hst_prt_id'=>$prt_id_v,
-				//	'hst_stf_id'=>$this->session->stf_login_id,
-				//	'hst_action'=>$action,
-				//	'hst_notes'=>$register_comment->getValue()));
 				$this->db->insert('bf_history', array(
 					'hst_prt_id'=>$prt_id_v,
 					'hst_stf_id'=>$this->session->stf_login_id,
@@ -602,7 +601,7 @@ class Participant extends BF_Controller {
 			}
 		}
 
-		if (is_empty($prt_id_v)) {
+		if (empty($prt_id_v)) {
 			$clear_participant->setValue('Clear');
 			$clear_nr_name->hide();
 			$save_participant->hide();
@@ -689,6 +688,7 @@ class Participant extends BF_Controller {
 
 			$curr_age = get_age($prt_birthday->getDate());
 			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre")));
+
 		}
 
 		$status_line = table([ 'width'=>'100%' ],
@@ -764,7 +764,6 @@ class Participant extends BF_Controller {
 			table([ 'class'=>'input-table' ]);
 			tr(td(table(tr(td($prt_filter),
 				td(nbsp()), td($clear_filter),
-				td(nbsp()), td($also_reg_filter),
 				td(nbsp()), td($select_group)))));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
@@ -979,6 +978,7 @@ class Participant extends BF_Controller {
 			$sql .= 'prt_firstname LIKE ? AND prt_lastname LIKE ?';
 		}
 		else if ($qtype == 3) {
+			// Registered with:
 			if (str_contains($prt_filter_v, ' ')) {
 				$fname = str_left($prt_filter_v, ' ');
 				$lname = str_right($prt_filter_v, ' ');
@@ -995,6 +995,7 @@ class Participant extends BF_Controller {
 				$sql .= 'prt_supervision_firstname = ?';
 				$args = [ $prt_filter_v ];
 			}
+			$order_by = 'prt_birthday DESC, prt_name';
 		}
 		else if ($qtype == 4) {
 			// Search group:

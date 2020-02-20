@@ -532,13 +532,17 @@ class BF_Controller extends CI_Controller {
 	}
 
 	// ---------------------------
-	public function linkList($page, $ids, $names)
+	public function link_list($page, $ids, $names = null)
 	{
 		$out = out('');
-		for ($j=0; $j<sizeof($ids); $j++) {
-			if ($j > 0)
+		foreach ($ids as $id => $name) {
+			if (!$out->isempty())
 				$out->add(', ');
-			$out->add(a([ 'href'=>$page.$ids[$j] ], $names[$j] ));
+			if (!empty($names)) {
+				$name = $names[$id];
+				$id = $name;
+			}
+			$out->add(a([ 'href'=>$page.$id ], $name));
 		}
 		return $out;
 	}

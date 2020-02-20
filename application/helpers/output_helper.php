@@ -132,6 +132,10 @@ class Output extends BaseOutput {
 	public function output() {
 		return $this->output;
 	}
+
+	public function isempty() {
+		return empty($this->output);
+	}
 }
 
 /*
