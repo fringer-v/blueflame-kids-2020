@@ -6,7 +6,7 @@ function doLogin() {
 	$('#stf_password').val('');
 }
 
-function loadPage(target, page, field1 = null, field2 = null, field3 = null) {
+function loadPage(target, page, field1 = null, field2 = null, field3 = null, field4 = null) {
 	var params = {};
 	
 	if (field1) {
@@ -19,6 +19,10 @@ function loadPage(target, page, field1 = null, field2 = null, field3 = null) {
 	}
 	if (field3) {
 		var obj = $("#"+field3);
+		params[obj.attr("id")] = obj.val();
+	}
+	if (field4) {
+		var obj = $("#"+field4);
 		params[obj.attr("id")] = obj.val();
 	}
 	$("#"+target).load(page, params);

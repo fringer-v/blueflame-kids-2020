@@ -128,18 +128,22 @@ class Staff extends BF_Controller {
 
 		$current_period = $this->db_model->get_setting('current-period');
 
-		$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
-		$stf_select_role = $filter_staff->addSelect('stf_select_role', '', $extended_roles, 0, [ 'onchange'=>'this.form.submit()' ]);
-		$stf_select_role->persistent();
-		$stf_select_period = $filter_staff->addSelect('stf_select_period', '', [ -1 => '']  + $period_names, -1, [ 'onchange'=>'this.form.submit()' ]);
-		$stf_select_period->persistent();
-
-		$filter_options = [ 0=>'', 1=>'Anwesend', 2=>'Angemeldet', 3=>'Abwesend' ];
-		$stf_filter = $filter_staff->addSelect('stf_filter', '', $filter_options, 0, [ 'onchange'=>'this.form.submit()' ]);
-		$stf_filter->persistent();
-
+		//$filter_staff = new Form('filter_staff', 'staff?stf_page=1', 1, array('class'=>'input-table'));
 		$display_staff = new Form('display_staff', 'staff', 1, array('class'=>'input-table'));
 		$set_stf_id = $display_staff->addHidden('set_stf_id');
+		$stf_filter = $display_staff->addTextInput('stf_filter', '', '', [ 'placeholder'=>'Suchfilter', 'style'=>'width: 110px;' ]);
+		$stf_filter->persistent();
+		$stf_page = in('stf_page', 1);
+		$stf_page->persistent();
+		$clear_filter = $display_staff->addSubmit('clear_filter', 'X',
+			[ 'class'=>'button-black', 'onclick'=>'$("#stf_filter").val(""); staff_list(); return false;' ]);
+		$stf_select_role = $display_staff->addSelect('stf_select_role', '', $extended_roles, 0, [ 'onchange'=>'staff_list(); return false;' ]);
+		$stf_select_role->persistent();
+		$stf_select_period = $display_staff->addSelect('stf_select_period', '', [ -1 => '']  + $period_names, -1, [ 'onchange'=>'staff_list(); return false;' ]);
+		$stf_select_period->persistent();
+		$filter_options = [ 0=>'', 1=>'Anwesend', 2=>'Angemeldet', 3=>'Abwesend' ];
+		$stf_presence = $display_staff->addSelect('stf_presence', '', $filter_options, 0, [ 'onchange'=>'staff_list(); return false;' ]);
+		$stf_presence->persistent();
 
 		$update_staff = new Form('update_staff', 'staff', 2, array('class'=>'input-table'));
 		if ($read_only)
@@ -395,75 +399,8 @@ class Staff extends BF_Controller {
 			redirect("staff");
 		}
 
-		$stf_page = in('stf_page', 1);
-		$stf_page->persistent();
-		$stf_page_v = $stf_page->getValue();
-
-		$having = '';
-		$where = '';
-		if ($stf_select_period->getValue() == -1) {
-			// No period
-			$select_list = 'SELECT TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
-				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
-				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
-				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
-				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
-			$on = '';
-		}
-		else {
-			$select_list = 'SELECT FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
-				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
-				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
-				s2.stf_fullname my_leaders,
-				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
-			$on = ' AND per_period = '.$stf_select_period->getValue().' ';
-		}
-		$sql = 'FROM bf_staff s1
-				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
-		$sql .= 'LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
-		switch ($stf_select_role->getValue()) {
-			case ROLE_OTHER:
-				break;
-			case ROLE_GROUP_LEADER:
-			case ROLE_OFFICIAL:
-			case ROLE_TECHNICIAN:
-			case ROLE_REGISTRATION:
-			case ROLE_MANAGEMENT:
-				$where .= 's1.stf_role = '.$stf_select_role->getValue().' ';
-				break;
-			case EXT_ROLE_TEAM_LEADER:
-				$having = 'is_leader > 0 ';
-				break;
-			case EXT_ROLE_TEAM_COLEADER:
-				$having = 'my_leaders IS NOT NULL ';
-				break;
-		}
-		switch ($stf_filter->getValue()) {
-			case 1:
-				if (!empty($where))
-					$where .= 'AND ';
-				$where = 'per_present != 0 ';
-				break;
-			case 2:
-				if (!empty($where))
-					$where .= 'AND ';
-				$where = 's1.stf_registered != 0 ';
-				break;
-			case 3:
-				if (!empty($where))
-					$where .= 'AND ';
-				$where = 'per_present != 0 AND s1.stf_registered = 0 ';
-				break;
-		}
-		if (!empty($where))
-			$sql .= 'WHERE '.$where;
-		$sql .= 'GROUP BY s1.stf_id';
-		if (!empty($having))
-			$sql .= ' HAVING '.$having;
-		$staff_list = new StaffTable($select_list.$sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
-		$staff_list->setPageQuery('SELECT s1.stf_username, SUM(per_is_leader) is_leader, GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders '.$sql);
-		$staff_list->setPagination('staff?stf_page=', 16, $stf_page_v);
-		$staff_list->setOrderBy('stf_username');
+		$staff_list_loader = new AsyncLoader('staff_list', 'staff/getstaff?stf_page='.$stf_page->getValue(),
+			[ 'stf_filter', 'stf_select_role', 'stf_select_period', 'stf_presence' ]);
 
 		// Generate page ------------------------------------------
 		$this->header('Mitarbeiter');
@@ -471,15 +408,21 @@ class Staff extends BF_Controller {
 		table(array('style'=>'border-collapse: collapse;'));
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
-			table([ 'class'=>'input-table' ]);
-			$filter_staff->open();
-			tr(td(b('Suchauswahl: '), $stf_select_role, " ", $stf_select_period, ' ', $stf_filter));
-			$filter_staff->close();
 			$display_staff->open();
-			tr(td($staff_list->paginationHtml()));
-			tr(td($staff_list->html()));
-			$display_staff->close();
+			table([ 'class'=>'input-table' ]);
+			tr(td(table(tr(td($stf_filter),
+				td(nbsp()), td($clear_filter),
+				td(nbsp()), td($stf_select_role),
+				td(nbsp()), td($stf_select_period),
+				td(nbsp()), td($stf_presence)))));
+			tr();
+			td();
+			$staff_list_loader->html();
+			//$this->getstaff();
+			_td();
+			_tr();
 			_table();
+			$display_staff->close();
 		_td();
 		td(array('align'=>'left', 'valign'=>'top'));
 			table(array('style'=>'border-collapse: collapse; margin-right: 5px; min-width: 640px;'));
@@ -506,5 +449,98 @@ class Staff extends BF_Controller {
 			_script();
 		}
 		$this->footer();
+	}
+	
+	public function getstaff() {
+		$stf_filter = in('stf_filter');
+		$stf_filter->persistent();
+		$stf_page = in('stf_page', 1);
+		$stf_page->persistent();
+		$stf_select_role = in('stf_select_role', '');
+		$stf_select_role->persistent();
+		$stf_select_period = in('stf_select_period', '');
+		$stf_select_period->persistent();
+		$stf_presence = in('stf_presence', 0);
+		$stf_presence->persistent();
+
+
+		$stf_filter_v = trim($stf_filter->getValue());
+		$stf_page_v = $stf_page->getValue();
+
+		$where = '';
+		if ($stf_select_period->getValue() == -1) {
+			// No period
+			$select_list = 'SELECT TRUE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
+				s1.stf_role, SUM(per_present) is_present, s1.stf_registered, "button_column", SUM(per_is_leader) is_leader,
+				GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders,
+				SUM(per_age_level_0) age_level_0, SUM(per_age_level_1) age_level_1, SUM(per_age_level_2) age_level_2 ';
+			$on = '';
+		}
+		else {
+			$select_list = 'SELECT FALSE all_periods, s1.stf_id, s1.stf_username, s1.stf_fullname,
+				s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
+				s1.stf_role, per_present is_present, s1.stf_registered, "button_column", per_is_leader is_leader,
+				s2.stf_fullname my_leaders,
+				per_age_level_0 age_level_0, per_age_level_1 age_level_1, per_age_level_2 age_level_2 ';
+			$on = ' AND per_period = '.$stf_select_period->getValue().' ';
+		}
+		$sql = 'FROM bf_staff s1
+				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
+		$sql .= 'LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
+		if (!empty($stf_filter_v))
+			$where .= 's1.stf_fullname LIKE "%'.db_escape($stf_filter_v).'%" ';
+		switch ($stf_select_role->getValue()) {
+			case ROLE_OTHER:
+				break;
+			case ROLE_GROUP_LEADER:
+			case ROLE_OFFICIAL:
+			case ROLE_TECHNICIAN:
+			case ROLE_REGISTRATION:
+			case ROLE_MANAGEMENT:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where .= 's1.stf_role = '.$stf_select_role->getValue().' ';
+				break;
+			case EXT_ROLE_TEAM_LEADER:
+				$having = 'is_leader > 0 ';
+				break;
+			case EXT_ROLE_TEAM_COLEADER:
+				$having = 'my_leaders IS NOT NULL ';
+				break;
+		}
+		switch ($stf_presence->getValue()) {
+			case 1:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where .= 'per_present != 0 ';
+				break;
+			case 2:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where .= 's1.stf_registered != 0 ';
+				break;
+			case 3:
+				if (!empty($where))
+					$where .= 'AND ';
+				$where .= 'per_present != 0 AND s1.stf_registered = 0 ';
+				break;
+		}
+		if (!empty($where))
+			$sql .= 'WHERE '.$where;
+		$sql .= 'GROUP BY s1.stf_id';
+		if (!empty($having))
+			$sql .= ' HAVING '.$having;
+		$staff_list = new StaffTable($select_list.$sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
+		$staff_list->setPageQuery('SELECT s1.stf_username, SUM(per_is_leader) is_leader, '.
+			'GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders '.$sql);
+		$staff_list->setPagination('staff?stf_page=', 18, $stf_page_v);
+		$staff_list->setOrderBy('stf_username');
+
+		table(array('style'=>'border-collapse: collapse;'));
+		tr(td($staff_list->paginationHtml()));
+		tr(td($staff_list->html()));
+		_table();
+
 	}
 }

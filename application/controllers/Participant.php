@@ -261,7 +261,6 @@ class Participant extends BF_Controller {
 			[ 'class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;' ]);
 		$also_reg_filter = $display_participant->addSubmit('also_reg_filter', 'Mit Registriert',
 			[ 'class'=>'button-black', 'onclick'=>'get_supervisor_parts(); return false;' ]);
-
 		list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data();
 		$group_options = [ '#'=>'' ];
 		for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
@@ -916,7 +915,7 @@ class Participant extends BF_Controller {
 		
 		$prt_filter_v = trim($prt_filter->getValue());
 		$qtype = 0;
-		if (is_empty($prt_filter_v)) {
+		if (empty($prt_filter_v)) {
 			$prt_filter_v = '%';
 			$order_by = 'prt_modifytime DESC';
 		}
@@ -1019,12 +1018,12 @@ class Participant extends BF_Controller {
 					prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
 			$args = [ $prt_filter_v ];
 		}
-//bugout($sql);
-//bugout($args);
+
 		$participant_table = new ParticipantTable($sql, $args,
 			array('class'=>'details-table participant-table', 'style'=>'width: 600px;'));
 		$participant_table->setPagination('participant?prt_page=', 18, $prt_page_v);
 		$participant_table->setOrderBy($order_by);
+
 		table(array('style'=>'border-collapse: collapse;'));
 		tr(td($participant_table->paginationHtml()));
 		tr(td($participant_table->html()));
