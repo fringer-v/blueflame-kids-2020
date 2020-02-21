@@ -328,18 +328,15 @@ class Staff extends BF_Controller {
 			$pwd = isset($stf_password) ? $stf_password->getValue() : '';
 
 			$this->error = $update_staff->validate();
-			//if (is_empty($this->error) &&
-			//	$stf_loginallowed->getValue() &&
-			//	is_empty($pwd))
-			//	$this->error = 'Für Benutzer, die sich anmelden können, muss ein Passwort angegeben werden';
 
 			if (is_empty($this->error)) {
 				if (!is_empty($pwd))
 					$pwd = password_hash(strtolower(md5($pwd.'129-3026-19-2089')), PASSWORD_DEFAULT);
+				$role = $stf_role->getValue();
 				$data = array(
 					'stf_username' => $stf_username->getValue(),
 					'stf_fullname' => $stf_fullname->getValue(),
-					'stf_role' => $stf_role->getValue(),
+					'stf_role' => $role,
 					'stf_loginallowed' => $stf_loginallowed->getValue(),
 					'stf_technician' => $stf_technician->getValue()
 				);
@@ -355,13 +352,16 @@ class Staff extends BF_Controller {
 						$data['stf_password'] = $pwd;
 					$this->db->where('stf_id', $stf_id_v);
 					$this->db->update('bf_staff', $data);
+					$this->setSuccess($stf_fullname->getValue().' geändert');
+				}
+				if ($role == ROLE_GROUP_LEADER) {
 					for ($p=$current_period; $p<PERIOD_COUNT; $p++) {
 						$p_p = $present[$p]->getValue();
 						$l_p = $leader[$p]->getValue();
 						$my_l = 0;
 						if ($p_p && !$l_p && $my_leader[$p] instanceof Select)
 							$my_l = $my_leader[$p]->getValue();
-						$data = array(
+						$data = [
 							'per_staff_id' => $stf_id_v,
 							'per_period' => $p,
 							'per_present' => $p_p,
@@ -370,7 +370,7 @@ class Staff extends BF_Controller {
 							'per_age_level_0' => $groups[0][$p]->getValue(),
 							'per_age_level_1' => $groups[1][$p]->getValue(),
 							'per_age_level_2' => $groups[2][$p]->getValue(),
-						);
+						];
 						if (isset($periods[$p])) {
 							$this->db->where('per_staff_id', $stf_id_v);
 							$this->db->where('per_period', $p);
@@ -379,8 +379,21 @@ class Staff extends BF_Controller {
 						else
 							$this->db->insert('bf_period', $data);
 					}
-					$this->setSuccess($stf_fullname->getValue().' geändert');
 				}
+				else {
+					$data = [
+						'per_is_leader' => 0,
+						'per_is_leader' => 0
+					];
+					$this->db->where('per_staff_id', $stf_id_v);
+					$this->db->update('bf_period', $data);
+					$data = [
+						'per_my_leader_id' => null,
+					];
+					$this->db->where('per_my_leader_id', $stf_id_v);
+					$this->db->update('bf_period', $data);
+				}
+
 				redirect("staff");
 			}
 		}
@@ -399,7 +412,7 @@ class Staff extends BF_Controller {
 			redirect("staff");
 		}
 
-		$staff_list_loader = new AsyncLoader('staff_list', 'staff/getstaff?stf_page='.$stf_page->getValue(),
+		$staff_list_loader = new AsyncLoader('staff_list', 'staff/getstaff',
 			[ 'stf_filter', 'stf_select_role', 'stf_select_period', 'stf_presence' ]);
 
 		// Generate page ------------------------------------------
@@ -452,20 +465,20 @@ class Staff extends BF_Controller {
 	}
 	
 	public function getstaff() {
-		$stf_filter = in('stf_filter');
-		$stf_filter->persistent();
+		if (!$this->authorize())
+			return;
+
 		$stf_page = in('stf_page', 1);
 		$stf_page->persistent();
+		$stf_filter = in('stf_filter', '');
+		$stf_filter->persistent();
+		$stf_filter_v = trim($stf_filter->getValue());
 		$stf_select_role = in('stf_select_role', '');
 		$stf_select_role->persistent();
 		$stf_select_period = in('stf_select_period', '');
 		$stf_select_period->persistent();
 		$stf_presence = in('stf_presence', 0);
 		$stf_presence->persistent();
-
-
-		$stf_filter_v = trim($stf_filter->getValue());
-		$stf_page_v = $stf_page->getValue();
 
 		$where = '';
 		if ($stf_select_period->getValue() == -1) {
@@ -491,13 +504,15 @@ class Staff extends BF_Controller {
 		if (!empty($stf_filter_v))
 			$where .= 's1.stf_fullname LIKE "%'.db_escape($stf_filter_v).'%" ';
 		switch ($stf_select_role->getValue()) {
-			case ROLE_OTHER:
+			case ROLE_NONE:
 				break;
 			case ROLE_GROUP_LEADER:
 			case ROLE_OFFICIAL:
 			case ROLE_TECHNICIAN:
 			case ROLE_REGISTRATION:
 			case ROLE_MANAGEMENT:
+			case ROLE_OFFICE:
+			case ROLE_OTHER:
 				if (!empty($where))
 					$where .= 'AND ';
 				$where .= 's1.stf_role = '.$stf_select_role->getValue().' ';
@@ -534,7 +549,7 @@ class Staff extends BF_Controller {
 		$staff_list = new StaffTable($select_list.$sql, [], [ 'class'=>'details-table no-wrap-table', 'style'=>'width: 600px;' ]);
 		$staff_list->setPageQuery('SELECT s1.stf_username, SUM(per_is_leader) is_leader, '.
 			'GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ", ") my_leaders '.$sql);
-		$staff_list->setPagination('staff?stf_page=', 18, $stf_page_v);
+		$staff_list->setPagination('staff?stf_page=', 21, $stf_page);
 		$staff_list->setOrderBy('stf_username');
 
 		table(array('style'=>'border-collapse: collapse;'));

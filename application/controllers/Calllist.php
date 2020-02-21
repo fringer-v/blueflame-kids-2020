@@ -83,7 +83,7 @@ class CallList extends BF_Controller {
 				$sql .= 'prt_call_escalation = 0, ';
 				$sql .= 'prt_call_change_time = NOW() ';
 				$sql .= 'WHERE prt_id = ?';
-				$this->db->query($sql, array($prt_id));
+				$this->db->query($sql, [ $prt_id ]);
 			}
 		}
 

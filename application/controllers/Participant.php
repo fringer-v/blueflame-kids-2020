@@ -249,12 +249,15 @@ class Participant extends BF_Controller {
 
 		$read_only = !is_empty($this->session->stf_login_tech);
 
+		$prt_page = in('prt_page', 1);
+		$prt_page->persistent();
+		$hst_page = in('hst_page', 1);
+		$hst_page->persistent();
+
 		$display_participant = new Form('display_participant', 'participant', 1, [ 'class'=>'input-table' ]);
 		$set_prt_id = $display_participant->addHidden('set_prt_id');
 		$prt_filter = $display_participant->addTextInput('prt_filter', '', '', [ 'placeholder'=>'Suchfilter' ]);
 		$prt_filter->persistent();
-		$prt_page = in('prt_page', 1);
-		$prt_page->persistent();
 		$clear_filter = $display_participant->addSubmit('clear_filter', 'X',
 			[ 'class'=>'button-black', 'onclick'=>'$("#prt_filter").val(""); participants_list(); return false;' ]);
 		list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data();
@@ -273,29 +276,20 @@ class Participant extends BF_Controller {
 		$prt_id = $update_participant->addHidden('prt_id');
 		$prt_id->persistent();
 		$prt_id_v = $prt_id->getValue();
-		$hst_page = in('hst_page', 1);
-		$hst_page->persistent();
 
 		if ($set_prt_id->submitted()) {
 			$prt_id->setValue($set_prt_id->getValue());
 			$hst_page->setValue(1);
 			redirect("participant");
 		}
-		
+
 		$participant_row = $this->get_participant_row($prt_id_v);
 
-		$registered_with = '';
+		$co_kid_list = [];
 		if (!empty($prt_id_v)) {
-			$co_kids = db_array_2('SELECT prt_id, CONCAT(prt_firstname, " ", prt_lastname) as prt_name FROM bf_participants WHERE '.
+			$co_kid_list = db_array_2('SELECT prt_id, CONCAT(prt_firstname, " ", prt_lastname) as prt_name FROM bf_participants WHERE '.
 				'prt_id != ? AND prt_supervision_firstname = ? AND prt_supervision_lastname = ? ORDER BY prt_birthday DESC, prt_name',
 				[ $prt_id_v, $participant_row['prt_supervision_firstname'], $participant_row['prt_supervision_lastname'] ]);
-			if (count($co_kids) > 0) {
-				$registered_with = b();
-				$registered_with->add(a([ 'onclick'=>'get_supervisor_parts();' ], 'Mit Registriert'));
-				$registered_with->add(': ');
-				$registered_with->add(_b());
-				$registered_with->add($this->link_list('participant?set_prt_id=', $co_kids));
-			}
 		}
 
 		// Registrierung u. Ändern
@@ -319,10 +313,20 @@ class Participant extends BF_Controller {
 			$participant_row['prt_supervision_firstname'], [ 'placeholder'=>'Vorname', 'onkeyup'=>'capitalize($(this));' ]);
 		$prt_supervision_lastname = $update_participant->addTextInput('prt_supervision_lastname', '',
 			$participant_row['prt_supervision_lastname'], [ 'placeholder'=>'Nachname', 'onkeyup'=>'capitalize($(this));' ]);
-		//$prt_supervision_lastname->setFormat([ 'nolabel'=>true ]);
 		$prt_supervision_cellphone = $update_participant->addTextInput('prt_supervision_cellphone', 'Handy-Nr',
 			$participant_row['prt_supervision_cellphone']);
 		$update_participant->addSpace();
+		if (!empty($co_kid_list)) {
+			$co_reg = out('Aktualisiere die ');
+			$co_reg->add(a([ 'onclick'=>'get_supervisor_parts();' ], 'Begleitperson'));
+			$co_reg->add(' von: ');
+			$co_reg->add($this->link_list('participant?set_prt_id=', $co_kid_list));
+			$prt_update_all_kids = $update_participant->addCheckbox('prt_update_all_kids', $co_reg, true);
+			$prt_update_all_kids->setFormat([ 'colspan'=>'*', 'style'=>'white-space: normal; max-width: 600px;' ]);
+		}
+		else
+			$prt_update_all_kids = null;
+
 		$prt_notes = $update_participant->addTextArea('prt_notes', 'Hinweise', $participant_row['prt_notes'],
 			[ 'style'=>'height: 24px;' ]);
 		$prt_notes->setFormat([ 'colspan'=>'2' ]);
@@ -338,9 +342,15 @@ class Participant extends BF_Controller {
 		$register_data = $update_participant->addRow('');
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
-		if (!empty($registered_with))
-			$update_participant->addRow($registered_with);
-
+		if (!empty($co_kid_list)) {
+			$co_reg = b();
+			$co_reg->add(a([ 'onclick'=>'get_supervisor_parts();' ], 'Mit Registriert'));
+			$co_reg->add(': ');
+			$co_reg->add(_b());
+			$co_reg->add($this->link_list('participant?set_prt_id=', $co_kid_list));
+			$f1 = $update_participant->addField('', $co_reg);
+			$f1->setFormat([ 'nolabel'=>true, 'colspan'=>'*', 'style'=>'white-space: normal; max-width: 600px;' ]);
+		}
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', [ 'class'=>'button-white wc' ]);
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', [ 'class'=>'button-white wc strike-thru' ]);
 		$being_fetched = $update_participant->addSubmit('being_fetched', 'Wird Abgeholt', [ 'class'=>'button-yellow register' ]);
@@ -431,6 +441,16 @@ class Participant extends BF_Controller {
 				}
 				else {
 					$this->modify_participant($prt_id_v, $participant_row, $data, $group_reserved);
+					if (!empty($co_kid_list) && $prt_update_all_kids->getValue()) {
+						$edit_part = [
+							'prt_supervision_firstname' => $data['prt_supervision_firstname'],
+							'prt_supervision_lastname' => $data['prt_supervision_lastname'],
+							'prt_supervision_cellphone' => $data['prt_supervision_cellphone']
+						];
+						foreach ($co_kid_list as $kid_id => $kid_name) {
+							$this->update_supervisor($kid_id, $edit_part);
+						}
+					}
 					$this->setSuccess($prt_firstname->getValue()." ".$prt_lastname->getValue().' geändert');
 					redirect("participant");
 				}
@@ -748,7 +768,7 @@ class Participant extends BF_Controller {
 		$reg_data->add(_table());
 		$register_data->setValue($reg_data);
 
-		$participants_list_loader = new AsyncLoader('participants_list', 'participant/getkids?prt_page='.$prt_page->getValue(), [ 'prt_filter' ]);
+		$participants_list_loader = new AsyncLoader('participants_list', 'participant/getkids', [ 'prt_filter' ]);
 
 		$prt_tab = in('prt_tab', 'register');
 		$prt_tab->persistent();
@@ -764,7 +784,7 @@ class Participant extends BF_Controller {
 			table([ 'class'=>'input-table' ]);
 			tr(td(table(tr(td($prt_filter),
 				td(nbsp()), td($clear_filter),
-				td(nbsp()), td($select_group)))));
+				td(nbsp().b('Gruppe:').nbsp()), td($select_group)))));
 			tr(td($participants_list_loader->html()));
 			_table(); // 
 			$display_participant->close();
@@ -905,8 +925,6 @@ class Participant extends BF_Controller {
 
 		$prt_filter = in('prt_filter');
 		$prt_filter->persistent();
-		$prt_last_filter = in('prt_last_filter');
-		$prt_last_filter->persistent();
 		$prt_page = in('prt_page', 1);
 		$prt_page->persistent();
 		$prt_tab = in('prt_tab', 'modify');
@@ -949,14 +967,6 @@ class Participant extends BF_Controller {
 		}
 		if ($prt_tab->getValue() == 'supervisor')
 			$order_by = 'calling,prt_registered DESC,prt_call_start_time DESC';
-
-		$prt_page_v = $prt_page->getValue();
-		if ($prt_filter_v.'|'.$order_by != $prt_last_filter->getValue()) {
-			$prt_page->setValue(1);
-			$prt_page_v = $prt_page->getValue();
-		}
-
-		$prt_last_filter->setValue($prt_filter_v.'|'.$order_by);
 
 		$sql = 'SELECT SQL_CALC_FOUND_ROWS prt_id, prt_number, CONCAT(prt_firstname, " ", prt_lastname) as prt_name, prt_call_escalation,
 			prt_birthday, "age", prt_age_level, prt_group_number, prt_call_status, prt_registered, prt_wc_time, "button_column",
@@ -1022,7 +1032,7 @@ class Participant extends BF_Controller {
 
 		$participant_table = new ParticipantTable($sql, $args,
 			array('class'=>'details-table participant-table', 'style'=>'width: 600px;'));
-		$participant_table->setPagination('participant?prt_page=', 18, $prt_page_v);
+		$participant_table->setPagination('participant?prt_page=', 20, $prt_page);
 		$participant_table->setOrderBy($order_by);
 
 		table(array('style'=>'border-collapse: collapse;'));
@@ -1195,7 +1205,7 @@ class Participant extends BF_Controller {
 			FROM bf_history LEFT JOIN bf_staff ON stf_id = hst_stf_id
 			WHERE hst_prt_id = ? ORDER BY hst_timestamp DESC',
 			[ $prt_id_v ], [ 'class'=>'details-table history-table' ]);
-		$history_table->setPagination('participant?hst_page=', 10, $hst_page->getValue());
+		$history_table->setPagination('participant?hst_page=', 10, $hst_page);
 
 		table(array('style'=>'border-collapse: collapse;'));
 		tr(td([ 'align'=>'left', 'valign'=>'top' ], $history_table->paginationHtml()));

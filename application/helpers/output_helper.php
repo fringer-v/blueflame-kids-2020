@@ -196,7 +196,7 @@ class Table {
 	private $attributes;
 	private $page_url = '';
 	private $per_page = 0;
-	private $curr_page = 1;
+	private $curr_page = null;
 	private $query = null;
 	protected $order_by = null;
 	private $page_sql = null;
@@ -212,14 +212,15 @@ class Table {
 		$this->page_sql = $pq;
 	}
 
-	public function setPagination($page_url, $per_page, $curr_page = 1) {
+	public function setPagination($page_url, $per_page, $curr_page) {
 		if (empty($this->page_sql) && !str_startswith($this->sql, "SELECT SQL_CALC_FOUND_ROWS "))
 			fatal_error('SQL must begin with SQL_CALC_FOUND_ROWS for pagination');
 		if (str_contains($this->sql, "LIMIT"))
 			fatal_error('SQL may not include LIMIT for pagination');
 		$this->page_url = $page_url;
 		$this->per_page = (integer) $per_page;
-		$this->curr_page = (integer) $curr_page < 1 ? 1 : (integer) $curr_page;
+		$this->curr_page = $curr_page;
+		$dummy = $curr_page->getValue(); // Must be of type InputField!
 	}
 	
 	public function setOrderBy($order_by) {
@@ -255,7 +256,10 @@ class Table {
 			$sql .= ' ORDER BY '.$this->order_by;
 
 		if ($this->per_page > 0) {
-			$offset = $this->per_page * ($this->curr_page-1);
+			$curr_page = $this->curr_page->getValue();
+			if ($curr_page < 1)
+				$curr_page = 1;
+			$offset = $this->per_page * ($curr_page-1);
 			$sql .= ' LIMIT '.$this->per_page.' OFFSET '.$offset;
 		}
 
@@ -263,7 +267,6 @@ class Table {
 	}
 
 	public function html() {
-
 		$this->doQuery();
 
 		$fields = $this->query->list_fields();
@@ -317,26 +320,37 @@ class Table {
 			return;
 
 		if (empty($this->page_sql)) {
+			retry:
 			$this->doQuery();
 
 			$max_rows = (integer) db_1_value('SELECT FOUND_ROWS()');
 			$max_page = (integer) (($max_rows + $this->per_page - 1) / $this->per_page);
-			if ($this->curr_page > $max_page)
-				$this->curr_page = $max_page;
+
+			$curr_page = $this->curr_page->getValue();
+			if ($curr_page < 1) {
+				$curr_page = 1;
+				$this->curr_page->setValue($curr_page);
+			}
+			else if ($curr_page > max(1, $max_page)) {
+				$curr_page = 1;
+				$this->curr_page->setValue($curr_page);
+				$this->query = null;
+				goto retry;
+			}
 
 			$out = div(array('class'=>'pagination-div'));
 			$out->add(href(url($this->page_url.'1'), '⇤'));
 			$out->add(nbsp());
-			$out->add(href(url($this->page_url.max(1, $this->curr_page-1)), '<'));
+			$out->add(href(url($this->page_url.max(1, $curr_page-1)), '<'));
 			for ($i = 1; $i <= $max_page; $i++) {
 				$out->add(nbsp());
-				if ($this->curr_page == $i)
+				if ($curr_page == $i)
 					$out->add(href(url($this->page_url.$i), $i, array('selected')));
 				else
 					$out->add(href(url($this->page_url.$i), $i));
 			}
 			$out->add(nbsp());
-			$out->add(href(url($this->page_url.min($max_page, $this->curr_page+1)), '>'));
+			$out->add(href(url($this->page_url.min($max_page, $curr_page+1)), '>'));
 			$out->add(nbsp());
 			$out->add(href(url($this->page_url.$max_page), '⇥'));
 			$out->add(_div());
@@ -352,8 +366,8 @@ class Table {
 
 			$query = $cii->db->query($sql, $this->sqlargs);
 			$fields = $query->list_fields();
-			$out = div(array('class'=>'pagination-div'));
-			
+
+			$pages = [];			
 			$max_rows = 0;
 			$page = 1;
 			$i = 0;
@@ -365,21 +379,32 @@ class Table {
 				if ($i == 1)
 					$from = $to;
 				else if ($i == $this->per_page) {
-					if ($page > 1)
-						$out->add(nbsp());
-					$out->add(href(url($this->page_url.$page), $from.' - '.$to, $this->curr_page == $page ? array('selected') : array()));
+					$pages[$page] = $from.' - '.$to;
 					$from = '';
 					$page++;
 					$i = 0;
 				}
 			}
-			if (!empty($from)) {
+			if (!empty($from))
+				$pages[$page] = $from.' - '.$to;
+
+			$max_page = (integer) (($max_rows + $this->per_page - 1) / $this->per_page);
+
+			$curr_page = $this->curr_page->getValue();
+			if ($curr_page < 1 || $curr_page > max(1, $max_page)) {
+				$curr_page = 1;
+				$this->curr_page->setValue($curr_page);
+			}
+
+			$out = div(array('class'=>'pagination-div'));
+			foreach ($pages as $page=>$label) {
 				if ($page > 1)
 					$out->add(nbsp());
-				$out->add(href(url($this->page_url.$page), $from.' - '.$to, $this->curr_page == $page ? array('selected') : array()));
+				$out->add(href(url($this->page_url.$page), $label, $curr_page == $page ? [ 'selected' ] : [ ]));
 			}
 			$out->add(_div());
 		}
+
 		$this->row_count = $max_rows;
 		return $out;
 	}

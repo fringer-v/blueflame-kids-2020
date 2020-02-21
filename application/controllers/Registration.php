@@ -199,15 +199,13 @@ class Registration extends BF_Controller {
 
 		return 5;
 	}
-	
-	public function update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v)
+
+	public function update_supervisors($reg_participants_v, $reg_part_v, $reg_supervision_v)
 	{
 		for ($i=1; $i<=count($reg_participants_v); $i++) {
 			$prt_id = $reg_participants_v[$i]['prt_id'];
 			if ($i != $reg_part_v && !empty($prt_id))  {
-				$db_part = $this->get_participant_row($prt_id);
-				$edit_part = $reg_participants_v[$i] + $reg_supervision_v;
-				$this->modify_participant($prt_id, $db_part, $edit_part, false);
+				$this->update_supervisor($prt_id, $reg_participants_v[$i] + $reg_supervision_v);
 			}
 		}
 	}
@@ -415,7 +413,7 @@ class Registration extends BF_Controller {
 						if (!empty($prt_id_v)) {
 							$reg_participants_v[$reg_part_v]['prt_id'] = $prt_id_v;
 							$reg_participants->setValue($reg_participants_v);
-							$this->update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
+							$this->update_supervisors($reg_participants_v, $reg_part_v, $reg_supervision_v);
 							$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' registriert');
 							// Move to next tab:
 							$reg_part_v++;
@@ -447,7 +445,7 @@ class Registration extends BF_Controller {
 							$this->modify_participant($db_part['prt_id'], $db_part, $edit_part, false);
 							$reg_participants_v[$reg_part_v]['prt_id'] = $db_part['prt_id'];
 							$reg_participants->setValue($reg_participants_v);
-							$this->update_supervisor($reg_participants_v, $reg_part_v, $reg_supervision_v);
+							$this->update_supervisors($reg_participants_v, $reg_part_v, $reg_supervision_v);
 							$this->setSuccess($edit_part['prt_firstname']." ".$edit_part['prt_lastname'].' geändert');
 							if (!empty($reg_set_part_v)) {
 								$reg_part->setValue($reg_set_part_v);

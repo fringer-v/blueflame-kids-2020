@@ -286,9 +286,9 @@ class Groups extends BF_Controller {
 				td([ 'onclick'=>$set_group_limit ], span(['class'=>'group-number'], $i));
 				$rows = db_array_n("SELECT stf_id, per_group_number, stf_username
 					FROM bf_staff, bf_period
-					WHERE stf_id = per_staff_id AND per_is_leader = TRUE AND
-						per_period = $p AND per_age_level_$a = TRUE
-						ORDER BY stf_username");
+					WHERE stf_id = per_staff_id AND stf_role = ? AND per_is_leader = TRUE AND
+						per_period = ? AND per_age_level_$a = TRUE
+						ORDER BY stf_username", [ ROLE_GROUP_LEADER, $p ]);
 				$leaders = [ 0=>'' ];
 				$group_leader = arr_nvl($group_leaders, $a.'_'.$i, 0);
 				foreach ($rows as $id => $row) {

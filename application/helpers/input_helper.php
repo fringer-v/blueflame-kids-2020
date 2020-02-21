@@ -248,15 +248,15 @@ class Form {
 					$style = '';
 					if (!empty($field->format)) {
 						foreach ($field->format as $format=>$value) {
-							if ($format == "nolabel")
+							if ($format == 'nolabel')
 								$haslabel = false;
-							else if (isset($field->format['colspan'])) {
+							else if ($format == 'colspan') {
 								if ($value == '*')
 									$colspan = $this->columns;
 								else
 									$colspan = (integer) $value;
 							}
-							else if ($format == "style")
+							else if ($format == 'style')
 								$style = $value;
 						}
 					}

@@ -42,12 +42,14 @@ define('TEXT_ESCALATED', 'Ruf eskaliert');
 define('CALL_ENDED_DISPLAY_TIME', '00:00:30'); // Call cancel/end state shown for 30 seconds
 
 // Staff roles:
-define('ROLE_OTHER', 0);
+define('ROLE_NONE', 0);
 define('ROLE_GROUP_LEADER', 1);
 define('ROLE_OFFICIAL', 2);
 define('ROLE_TECHNICIAN', 3);
 define('ROLE_REGISTRATION', 4);
 define('ROLE_MANAGEMENT', 5);
+define('ROLE_OFFICE', 6);
+define('ROLE_OTHER', 7);
 
 // Extended roles
 define('EXT_ROLE_TEAM_LEADER', 100);
@@ -73,12 +75,14 @@ $period_names = array (
 	PERIOD_SUNDAY => 'Sontag Morgen');
 
 $all_roles = array(
-	ROLE_OTHER => '',
-	ROLE_GROUP_LEADER => 'Gruppenleiter',
-	ROLE_OFFICIAL => 'Ordner',	
-	ROLE_TECHNICIAN => 'Techniker',
+	ROLE_NONE => '',
 	ROLE_REGISTRATION => 'An/Abmeldung',
-	ROLE_MANAGEMENT => 'Organisation'
+	ROLE_OFFICE => 'Büro',
+	ROLE_GROUP_LEADER => 'Gruppenleiter',
+	ROLE_MANAGEMENT => 'Leitungsteam',
+	ROLE_OTHER => 'Mitarbeiter',
+	ROLE_OFFICIAL => 'Ordner',	
+	ROLE_TECHNICIAN => 'Techniker'
 );
 
 $extended_roles = $all_roles + array(
@@ -160,7 +164,7 @@ class BF_Controller extends CI_Controller {
 		if (is_empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
 				'stf_reserved_age_level'=>0, 'stf_reserved_group_number'=>0, 'stf_reserved_count'=>0,
-				'stf_role'=>ROLE_OTHER, 'stf_registered'=>0, 'stf_loginallowed'=>'', 'stf_technician'=>0);
+				'stf_role'=>ROLE_NONE, 'stf_registered'=>0, 'stf_loginallowed'=>'', 'stf_technician'=>0);
 
 		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
 			s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
@@ -312,6 +316,28 @@ class BF_Controller extends CI_Controller {
 			$this->db->insert('bf_history', $history);
 			$this->unreserve_group($after_row['prt_age_level'], $after_row['prt_group_number']);
 		}
+	}
+
+	public function update_supervisor($prt_id, $edit_part)
+	{
+		$db_part = $this->get_participant_row($prt_id);
+		// Check if the supervisor data has changed!
+		if ($db_part['prt_supervision_firstname'] == $edit_part['prt_supervision_firstname'] &&
+			$db_part['prt_supervision_lastname'] == $edit_part['prt_supervision_lastname'] &&
+			$db_part['prt_supervision_cellphone'] == $edit_part['prt_supervision_cellphone'])
+			return;
+
+		// Add any missing fields:
+		if (!isset($edit_part['prt_birthday']))
+			$edit_part['prt_birthday'] = $db_part['prt_birthday'];
+		if (!isset($edit_part['prt_firstname']))
+			$edit_part['prt_firstname'] = $db_part['prt_firstname'];
+		if (!isset($edit_part['prt_lastname']))
+			$edit_part['prt_lastname'] = $db_part['prt_lastname'];
+		if (!isset($edit_part['prt_notes']))
+			$edit_part['prt_notes'] = $db_part['prt_notes'];
+			
+		$this->modify_participant($prt_id, $db_part, $edit_part, false);
 	}
 
 	public function get_group_data($p = 0)
