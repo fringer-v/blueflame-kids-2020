@@ -246,6 +246,7 @@ class Form {
 					$colspan = 1;
 					$haslabel = true;
 					$style = '';
+					$postfix = out('');
 					if (!empty($field->format)) {
 						foreach ($field->format as $format=>$value) {
 							if ($format == 'nolabel')
@@ -258,6 +259,9 @@ class Form {
 							}
 							else if ($format == 'style')
 								$style = $value;
+							else if ($format == 'postfix') {
+								$postfix = $value;
+							}
 						}
 					}
 
@@ -270,12 +274,14 @@ class Form {
 						td($attr);
 						$field->show();
 						label(array('for'=>$name), ' '.$label);
+						$postfix->show();
 						_td();
 					}
 					else if (!$haslabel) {
 						$attr['colspan'] = $colspan*2;
 						td($attr);
 						$field->show();
+						$postfix->show();
 						_td();
 					}
 					else {
@@ -284,6 +290,7 @@ class Form {
 							$attr['colspan'] = $colspan*2-1;
 						td($attr);
 						$field->show();
+						$postfix->show();
 						_td();
 					}
 			

@@ -318,11 +318,11 @@ class Participant extends BF_Controller {
 		$update_participant->addSpace();
 		if (!empty($co_kid_list)) {
 			$co_reg = out('Aktualisiere die ');
-			$co_reg->add(a([ 'onclick'=>'get_supervisor_parts();' ], 'Begleitperson'));
-			$co_reg->add(' von: ');
-			$co_reg->add($this->link_list('participant?set_prt_id=', $co_kid_list));
+			$links = a([ 'onclick'=>'get_supervisor_parts();' ], 'Begleitperson');
+			$links->add(' von: ');
+			$links->add($this->link_list('participant?set_prt_id=', $co_kid_list));
 			$prt_update_all_kids = $update_participant->addCheckbox('prt_update_all_kids', $co_reg, true);
-			$prt_update_all_kids->setFormat([ 'colspan'=>'*', 'style'=>'white-space: normal; max-width: 600px;' ]);
+			$prt_update_all_kids->setFormat([ 'colspan'=>'*', 'style'=>'white-space: normal; max-width: 600px;', 'postfix'=>$links ]);
 		}
 		else
 			$prt_update_all_kids = null;
