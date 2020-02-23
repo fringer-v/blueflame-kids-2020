@@ -434,8 +434,13 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function authorize($redirect_page = 'login') {
-		if ($this->is_logged_in())
-			return true;
+		if ($this->is_logged_in()) {
+			if ($redirect_page == 'registration' ||
+				!$this->session->has_userdata('ses_in_register') ||
+				!$this->session->ses_in_register)
+				return true;
+			$redirect_page = 'registration';
+		}
 
 		$this->header('Redirect');
 		script();

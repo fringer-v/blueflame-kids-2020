@@ -42,12 +42,16 @@ class Registration extends BF_Controller {
 
 	public function index()
 	{
+		$this->load->library('session');
+
 		$this->header('iPad Registrierung', false);
 
+		$this->session->set_userdata('ses_in_register', true);
 		$reg_top_form = new Form('reg_top_form', 'registration', 2, array('class'=>'input-table'));
 		$reg_back = $reg_top_form->addHidden('reg_back');
 		if (!empty($reg_back->getValue())) {
 			if ($this->prompted_login($reg_back->getValue())) {
+				$this->session->set_userdata('ses_in_register', false);
 				if ($this->session->ses_prev_page == "registration")
 					redirect("participant");
 				redirect($this->session->ses_prev_page);
