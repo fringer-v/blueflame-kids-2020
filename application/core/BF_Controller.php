@@ -164,11 +164,12 @@ class BF_Controller extends CI_Controller {
 		if (is_empty($stf_id))
 			return array('stf_id'=>'', 'stf_username'=>'', 'stf_fullname'=>'', 'stf_password'=>'',
 				'stf_reserved_age_level'=>0, 'stf_reserved_group_number'=>0, 'stf_reserved_count'=>0,
-				'stf_role'=>ROLE_NONE, 'stf_registered'=>0, 'stf_loginallowed'=>'', 'stf_technician'=>0);
+				'stf_role'=>ROLE_NONE, 'stf_registered'=>0, 'stf_loginallowed'=>'', 'stf_technician'=>0,
+				'stf_notes'=>'' );
 
 		$query = $this->db->query('SELECT s1.stf_id, s1.stf_username, s1.stf_fullname, s1.stf_password,
 			s1.stf_reserved_age_level, s1.stf_reserved_group_number, s1.stf_reserved_count,
-			s1.stf_role, s1.stf_registered, s1.stf_loginallowed, s1.stf_technician,
+			s1.stf_role, s1.stf_registered, s1.stf_loginallowed, s1.stf_technician, s1.stf_notes,
 			GROUP_CONCAT(DISTINCT s2.stf_id ORDER BY s2.stf_username SEPARATOR ",") team_ids,
 			GROUP_CONCAT(DISTINCT s2.stf_username ORDER BY s2.stf_username SEPARATOR ",") team_names
 			FROM bf_staff s1
@@ -338,6 +339,18 @@ class BF_Controller extends CI_Controller {
 			$edit_part['prt_notes'] = $db_part['prt_notes'];
 			
 		$this->modify_participant($prt_id, $db_part, $edit_part, false);
+	}
+
+	public function cancel_group_leader($stf_id, $remove_presence)
+	{
+		$data = [ 'per_is_leader' => 0 ];
+		if ($remove_presence)
+			$data['per_present'] = false;
+		$this->db->where('per_staff_id', $stf_id);
+		$this->db->update('bf_period', $data);
+		$data = [ 'per_my_leader_id' => null ];
+		$this->db->where('per_my_leader_id', $stf_id);
+		$this->db->update('bf_period', $data);
 	}
 
 	public function get_group_data($p = 0)

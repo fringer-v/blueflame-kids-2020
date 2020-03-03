@@ -191,6 +191,10 @@ function _td() {
 	return _tag('td');
 }
 
+function hr() {
+	return tag('hr', func_get_args());
+}
+
 function url($page, $args = array()) {
 	$url = out('[]', $page);
 	if (!empty($args)) {

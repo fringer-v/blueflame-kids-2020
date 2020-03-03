@@ -7,13 +7,16 @@
 // 27 - Changed prt_registered field to status
 // 41 - Changes for Blueflame 2020
 // 42 - Added grp_size_hints
-define("DB_VERSION", 42);
+// 43 - Added bf_staff.stf_deleted
+// 44 - Added bf_staff.stf_notes
+define("DB_VERSION", 44);
 
 class DB_model extends CI_Model {
 	private $settings = array();
 	private $meta_settings = array(
 			"database-version" => array("integer", 0),	// type, default_value
-			"current-period" => array("integer", 2)	// type, default_value
+			"current-period" => array("integer", 2),	// type, default_value
+			"show-deleted-staff" => array("integer", 0)	// type, default_value
 		);
 
 	public function __construct() {
@@ -94,6 +97,8 @@ class DB_model extends CI_Model {
 			'stf_registered'=>array('type'=>'BOOLEAN', 'default'=>false),
 			'stf_loginallowed'=>array('type'=>'BOOLEAN', 'default'=>true),
 			'stf_technician'=>array('type'=>'BOOLEAN', 'default'=>false),
+			'stf_deleted'=>array('type'=>'BOOLEAN', 'default'=>false),
+			'stf_notes'=>array('type'=>'VARCHAR', 'constraint'=>'500'),
 			'stf_reserved_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'stf_reserved_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'stf_reserved_count'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),

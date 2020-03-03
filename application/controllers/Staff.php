@@ -185,6 +185,9 @@ class Staff extends BF_Controller {
 			$update_staff->addField('Teammitglieder', $this->link_list('staff?set_stf_id=',
 						explode(',', $staff_row['team_ids']), explode(',', $staff_row['team_names'])));
 
+		$f1 = $update_staff->addField('Notizen', $staff_row['stf_notes']);
+		$f1->setFormat([ 'colspan'=>'*' ]);
+
 		$periods = db_array_n('SELECT per_period, per_age_level, per_group_number, per_location_id,
 			per_present, per_is_leader, per_my_leader_id, per_age_level_0, per_age_level_1, per_age_level_2
 			FROM bf_period WHERE per_staff_id=?', [ $stf_id_v ]);
@@ -381,17 +384,7 @@ class Staff extends BF_Controller {
 					}
 				}
 				else {
-					$data = [
-						'per_is_leader' => 0,
-						'per_is_leader' => 0
-					];
-					$this->db->where('per_staff_id', $stf_id_v);
-					$this->db->update('bf_period', $data);
-					$data = [
-						'per_my_leader_id' => null,
-					];
-					$this->db->where('per_my_leader_id', $stf_id_v);
-					$this->db->update('bf_period', $data);
+					$this->cancel_group_leader($stf_id_v, false);
 				}
 
 				redirect("staff");
@@ -501,8 +494,23 @@ class Staff extends BF_Controller {
 		$sql = 'FROM bf_staff s1
 				LEFT OUTER JOIN bf_period ON per_staff_id = s1.stf_id '.$on;
 		$sql .= 'LEFT OUTER JOIN bf_staff s2 ON per_my_leader_id = s2.stf_id ';
-		if (!empty($stf_filter_v))
+
+		switch ($this->db_model->get_setting('show-deleted-staff')) {
+			case 0:
+				$where = 's1.stf_deleted = FALSE ';
+				break;
+			case 1:
+				break;
+			case 2:
+				$where = 's1.stf_deleted = TRUE ';
+				break;
+		}
+
+		if (!empty($stf_filter_v)) {
+			if (!empty($where))
+				$where .= 'AND ';
 			$where .= 's1.stf_fullname LIKE "%'.db_escape($stf_filter_v).'%" ';
+		}
 		switch ($stf_select_role->getValue()) {
 			case ROLE_NONE:
 				break;
