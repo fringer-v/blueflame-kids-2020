@@ -152,9 +152,78 @@ class Admin extends BF_Controller {
 		}
 	}
 
+	private function export_table($table_name, $filename)
+	{
+		if (($handle = fopen($filename, 'a')) === false) {
+			die('Cannot open: '.file);
+			return;
+		}
+
+		$fields = $this->db->list_fields($table_name);
+		
+		$line = '';
+		foreach ($fields as $field) {
+			$line = str_listappend($line, $field, "\t");
+		}
+		fwrite($handle, $line."\n");
+
+		$rows = db_array_n('SELECT * FROM '.$table_name, [ ]);
+
+		foreach ($rows as $row) {
+			$line = '';
+			foreach ($fields as $field) {
+				$val = $row[$field];
+				$val = str_replace("\\", "\\\\", $val);
+				$val = str_replace("\n", "\\n", $val);
+				$val = str_replace("\r", "\\r", $val);
+				$val = str_replace("\t", "\\t", $val);
+				$line = str_listappend($line, $val, "\t");
+			}
+			fwrite($handle, $line."\n");
+		}
+
+		fclose($handle);
+	}
+
+	private function export_kids($path)
+	{
+		$i = 2;
+		for (;;) {
+			$file = $i.'-export-kids.csv';
+			if (!file_exists($path.$file))
+				break;
+			$i++;
+		}
+		$this->export_table('bf_participants', $path.$file);
+		$this->export_table('bf_history', $path.$i.'-export-history.csv');
+	}
+
+	private function all_to_and($parents, $delim)
+	{
+		$parents = str_replace(' oder ', '~', $parents);
+		$parents = str_replace(' und ', '~', $parents);
+		$parents = str_replace(' & ', '~', $parents);
+		$parents = str_replace('& ', '~', $parents);
+		$parents = str_replace(' &', '~', $parents);
+		$parents = str_replace('&', '~', $parents);
+		$parents = str_replace(' + ', '~', $parents);
+		$parents = str_replace('+ ', '~', $parents);
+		$parents = str_replace(' +', '~', $parents);
+		$parents = str_replace('+', '~', $parents);
+		$parents = str_replace(' , ', '~', $parents);
+		$parents = str_replace(', ', '~', $parents);
+		$parents = str_replace(' ,', '~', $parents);
+		$parents = str_replace(',', '~', $parents);
+
+		$parents = str_replace('~', $delim, $parents);
+		return $parents;		
+	}
+
 	public function index()
 	{
 		global $period_names;
+		$imp_exp_path = '/home/ec2-user/';
+		$imp_exp_path = '/Users/build/Documents/BLUE-FLAME/';
 
 		if (!$this->authorize())
 			return;
@@ -172,14 +241,18 @@ class Admin extends BF_Controller {
 		}
 
 		$import_staff_form = new Form('import_staff_form', '', 1, [ 'class'=>'input-table' ]);
-		// /Users/build/Documents/BLUE-FLAME/Mitarbeiter.csv
-		// /home/ec2-user/Mitarbeiter.csv
-		$staff_import_file = $import_staff_form->addTextInput('staff_import_file', 'Import File', '/home/ec2-user/Mitarbeiter.csv');
+		$staff_import_file = $import_staff_form->addTextInput('staff_import_file', 'Import File', 'Mitarbeiter.csv');
 		$import_staff = $import_staff_form->addSubmit('import_staff', 'Mitarbeiter Importieren', ['class'=>'button-black']);
 
 		if ($import_staff->submitted()) {
+			$import_file = $staff_import_file->getValue();
+			if (str_contains($import_file, '/'))
+				die('Wrong file name: '.$import_file);
+			if (!file_exists($imp_exp_path.'import/'.$import_file))
+				die('File not found: '.$imp_exp_path.'import/'.$import_file);
+
 			setlocale(LC_ALL, 'de_DE.utf-8');
-			$import_data = csv_to_array($staff_import_file->getValue());
+			$import_data = csv_to_array($imp_exp_path.'import/'.$import_file);
 
 			$this->db->where('stf_username NOT IN ("Admin", "sa", "Registrierung", "Tech")');
 			$this->db->update('bf_staff', [ 'stf_deleted'=>1 ]);
@@ -193,6 +266,49 @@ class Admin extends BF_Controller {
 			$deleted_list = db_array_2("SELECT stf_id FROM bf_staff WHERE stf_deleted = TRUE", [ ]);
 			foreach ($deleted_list as $stf_id) {
 				$this->cancel_group_leader($stf_id, true);
+			}
+
+			redirect("admin");
+		}
+
+		$import_kids_form = new Form('import_kids_form', '', 1, [ 'class'=>'input-table' ]);
+		$kids_import_file = $import_kids_form->addTextInput('kids_import_file', 'Import File', 'Kids(1).csv');
+		$import_kids = $import_kids_form->addSubmit('import_kids', 'Kinder Importieren', ['class'=>'button-black']);
+
+		if ($import_kids->submitted()) {
+			$import_file = $kids_import_file->getValue();
+			if (str_contains($import_file, '/'))
+				die('Wrong file name: '.$import_file);
+			if (!file_exists($imp_exp_path.'import/'.$import_file))
+				die('File not found: '.$imp_exp_path.'import/'.$import_file);
+
+			$this->export_kids($imp_exp_path.'export/');
+
+			// Empty the tables:
+			//$this->db->query('DELETE FROM bf_participants', [ ]);
+			//$this->db->query('DELETE FROM bf_history', [ ]);
+
+			setlocale(LC_ALL, 'de_DE.utf-8');
+			$import_data = csv_to_array($imp_exp_path.'import/'.$import_file);
+
+			foreach ($import_data as $import_row) {
+				$an_number = (integer) $import_row['AN-Nummer'];
+				$parents = $this->all_to_and($import_row['Vorname der Eltern'], ' & ');
+				$tels = $this->all_to_and($import_row['Handy der Eltern'], ' | ');
+				
+				$data = [
+					'prt_number'=>$an_number-800,
+					'prt_reg_num'=>$an_number,
+					'prt_firstname'=>$import_row['Vorname des Kindes'],
+					'prt_lastname'=>$import_row['Nachname des Kindes'],
+					'prt_birthday'=>str_to_date($import_row['Geburtstag des Kindes'])->format('Y-m-d'),
+					'prt_notes'=>$import_row['Zusätzliche Informationen'],
+					'prt_supervision_firstname'=>$parents,
+					'prt_supervision_lastname'=>$import_row['Nachname der Eltern'],
+					'prt_supervision_cellphone'=>$tels
+				];
+bugout($data);
+				//$this->db->insert('bf_history', $data);
 			}
 
 			redirect("admin");
@@ -222,6 +338,14 @@ class Admin extends BF_Controller {
 		tr();
 		td();
 		$import_staff_form->show();
+		_td();
+		_tr();
+
+		tr(td(hr()));
+
+		tr();
+		td();
+		$import_kids_form->show();
 		_td();
 		_tr();
 

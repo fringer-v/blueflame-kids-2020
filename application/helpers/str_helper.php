@@ -47,7 +47,7 @@ function str_contains($haystack, $needle) {
 
 function str_listappend($list, $value, $sep) {
 	if (empty($list))
-		return '';
+		return $value;
 	return $list.$sep.$value;
 }
 
@@ -178,12 +178,83 @@ function how_long_ago($then) {
 	return format_seconds(time() - $start_time);
 }
 
+function str_next_ch(&$i, $file_data) {
+	if ($i >= strlen($file_data))
+		return null;
+	$ch = substr($file_data, $i, 1);
+	$i++;
+	if ($ch == "\r" && $i < strlen($file_data)) {
+		$lf_ch = substr($file_data, $i, 1);
+		if ($lf_ch == "\n") {
+			$ch = "\n";
+			$i++;
+		}
+	}
+	else if ($ch == "\\" && $i < strlen($file_data)) {	
+		$esc_ch = substr($file_data, $i, 1);
+		switch ($esc_ch) {
+			case 'n': $ch = "\n"; $i++; break;
+			case 'r': $ch = "\r"; $i++; break;
+			case 't': $ch = "\t"; $i++; break;
+			case '"': $ch = '"'; $i++; break;
+			default:
+				break;
+		}
+	}
+	return $ch;
+}
+
 function csv_to_array($filename='', $delimiter=';') {
 	if (!file_exists($filename) || !is_readable($filename))
 		return FALSE;
 
-	$header = NULL;
-	$data = array();
+	$header = null;
+	$data = [];
+	$file_data = file_get_contents($filename);
+	$i = 0;
+	$ch = str_next_ch($i, $file_data);
+	while ($ch != null) {
+		$row = [];
+		while ($ch != null && $ch != "\n") {
+			$value = '';
+			if ($ch == '"') {
+				$delim = '"';
+				$ch = str_next_ch($i, $file_data);
+			}
+			else
+				$delim = '';
+			while ($ch != null) {
+				if (empty($delim)) {
+					if ($ch == ';' || $ch == "\n")
+						break;
+				}
+				else {
+					if ($ch == $delim) {
+						$ch = str_next_ch($i, $file_data);
+						// Exell exports 2 delim as one:
+						if ($ch != $delim)
+							break;
+					}
+				}
+				$value .= $ch;
+				$ch = str_next_ch($i, $file_data);
+			}
+			while ($ch != null && $ch != ';' && $ch != "\n")
+				$ch = str_next_ch($i, $file_data);
+			if ($ch == ';')
+				$ch = str_next_ch($i, $file_data);
+			$row[] = $value;
+		}
+		if ($ch == "\n")
+			$ch = str_next_ch($i, $file_data);
+
+		if (!$header)
+			$header = $row;
+		else
+			$data[] = array_combine($header, $row);
+	}
+	
+	/*
 	if (($handle = fopen($filename, 'r')) !== false) {
 		while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
 			if (!$header)
@@ -193,6 +264,7 @@ function csv_to_array($filename='', $delimiter=';') {
 		}
 		fclose($handle);
 	}
+	*/
 	return $data;
 }
 

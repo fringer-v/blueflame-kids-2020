@@ -9,7 +9,9 @@
 // 42 - Added grp_size_hints
 // 43 - Added bf_staff.stf_deleted
 // 44 - Added bf_staff.stf_notes
-define("DB_VERSION", 44);
+// 45 - Added prt_reg_num, change prt_supervision_firstname(50->120)
+// 46 - Added change prt_supervision_lastname(->120), prt_supervision_cellphone(->120)
+define("DB_VERSION", 46);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -124,14 +126,15 @@ class DB_model extends CI_Model {
 
 		$fields = array(
 			'prt_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY',
-			'prt_number'=>array('type'=>'INTEGER', 'unsigned'=>true, 'unique'=>true),
+			'prt_number'=>array('type'=>'INTEGER', 'unsigned'=>true, 'unique'=>true, 'null'=>false),
+			'prt_reg_num'=>array('type'=>'INTEGER', 'unsigned'=>true, 'unique'=>true, 'null'=>true),
 			'prt_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
 			'prt_birthday'=>array('type'=>'DATE', 'null'=>true),
 			'prt_registered'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>false, 'default'=>'1'),
-			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
-			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
-			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
+			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
+			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
+			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
 			'prt_age_level'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'prt_group_number'=>array('type'=>'SMALLINT', 'unsigned'=>true, 'null'=>true),
 			'prt_createtime TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
