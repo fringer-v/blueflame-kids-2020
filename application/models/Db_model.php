@@ -11,7 +11,8 @@
 // 44 - Added bf_staff.stf_notes
 // 45 - Added prt_reg_num, change prt_supervision_firstname(50->120)
 // 46 - Added change prt_supervision_lastname(->120), prt_supervision_cellphone(->120)
-define("DB_VERSION", 46);
+// 47 - prt_registered DEFAULT set to 0 (REG_NO)
+define("DB_VERSION", 47);
 
 class DB_model extends CI_Model {
 	private $settings = array();
@@ -131,7 +132,7 @@ class DB_model extends CI_Model {
 			'prt_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'50', 'null'=>true),
 			'prt_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'80', 'null'=>true),
 			'prt_birthday'=>array('type'=>'DATE', 'null'=>true),
-			'prt_registered'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>false, 'default'=>'1'),
+			'prt_registered'=>array('type'=>'TINYINT', 'unsigned'=>true, 'null'=>false, 'default'=>REG_NO),
 			'prt_supervision_firstname'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
 			'prt_supervision_lastname'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
 			'prt_supervision_cellphone'=>array('type'=>'VARCHAR', 'constraint'=>'120', 'null'=>true),
