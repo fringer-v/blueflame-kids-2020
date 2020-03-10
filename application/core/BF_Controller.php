@@ -74,6 +74,15 @@ $period_names = array (
 	PERIOD_SAT_EVENING => 'Samstag Abend',
 	PERIOD_SUNDAY => 'Sontag Morgen');
 
+// The session end times:
+$period_dates = array (
+	PERIOD_FRIDAY => date_create_from_format('Y-m-d H:i:s', '2018-10-26 23:00:00'),
+	PERIOD_SAT_MORNING => date_create_from_format('Y-m-d H:i:s', '2018-10-27 12:00:00'),
+	PERIOD_SAT_AFTERNOON => date_create_from_format('Y-m-d H:i:s', '2018-10-27 16:00:00'),
+	PERIOD_SAT_EVENING => date_create_from_format('Y-m-d H:i:s', '2018-10-27 23:00:00'),
+	PERIOD_SUNDAY => date_create_from_format('Y-m-d H:i:s', '2018-10-28 14:00:00')
+);
+
 $all_roles = array(
 	ROLE_NONE => '',
 	ROLE_REGISTRATION => 'An/Abmeldung',
@@ -121,10 +130,22 @@ class BF_Controller extends CI_Controller {
 		$this->load->helper('url_helper');
 	}
 
+	public function get_age_level($curr_age)
+	{
+		global $age_level_to;
+		global $age_level_from;
+
+		if ($curr_age <= $age_level_to[AGE_LEVEL_0])
+			return AGE_LEVEL_0;
+		if ($curr_age >= $age_level_from[AGE_LEVEL_2])
+			return AGE_LEVEL_2;
+		return AGE_LEVEL_1;
+	}
+
 	public function get_participant_row($prt_id) {
 		if (empty($prt_id))
-			$participant_row = array('prt_id'=>'', 'prt_number'=>'', 'prt_firstname'=>'', 'prt_lastname'=>'',
-				'prt_birthday'=>'',
+			$participant_row = array('prt_id'=>'', 'prt_number'=>'', 'prt_reg_num'=>0,
+				'prt_firstname'=>'', 'prt_lastname'=>'', 'prt_birthday'=>'',
 				'prt_registered'=>REG_NO, 'prt_supervision_firstname'=>'', 'prt_supervision_lastname'=>'',
 				'prt_supervision_cellphone'=>'', 'prt_notes'=>'',
 				'prt_age_level'=>'', 'prt_group_number'=>'',
@@ -132,7 +153,7 @@ class BF_Controller extends CI_Controller {
 				'prt_wc_time'=>'', 'prt_age_level'=>'', 'prt_group_number'=>''
 			);
 		else {
-			$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
+			$query = $this->db->query('SELECT prt_id, prt_number, prt_reg_num, prt_firstname, prt_lastname,
 				DATE_FORMAT(prt_birthday, "%d.%m.%Y") AS prt_birthday,
 				prt_registered, prt_supervision_firstname, prt_supervision_lastname,
 				prt_supervision_cellphone, prt_notes,
@@ -147,7 +168,7 @@ class BF_Controller extends CI_Controller {
 	}
 
 	public function get_participant_row_by_name($prt_firstname, $prt_lastname) {
-		$query = $this->db->query('SELECT prt_id, prt_number, prt_firstname, prt_lastname,
+		$query = $this->db->query('SELECT prt_id, prt_number, prt_reg_num, prt_firstname, prt_lastname,
 			DATE_FORMAT(prt_birthday, "%d.%m.%Y") AS prt_birthday,
 			prt_registered, prt_supervision_firstname, prt_supervision_lastname,
 			prt_supervision_cellphone, prt_notes,
@@ -359,7 +380,7 @@ class BF_Controller extends CI_Controller {
 		if ($p == 0)
 			$p = $current_period;
 
-		$nr_of_groups = [];
+		$nr_of_groups = array_fill(0, AGE_LEVEL_COUNT, 0);
 		$group_limits = [];
 
 		$groups = db_row_array('SELECT grp_age_level, grp_count, grp_size_hints

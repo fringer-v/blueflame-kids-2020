@@ -4,6 +4,9 @@ defined('BASEPATH') OR exit('No direct script access allowed');
 include_once(APPPATH.'core/BF_Controller.php');
 include_once(APPPATH.'helpers/output_helper.php');
 
+// IMPORT 2018 -test data:
+//include_once('/Users/build/Documents/BLUE-FLAME/import/kids-2018.php');
+
 class Admin extends BF_Controller {
 	public function __construct()
 	{
@@ -222,6 +225,9 @@ class Admin extends BF_Controller {
 	public function index()
 	{
 		global $period_names;
+		global $kids_import;
+		global $history_import;
+		
 		$imp_exp_path = '/home/ec2-user/';
 		$imp_exp_path = '/Users/build/Documents/BLUE-FLAME/';
 
@@ -285,8 +291,8 @@ class Admin extends BF_Controller {
 			$this->export_kids($imp_exp_path.'export/');
 
 			// Empty the tables:
-			//$this->db->query('DELETE FROM bf_participants', [ ]);
-			//$this->db->query('DELETE FROM bf_history', [ ]);
+			$this->db->query('DELETE FROM bf_participants', [ ]);
+			$this->db->query('DELETE FROM bf_history', [ ]);
 
 			setlocale(LC_ALL, 'de_DE.utf-8');
 			$import_data = csv_to_array($imp_exp_path.'import/'.$import_file);
@@ -307,9 +313,43 @@ class Admin extends BF_Controller {
 					'prt_supervision_lastname'=>$import_row['Nachname der Eltern'],
 					'prt_supervision_cellphone'=>$tels
 				];
-bugout($data);
-				//$this->db->insert('bf_history', $data);
+				$this->db->insert('bf_participants', $data);
 			}
+
+			/*
+			// IMPORT 2018 -test data:
+			foreach ($kids_import as $kid) {
+				$data = [
+					'prt_id'=>$kid[0],
+					'prt_number'=>$kid[1],
+					'prt_firstname'=>$kid[2],
+					'prt_lastname'=>$kid[3],
+					'prt_birthday'=>$kid[4],
+					'prt_notes'=>$kid[19],
+					'prt_supervision_firstname'=>$kid[6],
+					'prt_supervision_lastname'=>$kid[7],
+					'prt_supervision_cellphone'=>$kid[8]
+				];
+				$this->db->insert('bf_participants', $data);
+			}
+
+			$age = 0;
+			foreach ($history_import as $hist) {
+				$data = [
+					'hst_prt_id'=>$hist[1],
+					'hst_stf_id'=>$hist[2],
+					'hst_timestamp'=>$hist[3],
+					'hst_action'=>$hist[4],
+					'hst_escalation'=>$hist[5],
+					'hst_notes'=>$hist[7],
+					'hst_age_level'=>$age,
+					'hst_group_number'=>1
+				];
+				$this->db->insert('bf_history', $data);
+				$age++;
+				if ($age == 3) $age = 0;
+			}
+			*/
 
 			redirect("admin");
 		}

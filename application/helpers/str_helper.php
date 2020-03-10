@@ -58,7 +58,7 @@ function str_to_date($val)
 	if (str_contains($val, '.'))
 		$ts = DateTime::createFromFormat('d.m.Y', $val);
 	else
-		$ts = DateTime::createFromFormat('d-m-Y', $val);
+		$ts = DateTime::createFromFormat('Y-m-d', $val);
 	if ($ts === false)
 		return null;
 	$year = (integer) $ts->format('Y');

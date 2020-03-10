@@ -338,7 +338,7 @@ class Participant extends BF_Controller {
 
 		$update_participant->createGroup('tab_modify');
 
-		// An u. Abmeldung
+		// An u. Abmeldung PART 1
 		$register_data = $update_participant->addRow('');
 		$group_list = new AsyncLoader('register_group_list', 'participant/getgroups?tab=register', [ 'grp_arg'=>'""', 'action'=>'""' ] );
 		$update_participant->addRow($group_list->html());
@@ -350,6 +350,10 @@ class Participant extends BF_Controller {
 			$co_reg->add($this->link_list('participant?set_prt_id=', $co_kid_list));
 			$f1 = $update_participant->addField('', $co_reg);
 			$f1->setFormat([ 'nolabel'=>true, 'colspan'=>'*', 'style'=>'white-space: normal; max-width: 600px;' ]);
+		}
+		if (!empty($participant_row['prt_notes'])) {
+			$f1 = $update_participant->addField('', $participant_row['prt_notes']);
+			$f1->setFormat([ 'nolabel'=>true, 'colspan'=>'*', 'style'=>'white-space: pre-wrap; max-width: 600px; font-size: 14px;' ]);
 		}
 		$go_to_wc = $update_participant->addSubmit('go_to_wc', 'WC', [ 'class'=>'button-white wc' ]);
 		$back_from_wc = $update_participant->addSubmit('back_from_wc', 'WC', [ 'class'=>'button-white wc strike-thru' ]);
@@ -708,28 +712,26 @@ class Participant extends BF_Controller {
 
 			$curr_age = get_age($prt_birthday->getDate());
 			$age_field->setValue(div(array('id' => 'prt_age'), is_null($curr_age) ? '&nbsp;-' : b(nbsp().$curr_age." Jahre")));
-
 		}
 
+		$numbers = b($participant_row['prt_number']);
+		if (!empty($participant_row['prt_reg_num']))
+			$numbers .= ' (AN-'.$participant_row['prt_reg_num'].')';
 		$status_line = table([ 'width'=>'100%' ],
-			tr(td($participant_row['prt_number']),
+			tr(td($numbers),
 			td([ 'align'=>'center' ], $call_field),
 			td([ 'align'=>'right', 'style'=>'white-space: nowrap;' ], $reg_field)));
 		$number1->setValue($status_line);
 		$number3->setValue($status_line);
 
+		// An u. Abmeldung PART 2
 		$bday = '';
 		$unreg_group = ''; // Info for Abholkarte
 		if (!is_null($curr_age)) {
 			$attr = [ 'class'=>'group-s',
 				'style'=>'width: 32px; min-width: 32px; height: 28px; font-size: 24px; text-align: center;' ];
 			if ($participant_row['prt_registered'] == REG_NO || empty($participant_row['prt_group_number'])) {
-				if ($curr_age <= $age_level_to[AGE_LEVEL_0])
-					$attr['class'] .= ' g-'.AGE_LEVEL_0;
-				else if ($curr_age >= $age_level_from[AGE_LEVEL_2])
-					$attr['class'] .= ' g-'.AGE_LEVEL_2;
-				else
-					$attr['class'] .= ' g-'.AGE_LEVEL_1;
+				$attr['class'] .= ' g-'.$this->get_age_level($curr_age);
 			}
 			else {
 				$attr['style'] .= ' background-color: lightgrey; color: white;';
@@ -742,8 +744,15 @@ class Participant extends BF_Controller {
 		}
 		$child_data = table([ 'width'=>'100%', 'style'=>
 			'border: 1px solid black; font-weight: bold; background-color: white;' ]);
-		$child_data->add(tr(td([ 'colspan'=>2, 'style'=>'padding: 5px 5px 5px 10px; font-size: 20px; '],
-			'# '.$participant_row['prt_number'])));
+		$numbers = '';
+		if (!empty($participant_row['prt_reg_num']))
+			$numbers = 'AN-'.$participant_row['prt_reg_num'];
+		$child_data->add(tr());
+		$child_data->add(td([ 'style'=>'padding: 5px 5px 5px 10px; font-size: 20px; '],
+			'# '.$participant_row['prt_number']));
+		$child_data->add(td([ 'style'=>'text-align: right; padding: 5px 10px 5px 10px; font-size: 16px;'], $numbers));
+		$child_data->add(_tr());
+
 		$child_data->add(tr(td([ 'colspan'=>2, 'style'=>'padding: 5px 5px 5px 10px; font-size: 20px; '],
 			$participant_row['prt_firstname'].' '.$participant_row['prt_lastname'])));
 		$child_data->add(tr());
@@ -752,19 +761,21 @@ class Participant extends BF_Controller {
 		$child_data->add(_tr());
 		$child_data->add(_table());
 		
+		$supervisor = $participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'];
+		$tel = $participant_row['prt_supervision_cellphone'];
 		$status_line = table([ 'width'=>'100%' ],
 			td([ 'align'=>'left', 'style'=>'white-space: nowrap; padding: 0px;' ], $call_field),
 			td([ 'align'=>'right', 'style'=>'white-space: nowrap; padding: 0px;' ], $reg_field));
 		$reg_data = table([ 'width'=>'100%' ]);
 		$reg_data->add(tr());
-		$perc = empty($call_field) ? 48 : 40;
+		$perc = empty($call_field) ? ((strlen($supervisor) > 25 || strlen($tel) > 25) ? 40 : 48) : 40;
 		$reg_data->add(td([ 'rowspan'=>3, 'valign'=>'top', 'style'=>'width: '.$perc.'%;' ], $child_data));
 		$reg_data->add(td([ 'colspan'=>2, 'valign'=>'top', 'style'=>'padding-left: 10px;'  ], $status_line));
 		$reg_data->add(_tr());
-		$reg_data->add(tr(th(['align'=>'right', 'style'=>'padding-left: 10px;' ], 'Begleitperson:'),
-			td($participant_row['prt_supervision_firstname'].' '.$participant_row['prt_supervision_lastname'])));
+		$reg_data->add(tr(th(['align'=>'right' ], 'Begleitperson:'),
+			td(['style'=>'padding-left: 10px; white-space: normal;' ], $supervisor)));
 		$reg_data->add(tr(th(['align'=>'right' ], 'Handy-Nr:'),
-			td($participant_row['prt_supervision_cellphone'])));
+			td(['style'=>'padding-left: 10px; white-space: normal;' ], $tel)));
 		$reg_data->add(_table());
 		$register_data->setValue($reg_data);
 
@@ -956,11 +967,17 @@ class Participant extends BF_Controller {
 			}
 			else if (str_startswith($prt_filter_v, '@')) {
 				$qtype = 3;
-				$prt_filter_v = str_right($prt_filter_v, '@');
+				$prt_filter_v = '%'.str_right($prt_filter_v, '@').'%';
 			}
 			else if (str_startswith($prt_filter_v, '#')) {
 				$qtype = 4;
 				$prt_filter_v = str_right($prt_filter_v, '#');
+			}
+			else if (is_numeric($prt_filter_v)) {
+				$qtype = 5; // prt_number
+				if (substr($prt_filter_v, 0, 1) == '1')
+					$qtype = 6; // prt_reg_num
+				$prt_filter_v = $prt_filter_v.'%';
 			}
 			else
 				$prt_filter_v = '%'.$prt_filter_v.'%';
@@ -988,23 +1005,10 @@ class Participant extends BF_Controller {
 			$sql .= 'prt_firstname LIKE ? AND prt_lastname LIKE ?';
 		}
 		else if ($qtype == 3) {
-			// Registered with:
-			if (str_contains($prt_filter_v, ' ')) {
-				$fname = str_left($prt_filter_v, ' ');
-				$lname = str_right($prt_filter_v, ' ');
-				if (empty($fname)) {
-					$sql .= 'prt_supervision_lastname = ?';
-					$args = [ $lname ];
-				}
-				else {
-					$sql .= 'prt_supervision_firstname = ? AND prt_supervision_lastname = ?';
-					$args = [ $fname, $lname ];
-				}
-			}
-			else {
-				$sql .= 'prt_supervision_firstname = ?';
-				$args = [ $prt_filter_v ];
-			}
+			// Registered with, search parents:
+			$sql .= 'CONCAT(prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
+			$args = [ $prt_filter_v ];
+
 			$order_by = 'prt_birthday DESC, prt_name';
 		}
 		else if ($qtype == 4) {
@@ -1025,8 +1029,14 @@ class Participant extends BF_Controller {
 			$args = [ $a, $i ];
 		}
 		else {
-			$sql .= 'CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
-					prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
+			if ($qtype == 5)
+				$sql .= 'CONCAT(prt_number, "") LIKE ?';
+			else if ($qtype == 6)
+				$sql .= 'CONCAT(prt_reg_num, "") LIKE ?';
+			else {
+				$sql .= 'CONCAT(prt_number, "$", prt_firstname, " ", prt_lastname, "$",
+						prt_supervision_firstname, " ", prt_supervision_lastname) LIKE ?';
+			}
 			$args = [ $prt_filter_v ];
 		}
 

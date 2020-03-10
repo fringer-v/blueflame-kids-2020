@@ -48,6 +48,9 @@ class Groups extends BF_Controller {
 	public function index()
 	{
 		global $period_names;
+		global $period_dates;
+		global $age_level_from;
+		global $age_level_to;
 
 		if (!$this->authorize())
 			return;
@@ -56,23 +59,114 @@ class Groups extends BF_Controller {
 
 		$this->header('Kleingruppen');
 
+		$history = db_row_array('
+			SELECT hst_prt_id, hst_action, hst_timestamp, hst_age_level, hst_group_number,
+				prt_birthday
+			FROM bf_history, bf_participants
+			WHERE hst_prt_id = prt_id AND hst_action IN (?, ?, ?)
+			ORDER BY hst_timestamp, hst_id',
+			[ CREATED, REGISTER, CALLED ]);
+		$kids = []; // = [ $p=>$age, ... ]
+		$call = array_fill(0, PERIOD_COUNT, array_fill(0, AGE_LEVEL_COUNT, 0));;
+		foreach ($history as $hist) {
+			for ($p=0; $p<PERIOD_COUNT; $p++) {
+				if (date_create_from_format('Y-m-d H:i:s', $hist['hst_timestamp']) < $period_dates[$p]) {
+					break;
+				}
+			}
+			$age = get_age($hist['prt_birthday']);
+			$age_level = $this->get_age_level($age);
+
+			if ($p==PERIOD_COUNT)
+				continue;
+			switch ($hist['hst_action']) {
+				case CREATED:
+				case REGISTER:
+					if (empty($hist['hst_group_number']))
+						break;
+					if (!isset($kids[$hist['hst_prt_id']]))
+						$kids[$hist['hst_prt_id']] = array_fill(0, PERIOD_COUNT, -1);
+					$kids[$hist['hst_prt_id']][$p] = $hist['hst_age_level'];
+					break;
+				case CALLED:
+					$call[$p][$age_level]++;
+					break;
+			}
+		}
+
 		table( [ 'style'=>'border-collapse: collapse; width: 100%;' ] );
 		tr();
 		td(array('class'=>'left-panel', 'align'=>'left', 'valign'=>'top'));
 			table( [ 'style'=>'width: 100%;' ] );
-			for ($p=$current_period; $p<PERIOD_COUNT; $p++) {
+			for ($p=0; $p<PERIOD_COUNT; $p++) {
 				if ($p > 0)
 					tr(td([ 'style'=>'height: 10px' ]));
 				tr();
-				td([ 'class'=>'group-header' ], b($period_names[$p]), nbsp(), nbsp(), nbsp(),
+				td([ 'class'=>'group-header' ]);
+				b($period_names[$p]);
+				if ($p >= $current_period) {
+					nbsp();
+					nbsp();
+					nbsp();
 					href('groups/prints?session='.$p, img([ 'src'=>'../img/print-50.png',
-						'style'=>'height: 20px; width: auto; position: relative; bottom: -5px;'])));
+						'style'=>'height: 20px; width: auto; position: relative; bottom: -5px;']));
+				}
+				_td();
 				_tr();
 				tr();
 				td();
-				$async_loader = new AsyncLoader('group_list_'.$p, 'groups/getgrouplist?period='.$p,
-					[ 'age_level', 'args', 'action' ] );
-				$async_loader->html();
+				if ($p >= $current_period) {
+					$async_loader = new AsyncLoader('group_list_'.$p, 'groups/getgrouplist?period='.$p,
+						[ 'age_level', 'args', 'action' ] );
+					$async_loader->html();
+				}
+				else {
+					list($current_period, $nr_of_groups, $group_limits) = $this->get_group_data($p);
+					$ages = array_fill(0, AGE_LEVEL_COUNT, array_fill(0, PERIOD_COUNT, 0));
+					$total = array_fill(0, AGE_LEVEL_COUNT, 0);
+					foreach ($kids as $kid) {
+						if ($kid[$p] >= 0) {
+							$found = false;
+							for ($q=0; $q<$p; $q++) {
+								if ($kid[$q] >= 0) {
+									$found = true;
+									// More accurate is $kid[$q] not $kid[$p]
+									// But, so the number make sense we will just allways
+									// allocate the kids to the same age level in previous sessions!
+									$ages[$kid[$p]][$q]++;
+								}
+							}
+							if (!$found)
+								$ages[$kid[$p]][$p]++;
+							$total[$kid[$p]]++;
+						}
+					}
+
+					table();
+					tr();
+					td('Gruppe');
+					td('Anzahl');
+					td('Calls');
+					td('Gesamt');
+					td('1. Anmeldungen');
+					for ($q=0; $q<$p; $q++) {
+						td('Session '.($q+1));
+					}
+					_tr();
+					for ($a=0; $a<AGE_LEVEL_COUNT; $a++) {
+						tr();
+						td(b($age_level_from[$a].' - '.$age_level_to[$a]));
+						td($nr_of_groups[$a]);
+						td($call[$p][$a]);
+						td($total[$a]);
+						td($ages[$a][$p]);
+						for ($q=0; $q<$p; $q++) {
+							td($ages[$a][$q]);
+						}
+						_tr();
+					}
+					_table();
+				}
 				_td();
 				_tr();
 			}
